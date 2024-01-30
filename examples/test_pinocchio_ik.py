@@ -10,7 +10,9 @@ import time
 def create_robot_models():
     # Get the URDF file for the robot model
     pinocchio_model_dir = join(dirname(str(abspath(__file__))), "..", "models")
-    urdf_filename = join(pinocchio_model_dir, "ur_description", "urdf", "ur5_robot.urdf")
+    urdf_filename = join(
+        pinocchio_model_dir, "ur_description", "urdf", "ur5_robot.urdf"
+    )
 
     # Load the model from URDF
     model = pinocchio.buildModelFromUrdf(urdf_filename)
@@ -20,7 +22,7 @@ def create_robot_models():
         model,
         urdf_filename,
         pinocchio.GeometryType.COLLISION,
-        package_dirs=pinocchio_model_dir
+        package_dirs=pinocchio_model_dir,
     )
     collision_model.addAllCollisionPairs()
 
@@ -29,24 +31,31 @@ def create_robot_models():
         model,
         urdf_filename,
         pinocchio.GeometryType.VISUAL,
-        package_dirs=pinocchio_model_dir
+        package_dirs=pinocchio_model_dir,
     )
-    
+
     return (model, collision_model, visual_model)
+
 
 def get_random_state(model):
     return np.random.uniform(model.lowerPositionLimit, model.upperPositionLimit)
 
+
 def visualize_frame(name, tform):
     import meshcat.geometry as mg
-    FRAME_AXIS_POSITIONS = np.array([
-        [0, 0, 0], [1, 0, 0],
-        [0, 0, 0], [0, 1, 0],
-        [0, 0, 0], [0, 0, 1]]).astype(np.float32).T
-    FRAME_AXIS_COLORS = np.array([
-        [1, 0, 0], [1, 0.6, 0],
-        [0, 1, 0], [0.6, 1, 0],
-        [0, 0, 1], [0, 0.6, 1]]).astype(np.float32).T
+
+    FRAME_AXIS_POSITIONS = (
+        np.array([[0, 0, 0], [1, 0, 0], [0, 0, 0], [0, 1, 0], [0, 0, 0], [0, 0, 1]])
+        .astype(np.float32)
+        .T
+    )
+    FRAME_AXIS_COLORS = (
+        np.array(
+            [[1, 0, 0], [1, 0.6, 0], [0, 1, 0], [0.6, 1, 0], [0, 0, 1], [0, 0.6, 1]]
+        )
+        .astype(np.float32)
+        .T
+    )
     viz.viewer[name].set_object(
         mg.LineSegments(
             mg.PointsGeometry(
@@ -60,6 +69,7 @@ def visualize_frame(name, tform):
         )
     )
     viz.viewer[name].set_transform(tform.homogeneous)
+
 
 def solve_ik(model, target_frame, target_tform=None, init_state=None):
     target_frame_id = model.getFrameId(target_frame)
@@ -97,21 +107,27 @@ def solve_ik(model, target_frame, target_tform=None, init_state=None):
             error = target_tform.actInv(cur_tform)
             error = pinocchio.log(error).vector
             # print(f"Iteration {n_iters}, Error: {error}")
-            if np.linalg.norm(error[:3]) < MAX_TRANSLATION_ERROR and np.linalg.norm(error[3:]) < MAX_ROTATION_ERROR:           
+            if (
+                np.linalg.norm(error[:3]) < MAX_TRANSLATION_ERROR
+                and np.linalg.norm(error[3:]) < MAX_ROTATION_ERROR
+            ):
                 solved = True
                 break
 
             # Calculate the Jacobian
             J = pinocchio.computeFrameJacobian(
-                model, data, q_cur, target_frame_id,
+                model,
+                data,
+                q_cur,
+                target_frame_id,
                 pinocchio.ReferenceFrame.LOCAL,
             )
             if DAMPING <= 0:
                 # Regular Moore-Penrose pseudoinverse
-                vel = - np.linalg.pinv(J) @ error
+                vel = -np.linalg.pinv(J) @ error
             else:
                 # Damped least squares (Levenberg-Marquardt)
-                vel = - J.T.dot(
+                vel = -J.T.dot(
                     np.linalg.solve(J.dot(J.T) + DAMPING**2 * np.eye(6), error)
                 )
             q_cur = pinocchio.integrate(model, q_cur, vel * ALPHA)
@@ -119,7 +135,7 @@ def solve_ik(model, target_frame, target_tform=None, init_state=None):
             n_iters += 1
             viz.display(q_cur)
             time.sleep(0.05)
-        
+
         if solved:
             print(f"Solved in {n_tries+1} tries.")
             break

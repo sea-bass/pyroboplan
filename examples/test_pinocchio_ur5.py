@@ -6,10 +6,10 @@ from os.path import dirname, join, abspath
 import time
 
 # This path refers to Pinocchio source code but you can define your own directory here.
-pinocchio_model_dir = join(dirname(dirname(str(abspath(__file__)))), "models")
+pinocchio_model_dir = join(dirname(str(abspath(__file__))), "..", "models")
 
 # You should change here to set up your own URDF file or just pass it as an argument of this example.
-urdf_filename = pinocchio_model_dir + '/ur_description/urdf/ur5_robot.urdf'
+urdf_filename = join(pinocchio_model_dir, "ur_description", "urdf", "ur5_robot.urdf")
 
 # Load the urdf model
 model = pinocchio.buildModelFromUrdf(urdf_filename)
@@ -20,7 +20,7 @@ collision_model = pinocchio.buildGeomFromUrdf(
     model,
     urdf_filename,
     pinocchio.GeometryType.COLLISION,
-    package_dirs=pinocchio_model_dir
+    package_dirs=pinocchio_model_dir,
 )
 collision_model.addAllCollisionPairs()
 collision_data = pinocchio.GeometryData(collision_model)
@@ -31,31 +31,31 @@ visual_model = pinocchio.buildGeomFromUrdf(
     model,
     urdf_filename,
     pinocchio.GeometryType.VISUAL,
-    package_dirs=pinocchio_model_dir
+    package_dirs=pinocchio_model_dir,
 )
 
-print('model name: ' + model.name)
+print(f"model name: {model.name}")
 
 # Create data required by the algorithms
 data = model.createData()
 
 # Sample a random configuration
 q = pinocchio.randomConfiguration(model)
-print('q: %s' % q.T)
+print("q: %s" % q.T)
 
 # Perform the forward kinematics over the kinematic tree
 pinocchio.forwardKinematics(model, data, q)
 
 # Print out the placement of each joint of the kinematic tree
 for name, oMi in zip(model.names, data.oMi):
-    print(("{:<24} : {: .2f} {: .2f} {: .2f}"
-          .format(name, *oMi.translation.T.flat)))
+    print(("{:<24} : {: .2f} {: .2f} {: .2f}".format(name, *oMi.translation.T.flat)))
 
 
 viz = MeshcatVisualizer(model, collision_model, visual_model, data=data)
 viz.initViewer(open=True)
 viz.loadViewerModel()
 viz.displayFrames(True)
+
 
 def random_loop():
     for i in range(100):
@@ -67,12 +67,7 @@ def random_loop():
 
         # Compute collisions
         pinocchio.computeCollisions(
-            model,
-            data,
-            collision_model,
-            collision_data,
-            q,
-            False
+            model, data, collision_model, collision_data, q, False
         )
         # Print the status of collision for all collision pairs
         n_collision_pairs = len(collision_model.collisionPairs)
@@ -80,8 +75,12 @@ def random_loop():
             cr = collision_data.collisionResults[k]
             cp = collision_model.collisionPairs[k]
             if cr.isCollision():
-                print("collision between:", collision_model.geometryObjects[cp.first].name,
-                    " and ", collision_model.geometryObjects[cp.second].name)
+                print(
+                    "collision between:",
+                    collision_model.geometryObjects[cp.first].name,
+                    " and ",
+                    collision_model.geometryObjects[cp.second].name,
+                )
 
         print("\n")
 
@@ -90,9 +89,10 @@ def random_loop():
 
         time.sleep(0.5)
 
+
 def sim_loop():
     tau0 = np.zeros(model.nv)
-    qs = [np.array([0.0, -np.pi/2 + 0.01, 0.0, 0.0, 0.0, 0.0])]
+    qs = [np.array([0.0, -np.pi / 2 + 0.01, 0.0, 0.0, 0.0, 0.0])]
     vs = [np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])]
 
     dt = 0.005
@@ -119,8 +119,12 @@ def sim_loop():
             cr = collision_data.collisionResults[k]
             cp = collision_model.collisionPairs[k]
             if cr.isCollision():
-                print("collision between:", collision_model.geometryObjects[cp.first].name,
-                    " and ", collision_model.geometryObjects[cp.second].name)
+                print(
+                    "collision between:",
+                    collision_model.geometryObjects[cp.first].name,
+                    " and ",
+                    collision_model.geometryObjects[cp.second].name,
+                )
 
         qs.append(qnext)
         vs.append(vnext)

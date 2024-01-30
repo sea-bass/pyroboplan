@@ -41,7 +41,7 @@ def create_model():
         ),
         pin.SE3.Identity(),  # transform from joint frame?
     )
-   
+
     # Add tip frame
     frame = pin.Frame(
         "tip",  # name
@@ -57,7 +57,7 @@ def create_model():
     # Forward kinematics
     data = model.createData()
 
-    q = np.array([np.pi/4, -np.pi/3])
+    q = np.array([np.pi / 4, -np.pi / 3])
     pin.framesForwardKinematics(model, data, q)
 
     print("OMI")
@@ -69,7 +69,9 @@ def create_model():
     print(f"Joint Jacobians:\n{J}")
 
     JF = pin.computeFrameJacobian(
-        model, data, q,
+        model,
+        data,
+        q,
         model.getFrameId("tip"),
         pin.ReferenceFrame.LOCAL,
     )
@@ -77,25 +79,26 @@ def create_model():
 
     return model
 
+
 def create_visual_model(model):
     visual_model = pin.GeometryModel()
-    link0 =  pin.GeometryObject(
+    link0 = pin.GeometryObject(
         "link0",
         model.getJointId("joint0"),
         hppfcl.Box(0.05, 0.05, 1.0),
-        pin.SE3(np.eye(3), np.array([0.0, 0.0, 0.5]))
+        pin.SE3(np.eye(3), np.array([0.0, 0.0, 0.5])),
     )
     link0.meshColor = np.array([1.0, 0.0, 0.0, 1.0])
     visual_model.addGeometryObject(link0)
     link1 = pin.GeometryObject(
         "link1",
-        model.getJointId("joint1"), 
+        model.getJointId("joint1"),
         hppfcl.Box(0.05, 0.05, 1.0),
-        pin.SE3(np.eye(3), np.array([0.0, 0.0, 0.5]))
+        pin.SE3(np.eye(3), np.array([0.0, 0.0, 0.5])),
     )
     link1.meshColor = np.array([0.0, 0.0, 1.0, 1.0])
     visual_model.addGeometryObject(link1)
-    
+
     return visual_model
 
 
