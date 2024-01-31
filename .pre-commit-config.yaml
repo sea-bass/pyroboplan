@@ -9,4 +9,3 @@ repos:
     rev: 24.1.1
     hooks:
     -   id: black
-

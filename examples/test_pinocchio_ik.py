@@ -11,7 +11,7 @@ def create_robot_models():
     # Get the URDF file for the robot model
     pinocchio_model_dir = join(dirname(str(abspath(__file__))), "..", "models")
     urdf_filename = join(
-        pinocchio_model_dir, "ur_description", "urdf", "ur5_robot.urdf"
+        pinocchio_model_dir, "ur_description", "urdf", "ur5_joint_limited_robot.urdf"
     )
 
     # Load the model from URDF
