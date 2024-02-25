@@ -118,7 +118,8 @@ def solve_ik(model, target_frame, target_tform=None, init_state=None):
     MAX_TRANSLATION_ERROR = 1e-3
     MAX_ROTATION_ERROR = 1e-3
     DAMPING = 1e-3
-    ALPHA = 0.1
+    MIN_STEP = 0.1
+    MAX_STEP = 0.5
 
     # Initialize IK
     solved = False
@@ -129,6 +130,7 @@ def solve_ik(model, target_frame, target_tform=None, init_state=None):
 
     while n_tries < MAX_RETRIES:
         n_iters = 0
+        max_error = 0
         while n_iters < MAX_ITERS:
             # Compute forward kinematics at the current state
             pinocchio.framesForwardKinematics(model, data, q_cur)
@@ -137,7 +139,9 @@ def solve_ik(model, target_frame, target_tform=None, init_state=None):
             # Check the error using actInv
             error = target_tform.actInv(cur_tform)
             error = -pinocchio.log(error).vector
-            # print(f"Iteration {n_iters}, Error: {error}")
+            error_norm = np.linalg.norm(error)
+            max_error = max(max_error, error_norm)
+            # print(f"Iteration {n_iters}, Error norm: {error_norm}")
             if (
                 np.linalg.norm(error[:3]) < MAX_TRANSLATION_ERROR
                 and np.linalg.norm(error[3:]) < MAX_ROTATION_ERROR
@@ -165,9 +169,12 @@ def solve_ik(model, target_frame, target_tform=None, init_state=None):
             jjt = J.dot(J.T) + DAMPING**2 * np.eye(6)
             # nullspace_component = zero_nullspace_component(model)
             nullspace_component = joint_limit_nullspace_component(
-                model, q_cur, padding=0.01, gain=10.0
-            ) + joint_center_nullspace_component(model, q_cur, gain=1.0)
-            q_cur += ALPHA * (
+                model, q_cur, padding=0.05, gain=0.5
+            ) + joint_center_nullspace_component(model, q_cur, gain=0.1)
+            
+            # Gradient descent step
+            alpha = MIN_STEP + (1.0 - error_norm / max_error) * (MAX_STEP -  MIN_STEP)
+            q_cur += alpha * (
                 J.T @ (np.linalg.solve(jjt, error - J @ (nullspace_component)))
                 + nullspace_component
             )
