@@ -3,8 +3,14 @@ WORK IN PROGRESS: Learning resources for robot manipulation
 
 ## Setup
 
-Install the Python dependencies:
+Set up the virtual enviroment and install dependencies.
 
+```bash
+source setup.bash
 ```
-pip install -r requirements.txt
+
+Alternatively, you can just install the requirements in your own environment.
+
+```bash
+pip3 install -r requirements.txt
 ```
