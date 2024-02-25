@@ -41,6 +41,34 @@ def get_random_state(model):
     return np.random.uniform(model.lowerPositionLimit, model.upperPositionLimit)
 
 
+def zero_nullspace_component(model):
+    return np.zeros_like(model.lowerPositionLimit)
+
+
+def joint_limit_nullspace_component(model, q, gain=0.1, padding=0.0):
+    grad = zero_nullspace_component(model)
+    for idx in range(len(grad)):
+        if q[idx] > model.upperPositionLimit[idx] - padding:
+            grad[idx] = -gain * (q[idx] - model.upperPositionLimit[idx] + padding)
+        elif q[idx] < model.lowerPositionLimit[idx] + padding:
+            grad[idx] = -gain * (q[idx] - model.lowerPositionLimit[idx] - padding)
+    return grad
+
+
+def elbow_up_nullspace_component(model, q, gain=0.1):
+    grad = zero_nullspace_component(model)
+    joint_idx = model.getJointId("elbow_joint")
+    if q[joint_idx] < 0:
+        grad[joint_idx] = -gain * q[joint_idx]
+    return grad
+
+
+def check_within_limits(model, q):
+    return np.all(q >= model.lowerPositionLimit) and np.all(
+        q <= model.upperPositionLimit
+    )
+
+
 def visualize_frame(name, tform):
     import meshcat.geometry as mg
 
@@ -111,7 +139,13 @@ def solve_ik(model, target_frame, target_tform=None, init_state=None):
                 np.linalg.norm(error[:3]) < MAX_TRANSLATION_ERROR
                 and np.linalg.norm(error[3:]) < MAX_ROTATION_ERROR
             ):
-                solved = True
+                # Wrap to the range -/+ pi and check joint limits
+                q_cur = q_cur % np.pi
+                if check_within_limits(model, q_cur):
+                    print("Solved and within joint limits!")
+                    solved = True
+                else:
+                    print("Solved, but outside joint limits.")
                 break
 
             # Calculate the Jacobian
@@ -122,14 +156,17 @@ def solve_ik(model, target_frame, target_tform=None, init_state=None):
                 target_frame_id,
                 pinocchio.ReferenceFrame.LOCAL,
             )
-            if DAMPING <= 0:
-                # Regular Moore-Penrose pseudoinverse
-                vel = -np.linalg.pinv(J) @ error
-            else:
-                # Damped least squares (Levenberg-Marquardt)
-                vel = -J.T.dot(
-                    np.linalg.solve(J.dot(J.T) + DAMPING**2 * np.eye(6), error)
-                )
+
+            # Solve for the gradient using damping and nullspace components,
+            # as specified
+            jjt = J.dot(J.T) + DAMPING**2 * np.eye(6)
+            nullspace_component = joint_limit_nullspace_component(
+                model, q_cur
+            ) + elbow_up_nullspace_component(model, q_cur)
+            vel = (
+                -J.T.dot(np.linalg.solve(jjt, error - J @ nullspace_component))
+                - nullspace_component
+            )
             q_cur = pinocchio.integrate(model, q_cur, vel * ALPHA)
 
             n_iters += 1
@@ -144,6 +181,8 @@ def solve_ik(model, target_frame, target_tform=None, init_state=None):
             n_tries += 1
             print(f"Retry {n_tries}")
 
+    return q_cur
+
 
 if __name__ == "__main__":
     # Create models and data
@@ -157,4 +196,6 @@ if __name__ == "__main__":
     time.sleep(0.5)  # Needed to render
 
     # Solve IK
-    solve_ik(model, "ee_link")
+    q_sol = solve_ik(model, "ee_link")
+    np.set_printoptions(precision=3)
+    print(f"\nSolution configuration:\n{q_sol}")
