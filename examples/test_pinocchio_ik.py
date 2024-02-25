@@ -45,22 +45,22 @@ def zero_nullspace_component(model):
     return np.zeros_like(model.lowerPositionLimit)
 
 
-def joint_limit_nullspace_component(model, q, gain=0.1, padding=0.0):
+def joint_limit_nullspace_component(model, q, gain=1.0, padding=0.0):
+    upper_limits = model.upperPositionLimit - padding
+    lower_limits = model.lowerPositionLimit + padding
+
     grad = zero_nullspace_component(model)
     for idx in range(len(grad)):
-        if q[idx] > model.upperPositionLimit[idx] - padding:
-            grad[idx] = -gain * (q[idx] - model.upperPositionLimit[idx] + padding)
-        elif q[idx] < model.lowerPositionLimit[idx] + padding:
-            grad[idx] = -gain * (q[idx] - model.lowerPositionLimit[idx] - padding)
+        if q[idx] > upper_limits[idx]:
+            grad[idx] = -gain * (q[idx] - upper_limits[idx])
+        elif q[idx] < lower_limits[idx]:
+            grad[idx] = -gain * (q[idx] - lower_limits[idx])
     return grad
 
 
-def elbow_up_nullspace_component(model, q, gain=0.1):
-    grad = zero_nullspace_component(model)
-    joint_idx = model.getJointId("elbow_joint")
-    if q[joint_idx] < 0:
-        grad[joint_idx] = -gain * q[joint_idx]
-    return grad
+def joint_center_nullspace_component(model, q, gain=1.0):
+    joint_center_positions = 0.5 * (model.lowerPositionLimit + model.upperPositionLimit)
+    return gain * (joint_center_positions - q)
 
 
 def check_within_limits(model, q):
@@ -113,10 +113,10 @@ def solve_ik(model, target_frame, target_tform=None, init_state=None):
     visualize_frame("ik_target_pose", target_tform)
 
     # IK Hyperparameters
-    MAX_ITERS = 500
+    MAX_ITERS = 200
     MAX_RETRIES = 10
-    MAX_TRANSLATION_ERROR = 1e-4
-    MAX_ROTATION_ERROR = 1e-4
+    MAX_TRANSLATION_ERROR = 1e-3
+    MAX_ROTATION_ERROR = 1e-3
     DAMPING = 1e-3
     ALPHA = 0.1
 
@@ -124,6 +124,9 @@ def solve_ik(model, target_frame, target_tform=None, init_state=None):
     solved = False
     n_tries = 0
     q_cur = init_state
+    viz.display(q_cur)
+    time.sleep(0.5)  # Needed to render
+
     while n_tries < MAX_RETRIES:
         n_iters = 0
         while n_iters < MAX_ITERS:
@@ -133,14 +136,14 @@ def solve_ik(model, target_frame, target_tform=None, init_state=None):
 
             # Check the error using actInv
             error = target_tform.actInv(cur_tform)
-            error = pinocchio.log(error).vector
+            error = -pinocchio.log(error).vector
             # print(f"Iteration {n_iters}, Error: {error}")
             if (
                 np.linalg.norm(error[:3]) < MAX_TRANSLATION_ERROR
                 and np.linalg.norm(error[3:]) < MAX_ROTATION_ERROR
             ):
                 # Wrap to the range -/+ pi and check joint limits
-                q_cur = q_cur % np.pi
+                q_cur = (q_cur + np.pi) % (2 * np.pi) - np.pi
                 if check_within_limits(model, q_cur):
                     print("Solved and within joint limits!")
                     solved = True
@@ -160,14 +163,14 @@ def solve_ik(model, target_frame, target_tform=None, init_state=None):
             # Solve for the gradient using damping and nullspace components,
             # as specified
             jjt = J.dot(J.T) + DAMPING**2 * np.eye(6)
+            # nullspace_component = zero_nullspace_component(model)
             nullspace_component = joint_limit_nullspace_component(
-                model, q_cur
-            ) + elbow_up_nullspace_component(model, q_cur)
-            vel = (
-                -J.T.dot(np.linalg.solve(jjt, error - J @ nullspace_component))
-                - nullspace_component
+                model, q_cur, padding=0.01, gain=10.0
+            ) + joint_center_nullspace_component(model, q_cur, gain=1.0)
+            q_cur += ALPHA * (
+                J.T @ (np.linalg.solve(jjt, error - J @ (nullspace_component)))
+                + nullspace_component
             )
-            q_cur = pinocchio.integrate(model, q_cur, vel * ALPHA)
 
             n_iters += 1
             viz.display(q_cur)
@@ -181,7 +184,10 @@ def solve_ik(model, target_frame, target_tform=None, init_state=None):
             n_tries += 1
             print(f"Retry {n_tries}")
 
-    return q_cur
+    if solved:
+        return q_cur
+    else:
+        return None
 
 
 if __name__ == "__main__":
@@ -193,9 +199,10 @@ if __name__ == "__main__":
     viz = MeshcatVisualizer(model, collision_model, visual_model, data=data)
     viz.initViewer(open=True)
     viz.loadViewerModel()
-    time.sleep(0.5)  # Needed to render
 
     # Solve IK
-    q_sol = solve_ik(model, "ee_link")
-    np.set_printoptions(precision=3)
-    print(f"\nSolution configuration:\n{q_sol}")
+    NUM_SOLVES = 10
+    for i in range(NUM_SOLVES):
+        q_sol = solve_ik(model, "ee_link")
+        np.set_printoptions(precision=3)
+        print(f"Solution configuration:\n{q_sol}\n")
