@@ -10,9 +10,7 @@ import time
 def create_robot_models():
     # Get the URDF file for the robot model
     pinocchio_model_dir = join(dirname(str(abspath(__file__))), "..", "models")
-    urdf_filename = join(
-        pinocchio_model_dir, "ur_description", "urdf", "ur5_joint_limited_robot.urdf"
-    )
+    urdf_filename = join(pinocchio_model_dir, "panda_description", "urdf", "panda.urdf")
 
     # Load the model from URDF
     model = pinocchio.buildModelFromUrdf(urdf_filename)
@@ -169,11 +167,11 @@ def solve_ik(model, target_frame, target_tform=None, init_state=None):
             jjt = J.dot(J.T) + DAMPING**2 * np.eye(6)
             # nullspace_component = zero_nullspace_component(model)
             nullspace_component = joint_limit_nullspace_component(
-                model, q_cur, padding=0.05, gain=0.5
+                model, q_cur, padding=0.05, gain=1.0
             ) + joint_center_nullspace_component(model, q_cur, gain=0.1)
-            
+
             # Gradient descent step
-            alpha = MIN_STEP + (1.0 - error_norm / max_error) * (MAX_STEP -  MIN_STEP)
+            alpha = MIN_STEP + (1.0 - error_norm / max_error) * (MAX_STEP - MIN_STEP)
             q_cur += alpha * (
                 J.T @ (np.linalg.solve(jjt, error - J @ (nullspace_component)))
                 + nullspace_component
@@ -210,6 +208,6 @@ if __name__ == "__main__":
     # Solve IK
     NUM_SOLVES = 10
     for i in range(NUM_SOLVES):
-        q_sol = solve_ik(model, "ee_link")
+        q_sol = solve_ik(model, "panda_hand")
         np.set_printoptions(precision=3)
         print(f"Solution configuration:\n{q_sol}\n")
