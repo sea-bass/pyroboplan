@@ -1,0 +1,245 @@
+<?xml version="1.0" ?>
+<robot name="custom" xmlns:xacro="http://www.ros.org/wiki/xacro">
+    <link name="link0">
+        <visual>
+            <geometry>
+                <mesh filename="package://custom_description/meshes/visual/link.dae" />
+            </geometry>
+        </visual>
+        <collision>
+            <geometry>
+                <mesh filename="package://custom_description/meshes/collision/link.dae" />
+            </geometry>
+        </collision>
+    </link>
+    <link name="link1">
+        <visual>
+            <geometry>
+                <mesh filename="package://custom_description/meshes/visual/link.dae" />
+            </geometry>
+        </visual>
+        <collision>
+            <geometry>
+                <mesh filename="package://custom_description/meshes/collision/link.dae" />
+            </geometry>
+        </collision>
+    </link>
+    <joint name="joint1" type="revolute">
+        <safety_controller k_position="100.0" k_velocity="40.0" soft_lower_limit="-2.8973" soft_upper_limit="2.8973" />
+        <origin rpy="0 0 0" xyz="0 0 0.242" />
+        <parent link="link0" />
+        <child link="link1" />
+        <axis xyz="0 0 1" />
+        <limit effort="87" lower="-2.9671" upper="2.9671" velocity="2.3925" />
+    </joint>
+    <link name="link2">
+        <visual>
+            <geometry>
+                <mesh filename="package://custom_description/meshes/visual/link.dae" />
+            </geometry>
+        </visual>
+        <collision>
+            <geometry>
+                <mesh filename="package://custom_description/meshes/collision/link.dae" />
+            </geometry>
+        </collision>
+    </link>
+    <joint name="joint2" type="revolute">
+        <safety_controller k_position="100.0" k_velocity="40.0" soft_lower_limit="-1.7628" soft_upper_limit="1.7628" />
+        <origin rpy="0 0 0" xyz="0 0 0.242" />
+        <parent link="link1" />
+        <child link="link2" />
+        <axis xyz="1 0 0" />
+        <limit effort="87" lower="-1.8326" upper="1.8326" velocity="2.3925" />
+    </joint>
+    <link name="link3">
+        <visual>
+            <geometry>
+                <mesh filename="package://custom_description/meshes/visual/link.dae" />
+            </geometry>
+        </visual>
+        <collision>
+            <geometry>
+                <mesh filename="package://custom_description/meshes/collision/link.dae" />
+            </geometry>
+        </collision>
+    </link>
+    <joint name="joint3" type="revolute">
+        <safety_controller k_position="100.0" k_velocity="40.0" soft_lower_limit="-2.8973" soft_upper_limit="2.8973" />
+        <origin rpy="0 0 0" xyz="0 0 0.242" />
+        <parent link="link2" />
+        <child link="link3" />
+        <axis xyz="0 1 0" />
+        <limit effort="87" lower="-2.9671" upper="2.9671" velocity="2.3925" />
+    </joint>
+    <link name="link4">
+        <visual>
+            <geometry>
+                <mesh filename="package://custom_description/meshes/visual/link.dae" />
+            </geometry>
+        </visual>
+        <collision>
+            <geometry>
+                <mesh filename="package://custom_description/meshes/collision/link.dae" />
+            </geometry>
+        </collision>
+    </link>
+    <joint name="joint4" type="revolute">
+        <safety_controller k_position="100.0" k_velocity="40.0" soft_lower_limit="-3.0718" soft_upper_limit="0.0175" />
+        <origin rpy="0 0 0" xyz="0 0 0.242" />
+        <parent link="link3" />
+        <child link="link4" />
+        <axis xyz="0 0 1" />
+        <limit effort="87" lower="-3.1416" upper="0.0873" velocity="2.3925" />
+    </joint>
+    <link name="link5">
+        <visual>
+            <geometry>
+                <mesh filename="package://custom_description/meshes/visual/link.dae" />
+            </geometry>
+        </visual>
+        <collision>
+            <geometry>
+                <mesh filename="package://custom_description/meshes/collision/link.dae" />
+            </geometry>
+        </collision>
+    </link>
+    <joint name="joint5" type="revolute">
+        <safety_controller k_position="100.0" k_velocity="40.0" soft_lower_limit="-2.8973" soft_upper_limit="2.8973" />
+        <origin rpy="0 0 0" xyz="0 0 0.242" />
+        <parent link="link4" />
+        <child link="link5" />
+        <axis xyz="1 0 0" />
+        <limit effort="12" lower="-2.9671" upper="2.9671" velocity="2.8710" />
+    </joint>
+    <link name="link6">
+        <visual>
+            <geometry>
+                <mesh filename="package://custom_description/meshes/visual/link.dae" />
+            </geometry>
+        </visual>
+        <collision>
+            <geometry>
+                <mesh filename="package://custom_description/meshes/collision/link.dae" />
+            </geometry>
+        </collision>
+    </link>
+    <joint name="joint6" type="revolute">
+        <safety_controller k_position="100.0" k_velocity="40.0" soft_lower_limit="-0.0175" soft_upper_limit="3.7525" />
+        <origin rpy="0 0 0" xyz="0 0 0.242" />
+        <parent link="link5" />
+        <child link="link6" />
+        <axis xyz="0 1 0" />
+        <limit effort="12" lower="-0.0873" upper="3.8223" velocity="2.8710" />
+    </joint>
+    <link name="link7">
+        <visual>
+            <geometry>
+                <mesh filename="package://custom_description/meshes/visual/link.dae" />
+            </geometry>
+        </visual>
+        <collision>
+            <geometry>
+                <mesh filename="package://custom_description/meshes/collision/link.dae" />
+            </geometry>
+        </collision>
+    </link>
+    <joint name="joint7" type="revolute">
+        <safety_controller k_position="100.0" k_velocity="40.0" soft_lower_limit="-2.8973" soft_upper_limit="2.8973" />
+        <origin rpy="0 0 0" xyz="0 0 0.242" />
+        <parent link="link6" />
+        <child link="link7" />
+        <axis xyz="0 0 1" />
+        <limit effort="12" lower="-2.9671" upper="2.9671" velocity="2.8710" />
+    </joint>
+    <link name="link8">
+        <visual>
+            <geometry>
+                <mesh filename="package://custom_description/meshes/visual/link.dae" />
+            </geometry>
+        </visual>
+        <collision>
+            <geometry>
+                <mesh filename="package://custom_description/meshes/collision/link.dae" />
+            </geometry>
+        </collision>
+    </link>
+    <joint name="joint8" type="fixed">
+        <origin rpy="0 0 0" xyz="0 0 0.242" />
+        <parent link="link7" />
+        <child link="link8" />
+        <axis xyz="1 0 0" />
+        <limit effort="12" lower="-2.9671" upper="2.9671" velocity="2.8710" />
+    </joint>
+    <joint name="joint9" type="revolute">
+        <safety_controller k_position="100.0" k_velocity="40.0" soft_lower_limit="-2.8973" soft_upper_limit="2.8973" />
+        <origin rpy="0 0 0" xyz="0 0 0.242" />
+        <parent link="link8" />
+        <child link="link9" />
+        <axis xyz="0 1 0" />
+        <limit effort="87" lower="-2.9671" upper="2.9671" velocity="2.3925" />
+    </joint>
+    <link name="link9">
+        <visual>
+            <geometry>
+                <mesh filename="package://custom_description/meshes/visual/link.dae" />
+            </geometry>
+        </visual>
+        <collision>
+            <geometry>
+                <mesh filename="package://custom_description/meshes/collision/link.dae" />
+            </geometry>
+        </collision>
+    </link>
+    <joint name="joint10" type="revolute">
+        <safety_controller k_position="100.0" k_velocity="40.0" soft_lower_limit="-3.0718" soft_upper_limit="0.0175" />
+        <origin rpy="0 0 0" xyz="0 0 0.242" />
+        <parent link="link9" />
+        <child link="link10" />
+        <axis xyz="0 0 1" />
+        <limit effort="87" lower="-3.1416" upper="0.0873" velocity="2.3925" />
+    </joint>
+    <link name="link10">
+        <visual>
+            <geometry>
+                <mesh filename="package://custom_description/meshes/visual/link.dae" />
+            </geometry>
+        </visual>
+        <collision>
+            <geometry>
+                <mesh filename="package://custom_description/meshes/collision/link.dae" />
+            </geometry>
+        </collision>
+    </link>
+    <joint name="joint11" type="revolute">
+        <safety_controller k_position="100.0" k_velocity="40.0" soft_lower_limit="-2.8973" soft_upper_limit="2.8973" />
+        <origin rpy="0 0 0" xyz="0 0 0.242" />
+        <parent link="link10" />
+        <child link="link11" />
+        <axis xyz="1 0 0" />
+        <limit effort="12" lower="-2.9671" upper="2.9671" velocity="2.8710" />
+    </joint>
+    <link name="link11">
+        <visual>
+            <geometry>
+                <mesh filename="package://custom_description/meshes/visual/link.dae" />
+            </geometry>
+        </visual>
+        <collision>
+            <geometry>
+                <mesh filename="package://custom_description/meshes/collision/link.dae" />
+            </geometry>
+        </collision>
+    </link>
+    <joint name="joint12" type="revolute">
+        <safety_controller k_position="100.0" k_velocity="40.0" soft_lower_limit="-0.0175" soft_upper_limit="3.7525" />
+        <origin rpy="0 0 0" xyz="0 0 0.242" />
+        <parent link="link11" />
+        <child link="link12" />
+        <axis xyz="0 1 0" />
+        <limit effort="12" lower="-0.0873" upper="3.8223" velocity="2.8710" />
+    </joint>
+
+    <link name="link12"/>
+
+</robot>
