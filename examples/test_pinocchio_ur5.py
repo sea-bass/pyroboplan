@@ -1,6 +1,7 @@
 import pinocchio
 from pinocchio.visualize import MeshcatVisualizer
 
+import meshcat.geometry as mg
 import numpy as np
 from os.path import dirname, join, abspath
 import time
@@ -24,6 +25,8 @@ collision_model = pinocchio.buildGeomFromUrdf(
 )
 collision_model.addAllCollisionPairs()
 collision_data = pinocchio.GeometryData(collision_model)
+for cobj in collision_model.geometryObjects:
+    cobj.meshColor = np.array([0.7, 0.7, 0.7, 0.2])
 
 # Load visual model
 mesh_path = pinocchio_model_dir
@@ -54,7 +57,9 @@ for name, oMi in zip(model.names, data.oMi):
 viz = MeshcatVisualizer(model, collision_model, visual_model, data=data)
 viz.initViewer(open=True)
 viz.loadViewerModel()
-viz.displayFrames(True)
+viz.displayCollisions(True)
+viz.displayVisuals(False)
+viz.displayFrames(False)
 
 
 def random_loop():
@@ -115,6 +120,7 @@ def sim_loop():
             model, data, collision_model, collision_data, qnext, False
         )
         # Print the status of collision for all collision pairs
+        contacts = []
         for k in range(len(collision_model.collisionPairs)):
             cr = collision_data.collisionResults[k]
             cp = collision_model.collisionPairs[k]
@@ -125,6 +131,26 @@ def sim_loop():
                     " and ",
                     collision_model.geometryObjects[cp.second].name,
                 )
+                for contact in cr.getContacts():
+                    contacts.extend(
+                        [
+                            contact.pos,
+                            contact.pos - contact.normal * contact.penetration_depth,
+                        ]
+                    )
+
+        viz.viewer["collision_display"].set_object(
+            mg.LineSegments(
+                mg.PointsGeometry(
+                    position=np.array(contacts).T,
+                    color=np.array([[1.0, 0.0, 0.0] for c in contacts]).T,
+                ),
+                mg.LineBasicMaterial(
+                    linewidth=5,
+                    vertexColors=True,
+                ),
+            )
+        )
 
         qs.append(qnext)
         vs.append(vnext)
