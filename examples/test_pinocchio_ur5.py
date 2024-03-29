@@ -62,39 +62,6 @@ viz.displayVisuals(False)
 viz.displayFrames(False)
 
 
-def random_loop():
-    for i in range(100):
-        q = pinocchio.randomConfiguration(model)
-
-        pinocchio.framesForwardKinematics(model, data, q)
-        tool_tform = data.oMf[model.getFrameId("tool0")]
-        print(f"q: {q}\ntool_tform:\n{tool_tform}")
-
-        # Compute collisions
-        pinocchio.computeCollisions(
-            model, data, collision_model, collision_data, q, False
-        )
-        # Print the status of collision for all collision pairs
-        n_collision_pairs = len(collision_model.collisionPairs)
-        for k in range(n_collision_pairs):
-            cr = collision_data.collisionResults[k]
-            cp = collision_model.collisionPairs[k]
-            if cr.isCollision():
-                print(
-                    "collision between:",
-                    collision_model.geometryObjects[cp.first].name,
-                    " and ",
-                    collision_model.geometryObjects[cp.second].name,
-                )
-
-        print("\n")
-
-        viz.display(q)
-        viz.drawFrameVelocities(frame_id=model.getFrameId("tool0"))
-
-        time.sleep(0.5)
-
-
 def sim_loop():
     tau0 = np.zeros(model.nv)
     qs = [np.array([0.0, -np.pi / 2 + 0.01, 0.0, 0.0, 0.0, 0.0])]
@@ -113,17 +80,19 @@ def sim_loop():
 
         pinocchio.framesForwardKinematics(model, data, qnext)
         tool_tform = data.oMf[model.getFrameId("tool0")]
-        print(f"q: {q}\ntool_tform:\n{tool_tform}")
+        # print(f"q: {q}\ntool_tform:\n{tool_tform}")
 
-        # Compute collisions
+        # Compute collisions and distances
         pinocchio.computeCollisions(
             model, data, collision_model, collision_data, qnext, False
         )
-        # Print the status of collision for all collision pairs
+        pinocchio.computeDistances(model, data, collision_model, collision_data, qnext)
         contacts = []
+        distances = []
         for k in range(len(collision_model.collisionPairs)):
             cr = collision_data.collisionResults[k]
             cp = collision_model.collisionPairs[k]
+            dr = collision_data.distanceResults[k]
             if cr.isCollision():
                 print(
                     "collision between:",
@@ -138,15 +107,29 @@ def sim_loop():
                             contact.pos - contact.normal * contact.penetration_depth,
                         ]
                     )
+            else:
+                distances.extend([dr.getNearestPoint1(), dr.getNearestPoint2()])
 
         viz.viewer["collision_display"].set_object(
             mg.LineSegments(
                 mg.PointsGeometry(
                     position=np.array(contacts).T,
-                    color=np.array([[1.0, 0.0, 0.0] for c in contacts]).T,
+                    color=np.array([[1.0, 0.0, 0.0] for _ in contacts]).T,
                 ),
                 mg.LineBasicMaterial(
-                    linewidth=5,
+                    linewidth=3,
+                    vertexColors=True,
+                ),
+            )
+        )
+        viz.viewer["distance_display"].set_object(
+            mg.LineSegments(
+                mg.PointsGeometry(
+                    position=np.array(distances).T,
+                    color=np.array([[0.0, 0.6, 0.0] for _ in distances]).T,
+                ),
+                mg.LineBasicMaterial(
+                    linewidth=3,
                     vertexColors=True,
                 ),
             )
