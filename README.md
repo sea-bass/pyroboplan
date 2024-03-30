@@ -1,5 +1,5 @@
-# Introduction to Manipulation
-WORK IN PROGRESS: Learning resources for robot manipulation
+# PyRoboPlan
+WORK IN PROGRESS: Educational Python library for manipulator motion planning.
 
 ## Setup
 
