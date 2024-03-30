@@ -1,0 +1,22 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "pyroboplan"
+version = "0.0.0"
+dependencies = [
+  "pin == 2.7.0",
+  "meshcat == 0.3.2",
+]
+requires-python = ">=3.8"
+authors = [
+  {name = "Sebastian Castro", email = "sebas.a.castro@gmail.com"},
+]
+maintainers = [
+  {name = "Sebastian Castro", email = "sebas.a.castro@gmail.com"},
+]
+description = "Educational Python library for manipulator motion planning."
+readme = "README.md"
+license = {file = "LICENSE"}
+keywords = ["motion planning", "manipulators", "education"]

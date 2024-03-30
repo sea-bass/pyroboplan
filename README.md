@@ -1,16 +1,18 @@
 # PyRoboPlan
 WORK IN PROGRESS: Educational Python library for manipulator motion planning.
 
+This library extensively uses the [Pinocchio](https://github.com/stack-of-tasks/pinocchio) Python bindings for modeling robot kinematics and dynamics.
+
 ## Setup
 
-Set up the virtual enviroment and install dependencies.
+(Optional) Set up a virtual enviroment and install dependencies.
 
 ```bash
-source setup.bash
+source scripts/setup_virtual_env.bash
 ```
 
-Alternatively, you can just install the requirements in your own environment.
+Install this package and its dependencies.
 
 ```bash
-pip3 install -r requirements.txt
+pip3 install -e .
 ```
