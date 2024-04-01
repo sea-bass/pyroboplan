@@ -165,10 +165,10 @@ def solve_ik(model, target_frame, target_tform=None, init_state=None):
             # Solve for the gradient using damping and nullspace components,
             # as specified
             jjt = J.dot(J.T) + DAMPING**2 * np.eye(6)
-            # nullspace_component = zero_nullspace_component(model)
-            nullspace_component = joint_limit_nullspace_component(
-                model, q_cur, padding=0.05, gain=1.0
-            ) + joint_center_nullspace_component(model, q_cur, gain=0.1)
+            nullspace_component = zero_nullspace_component(model)
+            # nullspace_component = joint_limit_nullspace_component(
+            # model, q_cur, padding=0.05, gain=1.0
+            # ) + joint_center_nullspace_component(model, q_cur, gain=0.1)
 
             # Gradient descent step
             alpha = MIN_STEP + (1.0 - error_norm / max_error) * (MAX_STEP - MIN_STEP)
