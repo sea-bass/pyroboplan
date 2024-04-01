@@ -14,7 +14,7 @@ It is not designed for performance, but rather to teach newcomers the fundamenta
    :maxdepth: 2
    :caption: Contents:
 
-    modules
+   modules
 
 Indices and tables
 ==================
