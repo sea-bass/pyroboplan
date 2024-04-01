@@ -44,6 +44,7 @@ class DifferentialIkOptions:
     To use a fixed step size, set both minimum and maximum values to be equal.
     """
 
+
 class DifferentialIk:
     """Differential IK solver.
 
