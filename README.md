@@ -1,7 +1,7 @@
 # PyRoboPlan
 WORK IN PROGRESS: Educational Python library for manipulator motion planning.
 
-This library extensively uses the Pinocchio](https://github.com/stack-of-tasks/pinocchio) Python bindings for modeling robot kinematics and dynamics.
+This library extensively uses the [Pinocchio](https://github.com/stack-of-tasks/pinocchio) Python bindings for modeling robot kinematics and dynamics.
 
 ## Setup
 
