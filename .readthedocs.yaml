@@ -9,8 +9,10 @@ build:
 
 python:
   install:
+    - requirements: docs/requirements.txt
     - method: pip
       path: .
+
 
 # Build documentation in the Sphinx source directory
 sphinx:
