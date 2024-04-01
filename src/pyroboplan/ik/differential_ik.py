@@ -1,4 +1,3 @@
-import copy
 import numpy as np
 import pinocchio
 import time
@@ -33,8 +32,10 @@ class DifferentialIkOptions:
 
 class DifferentialIk:
 
-    def __init__(self, model, data, visualizer=None, verbose=False):
+    def __init__(self, model, data=None, visualizer=None, verbose=False):
         self.model = model
+        if not data:
+            data = model.createData()
         self.data = data
         self.visualizer = visualizer
         self.verbose = verbose
@@ -42,21 +43,16 @@ class DifferentialIk:
     def solve(
         self,
         target_frame,
-        target_tform=None,
+        target_tform,
         init_state=None,
         options=DifferentialIkOptions(),
         nullspace_components=[],
     ):
         target_frame_id = self.model.getFrameId(target_frame)
 
-        # Create a random initial state and/or target pose, if not specified
+        # Create a random initial state, if not specified
         if init_state is None:
             init_state = get_random_state(self.model)
-        if target_tform is None:
-            q_target = get_random_state(self.model)
-            pinocchio.framesForwardKinematics(self.model, self.data, q_target)
-            target_tform = copy.deepcopy(self.data.oMf[target_frame_id])
-
         if self.visualizer:
             self.visualizer.displayFrames(True, frame_ids=[target_frame_id])
             visualize_frame(self.visualizer, "ik_target_pose", target_tform)
@@ -81,9 +77,6 @@ class DifferentialIk:
                 # Check the error using actInv
                 error = target_tform.actInv(cur_tform)
                 error = -pinocchio.log(error).vector
-                error_norm = np.linalg.norm(error)
-                if not initial_error_norm:
-                    initial_error_norm = error_norm
                 if (
                     np.linalg.norm(error[:3]) < options.max_translation_error
                     and np.linalg.norm(error[3:]) < options.max_rotation_error
@@ -112,18 +105,20 @@ class DifferentialIk:
                 # as specified
                 jjt = J.dot(J.T) + options.damping**2 * np.eye(6)
 
-                # Gradient descent step
+                # Compute the gradient descent step size
+                error_norm = np.linalg.norm(error)
+                if not initial_error_norm:
+                    initial_error_norm = error_norm
                 alpha = options.min_step_size + (
                     1.0 - error_norm / initial_error_norm
                 ) * (options.max_step_size - options.min_step_size)
+
+                # Gradient descent step
                 if not nullspace_components:
                     q_cur += alpha * J.T @ np.linalg.solve(jjt, error)
                 else:
                     nullspace_term = sum(
-                        [
-                            component(self.model, q_cur)
-                            for component in nullspace_components
-                        ]
+                        [comp(self.model, q_cur) for comp in nullspace_components]
                     )
                     q_cur += alpha * (
                         J.T @ (np.linalg.solve(jjt, error - J @ (nullspace_term)))
@@ -136,6 +131,7 @@ class DifferentialIk:
                     self.visualizer.display(q_cur)
                     time.sleep(VIZ_SLEEP_TIME)
 
+            # Check results at the end of this try
             if solved:
                 if self.verbose:
                     print(f"Solved in {n_tries+1} tries.")
@@ -146,6 +142,7 @@ class DifferentialIk:
                 if self.verbose:
                     print(f"Retry {n_tries}")
 
+        # Check final results
         if solved:
             return q_cur
         else:
