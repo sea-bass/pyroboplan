@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>pyroboplan.core package &mdash; pyroboplan 0.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
+
+
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+
+        <script src="_static/jquery.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="_static/documentation_options.js?v=7026087e"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+</head>
+
+<body class="wy-body-for-nav">
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+
+
+          <a href="index.html" class="icon icon-home">
+            pyroboplan
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">pyroboplan.core package</a><ul>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#module-pyroboplan.core.planning_scene">pyroboplan.core.planning_scene module</a><ul>
+<li><a class="reference internal" href="#pyroboplan.core.planning_scene.PlanningScene"><code class="docutils literal notranslate"><span class="pre">PlanningScene</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-pyroboplan.core.utils">pyroboplan.core.utils module</a><ul>
+<li><a class="reference internal" href="#pyroboplan.core.utils.check_within_limits"><code class="docutils literal notranslate"><span class="pre">check_within_limits()</span></code></a></li>
+<li><a class="reference internal" href="#pyroboplan.core.utils.get_random_state"><code class="docutils literal notranslate"><span class="pre">get_random_state()</span></code></a></li>
+<li><a class="reference internal" href="#pyroboplan.core.utils.get_random_transform"><code class="docutils literal notranslate"><span class="pre">get_random_transform()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-pyroboplan.core">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">pyroboplan</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">pyroboplan.core package</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/pyroboplan.core.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+
+  <section id="pyroboplan-core-package">
+<h1>pyroboplan.core package<a class="headerlink" href="#pyroboplan-core-package" title="Link to this heading"></a></h1>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Link to this heading"></a></h2>
+</section>
+<section id="module-pyroboplan.core.planning_scene">
+<span id="pyroboplan-core-planning-scene-module"></span><h2>pyroboplan.core.planning_scene module<a class="headerlink" href="#module-pyroboplan.core.planning_scene" title="Link to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="pyroboplan.core.planning_scene.PlanningScene">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pyroboplan.core.planning_scene.</span></span><span class="sig-name descname"><span class="pre">PlanningScene</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">visual_model</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">collision_model</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyroboplan.core.planning_scene.PlanningScene" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+</dd></dl>
+
+</section>
+<section id="module-pyroboplan.core.utils">
+<span id="pyroboplan-core-utils-module"></span><h2>pyroboplan.core.utils module<a class="headerlink" href="#module-pyroboplan.core.utils" title="Link to this heading"></a></h2>
+<p>Core utilities for robot modeling.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="pyroboplan.core.utils.check_within_limits">
+<span class="sig-prename descclassname"><span class="pre">pyroboplan.core.utils.</span></span><span class="sig-name descname"><span class="pre">check_within_limits</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">q</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyroboplan.core.utils.check_within_limits" title="Link to this definition"></a></dt>
+<dd><p>Checks whether a particular joint configuration is within the model’s joint limits.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model</strong> (<cite>pinocchio.Model</cite>) – The model from which to generate a random state.</p></li>
+<li><p><strong>q</strong> (<em>array-like</em>) – The joint configuration for the model.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>True if the configuration is within joint limits, otherwise False.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyroboplan.core.utils.get_random_state">
+<span class="sig-prename descclassname"><span class="pre">pyroboplan.core.utils.</span></span><span class="sig-name descname"><span class="pre">get_random_state</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">padding</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyroboplan.core.utils.get_random_state" title="Link to this definition"></a></dt>
+<dd><p>Returns a random state that is within the model’s joint limits.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model</strong> (<cite>pinocchio.Model</cite>) – The model from which to generate a random state.</p></li>
+<li><p><strong>padding</strong> (<em>float</em><em> or </em><em>array-like</em><em>, </em><em>optional</em>) – The padding to use around the sampled joint limits.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A set of randomly generated joint variables.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>array-like</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyroboplan.core.utils.get_random_transform">
+<span class="sig-prename descclassname"><span class="pre">pyroboplan.core.utils.</span></span><span class="sig-name descname"><span class="pre">get_random_transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_frame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">joint_padding</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyroboplan.core.utils.get_random_transform" title="Link to this definition"></a></dt>
+<dd><p>Returns a random transform for a target frame that is within the model’s joint limits.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model</strong> (<cite>pinocchio.Model</cite>) – The model from which to generate a random transform.</p></li>
+<li><p><strong>target_frame</strong> (<em>str</em>) – The name of the frame for which to generate a random transform.</p></li>
+<li><p><strong>joint_padding</strong> (<em>float</em><em> or </em><em>array-like</em><em>, </em><em>optional</em>) – The padding to use around the sampled joint limits.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A randomly generated transform for the specified target frame.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><cite>pinocchio.SE3</cite></p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-pyroboplan.core">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-pyroboplan.core" title="Link to this heading"></a></h2>
+<p>Core pyroboplan module.</p>
+<p>This module contains the essential utilities to represent a robot model for motion planning.
+It makes extensive use of the Pinocchio library but adds planning-specific abstractions over its implementation.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Sebastian Castro.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+</body>
+</html>
