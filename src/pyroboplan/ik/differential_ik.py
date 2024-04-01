@@ -1,3 +1,5 @@
+""" Utilities for differential IK. """
+
 import numpy as np
 import pinocchio
 import time
@@ -10,6 +12,8 @@ VIZ_SLEEP_TIME = 0.05
 
 
 class DifferentialIkOptions:
+    """Options for differential IK."""
+
     # Maximum number of iterations per try
     max_iters = 200
 
@@ -31,8 +35,32 @@ class DifferentialIkOptions:
 
 
 class DifferentialIk:
+    """Differential IK solver.
+
+    This is a numerical IK solver that uses the manipulator's Jacobian to take first-order steps towards a solution.
+    It contains several of the common options such as damped least squares (Levenberg-Marquardt), random restarts, and nullspace projection.
+
+    Some good resources:
+    * https://motion.cs.illinois.edu/RoboticSystems/InverseKinematics.html
+    * https://homes.cs.washington.edu/~todorov/courses/cseP590/06_JacobianMethods.pdf
+    * https://www.cs.cmu.edu/~15464-s13/lectures/lecture6/iksurvey.pdf
+    """
 
     def __init__(self, model, data=None, visualizer=None, verbose=False):
+        """
+        Creates an instance of a DifferentialIk solver.
+
+        Parameters
+        ----------
+            model : `pinocchio.Model`
+                The model to use for this solver.
+            data : `pinocchio.Data`, optional
+                The model data to use for this solver. If None, data is created automatically.
+            visualizer : `pinocchio.visualize.meshcat_visualizer.MeshcatVisualizer`, optional
+                The visualizer to use for this solver.
+            verbose : bool, optional
+                If True, prints additional information to the console.
+        """
         self.model = model
         if not data:
             data = model.createData()
@@ -48,6 +76,28 @@ class DifferentialIk:
         options=DifferentialIkOptions(),
         nullspace_components=[],
     ):
+        """
+        Solves an IK query.
+
+        Parameters
+        ----------
+            target_frame : str
+                The name of the target frame in the model.
+            target_tform : `pinocchio.SE3`
+                The desired transformation of the target frame in the model.
+            init_state : array-like, optional
+                The initial state to solve from. If not specified, a random initial state will be selected.
+            options : `DifferentialIkOptions`, optional
+                The options to use for solving IK. If not specified, default options are used.
+            nullspace_components : list[function], optional
+                An optional list of nullspace components to use when solving.
+                These components must take the form `lambda model, q: component(model, q, <other_args>)`.
+
+        Returns
+        -------
+            array-like or None
+                A list of joint configuration values with the solution, if one was found. Otherwise, returns None.
+        """
         target_frame_id = self.model.getFrameId(target_frame)
 
         # Create a random initial state, if not specified
