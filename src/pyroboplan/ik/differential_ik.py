@@ -14,25 +14,35 @@ VIZ_SLEEP_TIME = 0.05
 class DifferentialIkOptions:
     """Options for differential IK."""
 
-    # Maximum number of iterations per try
     max_iters = 200
+    """ Maximum number of iterations per try. """
 
-    # Maximum number of tries
     max_retries = 10
+    """ Maximum number of tries. """
 
-    # Maximum translation and rotation error magnitudes
     max_translation_error = 1e-3
+    """ Maximum translation error magnitude. """
+
     max_rotation_error = 1e-3
+    """ Maximum rotation error magnitude. """
 
-    # Damping value, between 0 and 1, for the Jacobian pseudoinverse.
-    # Setting this to a nonzero value is using Levenberg-Marquardt.
     damping = 1e-3
+    """
+    Damping value, between 0 and 1, for the Jacobian pseudoinverse.
+    Setting this to a nonzero value is using Levenberg-Marquardt.
+    """
 
-    # Minimum and maximum gradient step, between 0 and 1, based on ratio of current distance to target to initial distance to target.
-    # To use a fixed step size, set both of these values to be equal.
     min_step_size = 0.1
-    max_step_size = 0.5
+    """
+    Minimum gradient step, between 0 and 1, based on ratio of current distance to target to initial distance to target.
+    To use a fixed step size, set both minimum and maximum values to be equal.
+    """
 
+    max_step_size = 0.5
+    """
+    Maximum gradient step, between 0 and 1, based on ratio of current distance to target to initial distance to target.
+    To use a fixed step size, set both minimum and maximum values to be equal.
+    """
 
 class DifferentialIk:
     """Differential IK solver.
@@ -41,9 +51,9 @@ class DifferentialIk:
     It contains several of the common options such as damped least squares (Levenberg-Marquardt), random restarts, and nullspace projection.
 
     Some good resources:
-    * https://motion.cs.illinois.edu/RoboticSystems/InverseKinematics.html
-    * https://homes.cs.washington.edu/~todorov/courses/cseP590/06_JacobianMethods.pdf
-    * https://www.cs.cmu.edu/~15464-s13/lectures/lecture6/iksurvey.pdf
+      * https://motion.cs.illinois.edu/RoboticSystems/InverseKinematics.html
+      * https://homes.cs.washington.edu/~todorov/courses/cseP590/06_JacobianMethods.pdf
+      * https://www.cs.cmu.edu/~15464-s13/lectures/lecture6/iksurvey.pdf
     """
 
     def __init__(self, model, data=None, visualizer=None, verbose=False):
