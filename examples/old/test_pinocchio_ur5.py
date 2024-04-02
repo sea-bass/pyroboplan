@@ -7,10 +7,10 @@ from os.path import dirname, join, abspath
 import time
 
 # This path refers to Pinocchio source code but you can define your own directory here.
-pinocchio_model_dir = join(dirname(str(abspath(__file__))), "..", "models")
+pinocchio_model_dir = join(dirname(str(abspath(__file__))), "..", "..", "models")
 
 # You should change here to set up your own URDF file or just pass it as an argument of this example.
-urdf_filename = join(pinocchio_model_dir, "ur_description", "urdf", "ur5_robot.urdf")
+urdf_filename = join(pinocchio_model_dir, "ur_description", "urdf", "ur5_gripper.urdf")
 
 # Load the urdf model
 model = pinocchio.buildModelFromUrdf(urdf_filename)
@@ -80,7 +80,7 @@ def sim_loop():
 
         pinocchio.framesForwardKinematics(model, data, qnext)
         tool_tform = data.oMf[model.getFrameId("tool0")]
-        # print(f"q: {q}\ntool_tform:\n{tool_tform}")
+        print(f"q: {q}\ntool_tform:\n{tool_tform}")
 
         # Compute collisions and distances
         pinocchio.computeCollisions(
