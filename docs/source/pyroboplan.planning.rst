@@ -1,6 +1,17 @@
 pyroboplan.planning package
 ===========================
 
+Submodules
+----------
+
+pyroboplan.planning.utils module
+--------------------------------
+
+.. automodule:: pyroboplan.planning.utils
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 Module contents
 ---------------
 

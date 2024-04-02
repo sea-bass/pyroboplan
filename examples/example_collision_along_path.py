@@ -1,4 +1,3 @@
-import copy
 import hppfcl
 import pinocchio
 from pinocchio.visualize import MeshcatVisualizer
