@@ -16,7 +16,9 @@ FRAME_AXIS_COLORS = (
 )
 
 
-def visualize_frame(visualizer, name, tform, line_length=0.2, line_width=3):
+def visualize_frame(
+    visualizer, name, tform, line_length=0.2, line_width=3, line_color=None
+):
     """
     Visualizes a coordinate frame as an axis triad at a specified pose.
 
@@ -32,12 +34,19 @@ def visualize_frame(visualizer, name, tform, line_length=0.2, line_width=3):
             The length of the axes in the triad.
         line_width : float, optional
             The width of the axes in the triad.
+        line_color : array-like, optional
+            The line colors to use. If None, chooses default axes colors.
     """
+    if line_color:
+        color = np.array([line_color] * 6).T
+    else:
+        color = FRAME_AXIS_COLORS
+
     visualizer.viewer[name].set_object(
         mg.LineSegments(
             mg.PointsGeometry(
                 position=line_length * FRAME_AXIS_POSITIONS,
-                color=FRAME_AXIS_COLORS,
+                color=color,
             ),
             mg.LineBasicMaterial(
                 linewidth=line_width,
@@ -48,7 +57,9 @@ def visualize_frame(visualizer, name, tform, line_length=0.2, line_width=3):
     visualizer.viewer[name].set_transform(tform.homogeneous)
 
 
-def visualize_frames(visualizer, prefix_name, tforms, line_length=0.2, line_width=3):
+def visualize_frames(
+    visualizer, prefix_name, tforms, line_length=0.2, line_width=3, line_color=None
+):
     """
     Visualizes a set of coordinate frames as axis triads at specified poses.
 
@@ -64,6 +75,8 @@ def visualize_frames(visualizer, prefix_name, tforms, line_length=0.2, line_widt
             The length of the axes in the triad.
         line_width : float, optional
             The width of the axes in the triad.
+        line_color : array-like, optional
+            The line colors to use. If None, chooses default axes colors.
     """
     for idx, tform in enumerate(tforms):
         visualize_frame(
@@ -72,4 +85,5 @@ def visualize_frames(visualizer, prefix_name, tforms, line_length=0.2, line_widt
             tform,
             line_length=line_length,
             line_width=line_width,
+            line_color=line_color,
         )
