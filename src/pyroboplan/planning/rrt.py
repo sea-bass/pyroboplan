@@ -2,18 +2,23 @@
 
 import numpy as np
 
-from ..core.utils import extract_cartesian_poses, get_random_state
+from ..core.utils import (
+    check_collisions_at_state,
+    check_collisions_along_path,
+    extract_cartesian_poses,
+    get_random_state,
+)
 from ..visualization.meshcat_utils import visualize_frames
 
 from .graph import Node, Graph
-from .utils import discretize_joint_space_path, check_collisions_along_path
+from .utils import discretize_joint_space_path
 
 
 class RRTPlannerOptions:
     max_angle_step = 0.05
     """ Maximum angle step, in radians, for collision checking. """
 
-    max_connection_dist = 0.25
+    max_connection_dist = 0.2
     """ Maximum angular distance, in radians, for connecting nodes. """
 
 
@@ -26,6 +31,9 @@ class RRTPlanner:
         self.collision_model = collision_model
         self.options = options
 
+        self.latest_path = None
+        self.graph = Graph()
+
     def plan(self, q_start, q_goal):
         """
         TODO
@@ -37,6 +45,14 @@ class RRTPlanner:
         goal_found = False
         latest_node = start_node
 
+        # Check start and end pose collisions
+        if check_collisions_at_state(self.model, self.collision_model, q_start):
+            print("Start configuration in collision.")
+            return None
+        if check_collisions_at_state(self.model, self.collision_model, q_goal):
+            print("Goal configuration in collision.")
+            return None
+
         # Check direct connection to goal
         path_to_goal = discretize_joint_space_path(
             start_node.q, q_goal, self.options.max_angle_step
@@ -46,7 +62,7 @@ class RRTPlanner:
         ):
             goal_node = Node(q_goal, parent=start_node)
             self.graph.add_node(latest_node)
-            self.graph.add_edge(start_node)
+            self.graph.add_edge(start_node, goal_node)
             goal_found = True
 
         while not goal_found:

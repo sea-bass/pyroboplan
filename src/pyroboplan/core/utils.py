@@ -5,6 +5,31 @@ import numpy as np
 import pinocchio
 
 
+def check_collisions_at_state(model, collision_model, q):
+    data = model.createData()
+    collision_data = collision_model.createData()
+
+    pinocchio.computeCollisions(model, data, collision_model, collision_data, q, False)
+    return np.any([cr.isCollision() for cr in collision_data.collisionResults])
+
+
+def check_collisions_along_path(model, collision_model, q_path):
+    """
+    Checks collisions along a path.
+    """
+    data = model.createData()
+    collision_data = collision_model.createData()
+
+    for q in q_path:
+        pinocchio.computeCollisions(
+            model, data, collision_model, collision_data, q, False
+        )
+        if np.any([cr.isCollision() for cr in collision_data.collisionResults]):
+            return True
+
+    return False
+
+
 def get_random_state(model, padding=0.0):
     """
     Returns a random state that is within the model's joint limits.
@@ -24,6 +49,37 @@ def get_random_state(model, padding=0.0):
     return np.random.uniform(
         model.lowerPositionLimit + padding, model.upperPositionLimit - padding
     )
+
+
+def get_random_collision_free_state(model, collision_model, padding=0.0, max_tries=100):
+    """
+    Returns a random state that is within the model's joint limits and is collision-free according to the collision model.
+
+    Parameters
+    ----------
+        model : `pinocchio.Model`
+            The model from which to generate a random state.
+        collision_model : `pinocchio.Model`
+            The model to use for collision checking.
+        padding : float or array-like, optional
+            The padding to use around the sampled joint limits.
+        max_tries : int, optional
+            The maximum number of tries for sampling a collision-free state.
+
+    Returns
+    -------
+        array-like
+            A set of randomly generated collision-free joint variables, or None if one cannot be found.
+    """
+    num_tries = 0
+    while num_tries < max_tries:
+        state = get_random_state(model, padding=padding)
+        if not check_collisions_at_state(model, collision_model, state):
+            return state
+        num_tries += 1
+
+    print(f"Could not generate collision-free state after {max_tries} tries.")
+    return None
 
 
 def get_random_transform(model, target_frame, joint_padding=0.0):
