@@ -85,7 +85,7 @@ class Graph:
 
     def get_nearest_node(self, q):
         """
-        Gets the nearest node to a specifed robot configuration.
+        Gets the nearest node to a specified robot configuration.
 
         Parameters
         ----------

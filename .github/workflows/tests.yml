@@ -1,0 +1,40 @@
+name: tests
+
+on:
+  # Run action on certain pull request events
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+  # Nightly job on default (main) branch
+  schedule:
+    - cron: '0 0 * * *'
+
+# Ensures that only one workflow runs at a time for this branch
+concurrency:
+  group: ${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v3
+        with:
+          python-version: '3.10'
+      - name: Install dependencies
+        run: |
+          python3 -m pip install --upgrade pip
+          pip3 install -e .
+          pip3 install -r test/test_requirements.txt
+      - name: Run unit tests
+        run: test/run_tests.bash
+      - name: Upload test results
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-results
+          path: test/results/
+        # Always publish test results even when there are failures.
+        if: ${{ always() }}
