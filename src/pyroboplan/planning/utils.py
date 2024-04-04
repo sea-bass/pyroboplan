@@ -24,7 +24,6 @@ def discretize_joint_space_path(q_start, q_end, max_angle_distance):
             A list of joint configuration arrays between the start and end points, inclusive.
     """
     q_diff = q_end - q_start
-    max_delta_q = max(abs(q_diff))
-    num_steps = int(np.ceil(max_delta_q / max_angle_distance)) + 1
+    num_steps = int(np.ceil(np.linalg.norm(q_diff) / max_angle_distance)) + 1
     step_vec = np.linspace(0.0, 1.0, num_steps)
     return [q_start + step * q_diff for step in step_vec]

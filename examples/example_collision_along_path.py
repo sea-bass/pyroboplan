@@ -126,4 +126,4 @@ if __name__ == "__main__":
         )
 
         viz.display(q)
-        time.sleep(0.2)
+        time.sleep(0.1)
