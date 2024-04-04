@@ -6,28 +6,82 @@ import pinocchio
 
 
 def check_collisions_at_state(model, collision_model, q):
+    """
+    Checks whether a specified joint configuration is collision-free.
+
+    Parameters
+    ----------
+        model : `pinocchio.Model`
+            The model from which to generate a random state.
+        collision_model : `pinocchio.Model`
+            The model to use for collision checking.
+        q : array-like
+            The joint configuration of the model.
+
+    Returns
+    -------
+        bool
+            True is there are any collisions, otherwise False.
+    """
     data = model.createData()
     collision_data = collision_model.createData()
+    stop_at_first_collision = True  # For faster computation
 
-    pinocchio.computeCollisions(model, data, collision_model, collision_data, q, False)
+    pinocchio.computeCollisions(
+        model, data, collision_model, collision_data, q, stop_at_first_collision
+    )
     return np.any([cr.isCollision() for cr in collision_data.collisionResults])
 
 
 def check_collisions_along_path(model, collision_model, q_path):
     """
-    Checks collisions along a path.
+    Checks whether a path consisting of multiple joint configurations is collision-free.
+
+    Parameters
+    ----------
+        model : `pinocchio.Model`
+            The model from which to generate a random state.
+        collision_model : `pinocchio.Model`
+            The model to use for collision checking.
+        q_path : list[array-like]
+            A list of joint configurations describing the path.
+
+    Returns
+    -------
+        bool
+            True is there are any collisions, otherwise False.
     """
     data = model.createData()
     collision_data = collision_model.createData()
+    stop_at_first_collision = True  # For faster computation
 
     for q in q_path:
         pinocchio.computeCollisions(
-            model, data, collision_model, collision_data, q, False
+            model, data, collision_model, collision_data, q, stop_at_first_collision
         )
         if np.any([cr.isCollision() for cr in collision_data.collisionResults]):
             return True
 
     return False
+
+
+def configuration_distance(q_start, q_end):
+    """
+    Returns the distance between two joint configurations.
+
+    Parameters
+    ----------
+        q_start : array-like
+            The start joint configuration.
+        q_end : array-like
+            The end joint configuration.
+
+    Returns
+    -------
+        float
+            The distance between the two joint configurations.
+    """
+    return np.linalg.norm(q_end - q_start)
 
 
 def get_random_state(model, padding=0.0):

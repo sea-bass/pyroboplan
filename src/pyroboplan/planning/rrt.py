@@ -8,36 +8,62 @@ from ..core.utils import (
     extract_cartesian_poses,
     get_random_state,
 )
-from ..visualization.meshcat_utils import visualize_frames
+from ..visualization.meshcat_utils import visualize_frames, visualize_path
 
 from .graph import Node, Graph
 from .utils import discretize_joint_space_path
 
 
 class RRTPlannerOptions:
+    """Options for Rapidly-expanding Random Tree (RRT) planning."""
+
     max_angle_step = 0.05
-    """ Maximum angle step, in radians, for collision checking. """
+    """ Maximum angle step, in radians, for collision checking along path segments. """
 
     max_connection_dist = 0.2
     """ Maximum angular distance, in radians, for connecting nodes. """
 
 
 class RRTPlanner:
-    def __init__(self, model, collision_model, options=RRTPlannerOptions()):
+    """Rapidly-expanding Random Tree (RRT) planner.
+
+    This is a sampling-based motion planner that finds collision-free paths from a start to a goal configuration.
+
+    Some good resources:
+      * https://msl.cs.illinois.edu/~lavalle/papers/Lav98c.pdf
+    """
+
+    def __init__(self, model, collision_model):
         """
-        TODO
+        Creates an instance of an RRT planner.
+
+        Parameters
+        ----------
+            model : `pinocchio.Model`
+                The model to use for this solver.
+            collision_model : `pinocchio.Model`
+                The model to use for collision checking.
         """
         self.model = model
         self.collision_model = collision_model
-        self.options = options
 
         self.latest_path = None
         self.graph = Graph()
 
-    def plan(self, q_start, q_goal):
+    def plan(self, q_start, q_goal, options=RRTPlannerOptions()):
         """
-        TODO
+        Plans a path from a start to a goal configuration.
+
+        Parameters
+        ----------
+            q_start : array-like
+                The starting robot configuration.
+            q_start : array-like
+                The goal robot configuration.
+            options : `RRTPlannerOptions`, optional
+                The options to use for planning. If not specified, default options are used.
         """
+        self.options = options
         self.graph = Graph()
         start_node = Node(q_start, parent=None)
         self.graph.add_node(start_node)
@@ -116,14 +142,33 @@ class RRTPlanner:
         self.latest_path.reverse()
         return self.latest_path
 
-    def visualize(self, visualizer, show_path=True, show_tree=False):
+    def visualize(
+        self,
+        visualizer,
+        frame_name,
+        path_name="planned_path",
+        tree_name="rrt",
+        show_path=True,
+        show_tree=False,
+    ):
         """
         Visualizes the RRT path.
-        """
-        target_frame = "panda_hand"
-        path_name = "planned_path"
-        tree_name = "rrt"
 
+        Parameters
+        ----------
+            visualizer : `pinocchio.visualize.meshcat_visualizer.MeshcatVisualizer`, optional
+                The visualizer to use for this solver.
+            frame_name : str
+                The name of the frame to use when visualizing paths in Cartesian space.
+            path_name : str, optional
+                The name of the MeshCat component for the path.
+            tree_name : str, optional
+                The name of the MeshCat component for the tree.
+            show_path : bool, optional
+                If true, shows the final path from start to goal.
+            show_tree : bool, optional
+                If true, shows the entire sampled tree.
+        """
         if show_path:
             q_path = []
             for idx in range(1, len(self.latest_path)):
@@ -133,9 +178,9 @@ class RRTPlanner:
                     q_start, q_goal, self.options.max_angle_step
                 )
 
-            target_tforms = extract_cartesian_poses(self.model, target_frame, q_path)
+            target_tforms = extract_cartesian_poses(self.model, frame_name, q_path)
             visualize_frames(
-                visualizer, path_name, target_tforms, line_length=0.05, line_width=1
+                visualizer, path_name, target_tforms, line_length=0.05, line_width=1.5
             )
 
         if show_tree:
@@ -143,14 +188,11 @@ class RRTPlanner:
                 q_path = discretize_joint_space_path(
                     edge.nodeA.q, edge.nodeB.q, self.options.max_angle_step
                 )
-                target_tforms = extract_cartesian_poses(
-                    self.model, target_frame, q_path
-                )
-                visualize_frames(
+                path_tforms = extract_cartesian_poses(self.model, frame_name, q_path)
+                visualize_path(
                     visualizer,
                     f"{tree_name}/edge{idx}",
-                    target_tforms,
-                    line_length=0.02,
+                    path_tforms,
                     line_width=0.5,
-                    line_color=[0.0, 0.0, 0.6],
+                    line_color=[0.9, 0.0, 0.9],
                 )

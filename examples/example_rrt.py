@@ -3,7 +3,6 @@ import pinocchio
 from pinocchio.visualize import MeshcatVisualizer
 import numpy as np
 from os.path import dirname, join, abspath
-import sys
 import time
 
 from pyroboplan.core.utils import get_random_collision_free_state
@@ -105,15 +104,18 @@ if __name__ == "__main__":
     options.max_angle_step = 0.05
     options.max_connection_dist = 0.25
 
-    planner = RRTPlanner(model, collision_model, options=options)
-    path = planner.plan(q_start, q_end)
-    planner.visualize(viz, show_tree=True)
+    planner = RRTPlanner(model, collision_model)
+    path = planner.plan(q_start, q_end, options=options)
+    planner.visualize(viz, "panda_hand", show_tree=True)
 
     # Animate the path
+    input("Press 'Enter' to animate the path.")
     for idx in range(1, len(path)):
         segment_start = path[idx - 1]
         segment_end = path[idx]
-        q_path = discretize_joint_space_path(segment_start, segment_end, 0.05)
+        q_path = discretize_joint_space_path(
+            segment_start, segment_end, options.max_angle_step
+        )
         for q in q_path:
             viz.display(q)
             time.sleep(0.05)
