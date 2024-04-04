@@ -53,6 +53,7 @@ jobs:
           label: coverage
           message: ${{ steps.coverageComment.outputs.coverage }}
           color: ${{ steps.coverageComment.outputs.color }}
+          namedLogo: python
       - name: Upload test results
         uses: actions/upload-artifact@v3
         with:
