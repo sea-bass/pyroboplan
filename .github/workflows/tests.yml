@@ -54,6 +54,8 @@ jobs:
           message: ${{ steps.coverageComment.outputs.coverage }}
           color: ${{ steps.coverageComment.outputs.color }}
           namedLogo: python
+        # Only update this badge on main
+        if: github.ref == 'refs/heads/main'
       - name: Upload test results
         uses: actions/upload-artifact@v3
         with:
