@@ -17,6 +17,8 @@ concurrency:
 jobs:
   test:
     runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
     steps:
       - name: Check out repository
         uses: actions/checkout@v3
@@ -31,6 +33,15 @@ jobs:
           pip3 install -r test/test_requirements.txt
       - name: Run unit tests
         run: test/run_tests.bash
+      - name: Pytest coverage comment
+        uses: MishaKav/pytest-coverage-comment@main
+        with:
+          pytest-coverage-path: ./test/results/pytest-coverage.txt
+          junitxml-path: ./test/results/test_results.xml
+          pytest-xml-coverage-path: ./test/results/test_results_coverage.xml
+          coverage-path-prefix: src/pyroboplan/
+        # This will break on PRs from forks
+        if: ${{ !github.event.pull_request.head.repo.fork }}
       - name: Upload test results
         uses: actions/upload-artifact@v3
         with:
