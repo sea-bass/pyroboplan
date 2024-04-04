@@ -4,7 +4,11 @@ import numpy as np
 import pinocchio
 import time
 
-from ..core.utils import check_within_limits, get_random_state
+from ..core.utils import (
+    check_collisions_at_state,
+    check_within_limits,
+    get_random_state,
+)
 from ..visualization.meshcat_utils import visualize_frame
 
 VIZ_INITIAL_RENDER_TIME = 0.5
@@ -57,7 +61,9 @@ class DifferentialIk:
       * https://www.cs.cmu.edu/~15464-s13/lectures/lecture6/iksurvey.pdf
     """
 
-    def __init__(self, model, data=None, visualizer=None, verbose=False):
+    def __init__(
+        self, model, collision_model=None, data=None, visualizer=None, verbose=False
+    ):
         """
         Creates an instance of a DifferentialIk solver.
 
@@ -65,6 +71,8 @@ class DifferentialIk:
         ----------
             model : `pinocchio.Model`
                 The model to use for this solver.
+            collision_model : `pinocchio.Model`, optional
+                The model to use for collision checking. If None, no collision checking takes place.
             data : `pinocchio.Data`, optional
                 The model data to use for this solver. If None, data is created automatically.
             visualizer : `pinocchio.visualize.meshcat_visualizer.MeshcatVisualizer`, optional
@@ -76,6 +84,9 @@ class DifferentialIk:
         if not data:
             data = model.createData()
         self.data = data
+
+        self.collision_model = collision_model
+
         self.visualizer = visualizer
         self.verbose = verbose
 
@@ -142,12 +153,27 @@ class DifferentialIk:
                     np.linalg.norm(error[:3]) < options.max_translation_error
                     and np.linalg.norm(error[3:]) < options.max_rotation_error
                 ):
-                    # Wrap to the range -/+ pi and check joint limits
+                    # Wrap to the range -/+ pi, and then check joint limits and collision.
                     q_cur = (q_cur + np.pi) % (2 * np.pi) - np.pi
                     if check_within_limits(self.model, q_cur):
-                        if self.verbose:
-                            print("Solved and within joint limits!")
-                        solved = True
+                        if self.collision_model is not None:
+                            if check_collisions_at_state(
+                                self.model, self.collision_model, q_cur
+                            ):
+                                if self.verbose:
+                                    print(
+                                        "Solved and within joint limits, but in collision."
+                                    )
+                            else:
+                                solved = True
+                                if self.verbose:
+                                    print(
+                                        "Solved, within joint limits, and collision-free!"
+                                    )
+                        else:
+                            solved = True
+                            if self.verbose:
+                                print("Solved and within joint limits!")
                     else:
                         if self.verbose:
                             print("Solved, but outside joint limits.")
