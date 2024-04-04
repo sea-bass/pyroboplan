@@ -1,6 +1,7 @@
 """ Utilities for manipulation-specific Rapidly-Expanding Random Trees (RRTs). """
 
 import numpy as np
+import time
 
 from ..core.utils import (
     check_collisions_at_state,
@@ -23,6 +24,9 @@ class RRTPlannerOptions:
 
     max_connection_dist = 0.2
     """ Maximum angular distance, in radians, for connecting nodes. """
+
+    max_planning_time = 10.0
+    """ Maximum planning time, in seconds. """
 
     goal_biasing_probability = 0.0
     """ Probability of sampling the goal configuration itself, which can help planning converge. """
@@ -67,6 +71,7 @@ class RRTPlanner:
             options : `RRTPlannerOptions`, optional
                 The options to use for planning. If not specified, default options are used.
         """
+        t_start = time.time()
         self.options = options
         self.graph = Graph()
         start_node = Node(q_start, parent=None)
@@ -96,6 +101,11 @@ class RRTPlanner:
             goal_found = True
 
         while not goal_found:
+            # Check for timeouts
+            if time.time() - t_start > options.max_planning_time:
+                print(f"Planning timed out after {options.max_planning_time} seconds.")
+                break
+
             # Sample a new configuration.
             if np.random.random() < self.options.goal_biasing_probability:
                 q_sample = q_goal
@@ -110,6 +120,9 @@ class RRTPlanner:
                 q_sample = nearest_node.q + scale * (q_sample - nearest_node.q)
 
             # Add the node only if it is collision free.
+            if check_collisions_at_state(self.model, self.collision_model, q_sample):
+                continue
+    
             path_to_node = discretize_joint_space_path(
                 nearest_node.q, q_sample, self.options.max_angle_step
             )
@@ -120,7 +133,7 @@ class RRTPlanner:
                 self.graph.add_node(latest_node)
                 self.graph.add_edge(nearest_node, latest_node)
 
-                # Check if that latest node connects directly to goal.
+                # Check if latest node connects directly to goal.
                 path_to_goal = discretize_joint_space_path(
                     latest_node.q, q_goal, self.options.max_angle_step
                 )
@@ -133,16 +146,18 @@ class RRTPlanner:
                     goal_found = True
 
         # Back out the path by traversing the parents from the goal.
-        cur_node = goal_node
         self.latest_path = []
-        path_extracted = False
-        while not path_extracted:
-            if cur_node is None:
-                path_extracted = True
-            else:
-                self.latest_path.append(cur_node.q)
-                cur_node = cur_node.parent
-        self.latest_path.reverse()
+        if goal_found:
+            cur_node = goal_node
+            path_extracted = False
+            while not path_extracted:
+                if cur_node is None:
+                    path_extracted = True
+                else:
+                    self.latest_path.append(cur_node.q)
+                    cur_node = cur_node.parent
+            self.latest_path.reverse()
+
         return self.latest_path
 
     def visualize(
