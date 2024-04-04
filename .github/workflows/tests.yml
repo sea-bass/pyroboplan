@@ -40,7 +40,7 @@ jobs:
           pytest-coverage-path: ./test/results/pytest-coverage.txt
           junitxml-path: ./test/results/test_results.xml
           pytest-xml-coverage-path: ./test/results/test_results_coverage.xml
-          coverage-path-prefix: src/pyroboplan/
+          coverage-path-prefix: src/
         # This will break on PRs from forks
         if: ${{ !github.event.pull_request.head.repo.fork }}
       - name: Create coverage badge
