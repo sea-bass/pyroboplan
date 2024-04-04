@@ -26,7 +26,7 @@
   </gazebo>
   <!--
   Author: Kelsey Hawkins
-  Contributers: Jimmy Da Silva, Ajit Krisshna N L, Muhammad Asif Rana
+  Contributors: Jimmy Da Silva, Ajit Krisshna N L, Muhammad Asif Rana
 -->
   <!-- measured from model -->
   <link name="base_link">

@@ -13,7 +13,7 @@ By Sebastian Castro, 2024
 
 ## Setup
 
-(Optional) Set up a virtual enviroment and install dependencies.
+(Optional) Set up a virtual environment and install dependencies.
 
 ```bash
 source scripts/setup_virtual_env.bash

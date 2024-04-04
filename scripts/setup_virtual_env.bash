@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # Setup script for Python virtual environment.
 
 VIRTUALENV_PATH=".virtualenvs/pyroboplan"
