@@ -2,7 +2,6 @@ from os.path import dirname, join, abspath
 import numpy as np
 import pinocchio
 
-from pyroboplan.core.utils import get_random_transform
 from pyroboplan.ik.differential_ik import DifferentialIk, DifferentialIkOptions
 
 
@@ -26,14 +25,14 @@ def test_ik_solve_trivial_ik():
     # Set the target transform to the current joint state's FK
     target_frame_id = model.getFrameId(target_frame)
     pinocchio.framesForwardKinematics(model, data, q)
-    target_xform = data.oMf[target_frame_id]
+    target_tform = data.oMf[target_frame_id]
 
     # Solve
     ik = DifferentialIk(model, data=None, visualizer=None, verbose=False)
     options = DifferentialIkOptions()
     q_sol = ik.solve(
         target_frame,
-        target_xform,
+        target_tform,
         init_state=q,
         options=options,
         nullspace_components=[],
@@ -50,14 +49,14 @@ def test_ik_solve_impossible_ik():
     # Target is unreachable by the panda
     R = np.identity(3)
     T = np.array([10.0, 10.0, 10.0])
-    target_xform = pinocchio.pinocchio_pywrap.SE3(R, T)
+    target_tform = pinocchio.SE3(R, T)
 
     # Solve
     ik = DifferentialIk(model, data=None, visualizer=None, verbose=False)
     options = DifferentialIkOptions()
     q_sol = ik.solve(
         target_frame,
-        target_xform,
+        target_tform,
         init_state=None,
         options=options,
         nullspace_components=[],
