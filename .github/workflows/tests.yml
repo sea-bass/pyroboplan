@@ -34,6 +34,7 @@ jobs:
       - name: Run unit tests
         run: test/run_tests.bash
       - name: Pytest coverage comment
+        id: coverageComment
         uses: MishaKav/pytest-coverage-comment@main
         with:
           pytest-coverage-path: ./test/results/pytest-coverage.txt
@@ -42,6 +43,19 @@ jobs:
           coverage-path-prefix: src/pyroboplan/
         # This will break on PRs from forks
         if: ${{ !github.event.pull_request.head.repo.fork }}
+      - name: Create coverage badge
+        uses: schneegans/dynamic-badges-action@v1.7.0
+        with:
+          auth: ${{ secrets.COVERAGE_GIST_SECRET }}
+          # This comes from https://gist.github.com/sea-bass/e5e091166a18c68b26338793917d3bab#file-pyroboplan-test-coverage-json
+          gistID: e5e091166a18c68b26338793917d3bab
+          filename: pyroboplan-test-coverage.json
+          label: coverage
+          message: ${{ steps.coverageComment.outputs.coverage }}
+          color: ${{ steps.coverageComment.outputs.color }}
+          namedLogo: python
+        # Only update this badge on main
+        if: github.ref == 'refs/heads/main'
       - name: Upload test results
         uses: actions/upload-artifact@v3
         with:
