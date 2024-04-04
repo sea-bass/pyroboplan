@@ -5,6 +5,7 @@ import numpy as np
 from ..core.utils import (
     check_collisions_at_state,
     check_collisions_along_path,
+    configuration_distance,
     extract_cartesian_poses,
     get_random_state,
 )
@@ -22,6 +23,9 @@ class RRTPlannerOptions:
 
     max_connection_dist = 0.2
     """ Maximum angular distance, in radians, for connecting nodes. """
+
+    goal_biasing_probability = 0.0
+    """ Probability of sampling the goal configuration itself, which can help planning converge. """
 
 
 class RRTPlanner:
@@ -71,7 +75,7 @@ class RRTPlanner:
         goal_found = False
         latest_node = start_node
 
-        # Check start and end pose collisions
+        # Check start and end pose collisions.
         if check_collisions_at_state(self.model, self.collision_model, q_start):
             print("Start configuration in collision.")
             return None
@@ -79,7 +83,7 @@ class RRTPlanner:
             print("Goal configuration in collision.")
             return None
 
-        # Check direct connection to goal
+        # Check direct connection to goal.
         path_to_goal = discretize_joint_space_path(
             start_node.q, q_goal, self.options.max_angle_step
         )
@@ -92,32 +96,31 @@ class RRTPlanner:
             goal_found = True
 
         while not goal_found:
-            # Now sample a new configuration and try connect
-            q_sample = get_random_state(self.model)
+            # Sample a new configuration.
+            if np.random.random() < self.options.goal_biasing_probability:
+                q_sample = q_goal
+            else:
+                q_sample = get_random_state(self.model)
             nearest_node = self.graph.get_nearest_node(q_sample)
 
-            # Sample to max connection distance
-            q_diff = q_sample - nearest_node.q
-            dist_norm = np.linalg.norm(q_diff)
-            if dist_norm > self.options.max_connection_dist:
-                q_sample = (
-                    nearest_node.q
-                    + (self.options.max_connection_dist / dist_norm) * q_diff
-                )
+            # Clip the distance between nearest and sampled nodes to max connection distance.
+            distance = configuration_distance(q_sample, nearest_node.q)
+            if distance > self.options.max_connection_dist:
+                scale = self.options.max_connection_dist / distance
+                q_sample = nearest_node.q + scale * (q_sample - nearest_node.q)
 
+            # Add the node only if it is collision free.
             path_to_node = discretize_joint_space_path(
                 nearest_node.q, q_sample, self.options.max_angle_step
             )
             if not check_collisions_along_path(
                 self.model, self.collision_model, path_to_node
             ):
-                latest_node = Node(
-                    q_sample, parent=nearest_node
-                )  # TODO: Should be closer
+                latest_node = Node(q_sample, parent=nearest_node)
                 self.graph.add_node(latest_node)
                 self.graph.add_edge(nearest_node, latest_node)
 
-                # Check if that latest node connects directly to goal
+                # Check if that latest node connects directly to goal.
                 path_to_goal = discretize_joint_space_path(
                     latest_node.q, q_goal, self.options.max_angle_step
                 )
@@ -129,7 +132,7 @@ class RRTPlanner:
                     self.graph.add_edge(latest_node, goal_node)
                     goal_found = True
 
-        # Back out the path
+        # Back out the path by traversing the parents from the goal.
         cur_node = goal_node
         self.latest_path = []
         path_extracted = False

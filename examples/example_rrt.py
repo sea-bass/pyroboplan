@@ -103,6 +103,7 @@ if __name__ == "__main__":
     options = RRTPlannerOptions()
     options.max_angle_step = 0.05
     options.max_connection_dist = 0.25
+    options.goal_biasing_probability = 0.15
 
     planner = RRTPlanner(model, collision_model)
     path = planner.plan(q_start, q_end, options=options)
