@@ -37,6 +37,10 @@ if __name__ == "__main__":
         init_state = get_random_state(model)
         target_tform = get_random_transform(model, target_frame)
         q_sol = ik.solve(
-            target_frame, target_tform, options=options, nullspace_components=[]
+            target_frame,
+            target_tform,
+            init_state=init_state,
+            options=options,
+            nullspace_components=[],
         )
         print(f"Solution configuration:\n{q_sol}\n")
