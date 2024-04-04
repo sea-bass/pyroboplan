@@ -65,6 +65,7 @@ if __name__ == "__main__":
     )
     data = model.createData()
 
+    # Comment out to exclude collision objects.
     prepare_scene(visual_model, collision_model)
 
     # Initialize visualizer
