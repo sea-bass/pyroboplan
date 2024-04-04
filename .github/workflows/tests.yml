@@ -44,15 +44,15 @@ jobs:
         # This will break on PRs from forks
         if: ${{ !github.event.pull_request.head.repo.fork }}
       - name: Create coverage badge
-        uses: schneegans/dynamic-badges-action@v1.6.0
+        uses: schneegans/dynamic-badges-action@v1.7.0
         with:
           auth: ${{ secrets.COVERAGE_GIST_SECRET }}
+          # This comes from https://gist.github.com/sea-bass/e5e091166a18c68b26338793917d3bab#file-pyroboplan-test-coverage-json
           gistID: e5e091166a18c68b26338793917d3bab
           filename: pyroboplan-test-coverage.json
-          label: Coverage Report
+          label: coverage
           message: ${{ steps.coverageComment.outputs.coverage }}
           color: ${{ steps.coverageComment.outputs.color }}
-          namedLogo: python
       - name: Upload test results
         uses: actions/upload-artifact@v3
         with:
