@@ -41,3 +41,26 @@ def test_ik_solve_trivial_ik():
 
     # The result should be very, very close to the initial state
     np.testing.assert_almost_equal(q, q_sol, decimal=6)
+
+
+def test_ik_solve_impossible_ik():
+    model, _, _ = load_panda_models()
+    target_frame = "panda_hand"
+
+    # Target is unreachable by the panda
+    R = np.identity(3)
+    T = np.array([10.0, 10.0, 10.0])
+    target_xform = pinocchio.pinocchio_pywrap.SE3(R, T)
+
+    # Solve
+    ik = DifferentialIk(model, data=None, visualizer=None, verbose=False)
+    options = DifferentialIkOptions()
+    q_sol = ik.solve(
+        target_frame,
+        target_xform,
+        init_state=None,
+        options=options,
+        nullspace_components=[],
+    )
+
+    assert q_sol is None, "Solution should be impossible!"
