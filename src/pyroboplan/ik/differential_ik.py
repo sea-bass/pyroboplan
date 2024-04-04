@@ -61,9 +61,7 @@ class DifferentialIk:
       * https://www.cs.cmu.edu/~15464-s13/lectures/lecture6/iksurvey.pdf
     """
 
-    def __init__(
-        self, model, collision_model=None, data=None, visualizer=None, verbose=False
-    ):
+    def __init__(self, model, collision_model=None, data=None, visualizer=None):
         """
         Creates an instance of a DifferentialIk solver.
 
@@ -77,8 +75,6 @@ class DifferentialIk:
                 The model data to use for this solver. If None, data is created automatically.
             visualizer : `pinocchio.visualize.meshcat_visualizer.MeshcatVisualizer`, optional
                 The visualizer to use for this solver.
-            verbose : bool, optional
-                If True, prints additional information to the console.
         """
         self.model = model
         if not data:
@@ -88,7 +84,6 @@ class DifferentialIk:
         self.collision_model = collision_model
 
         self.visualizer = visualizer
-        self.verbose = verbose
 
     def solve(
         self,
@@ -97,6 +92,7 @@ class DifferentialIk:
         init_state=None,
         options=DifferentialIkOptions(),
         nullspace_components=[],
+        verbose=False,
     ):
         """
         Solves an IK query.
@@ -114,6 +110,8 @@ class DifferentialIk:
             nullspace_components : list[function], optional
                 An optional list of nullspace components to use when solving.
                 These components must take the form `lambda model, q: component(model, q, <other_args>)`.
+            verbose : bool, optional
+                If True, prints additional information to the console.
 
         Returns
         -------
@@ -160,22 +158,22 @@ class DifferentialIk:
                             if check_collisions_at_state(
                                 self.model, self.collision_model, q_cur
                             ):
-                                if self.verbose:
+                                if verbose:
                                     print(
                                         "Solved and within joint limits, but in collision."
                                     )
                             else:
                                 solved = True
-                                if self.verbose:
+                                if verbose:
                                     print(
                                         "Solved, within joint limits, and collision-free!"
                                     )
                         else:
                             solved = True
-                            if self.verbose:
+                            if verbose:
                                 print("Solved and within joint limits!")
                     else:
-                        if self.verbose:
+                        if verbose:
                             print("Solved, but outside joint limits.")
                     break
 
@@ -220,13 +218,13 @@ class DifferentialIk:
 
             # Check results at the end of this try
             if solved:
-                if self.verbose:
+                if verbose:
                     print(f"Solved in {n_tries+1} tries.")
                 break
             else:
                 q_cur = get_random_state(self.model)
                 n_tries += 1
-                if self.verbose:
+                if verbose:
                     print(f"Retry {n_tries}")
 
         # Check final results

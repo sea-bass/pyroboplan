@@ -95,7 +95,7 @@ if __name__ == "__main__":
 
     # Set up the IK solver
     ik = DifferentialIk(
-        model, data=data, collision_model=collision_model, visualizer=viz, verbose=True
+        model, data=data, collision_model=collision_model, visualizer=viz
     )
     target_frame = "panda_hand"
     options = DifferentialIkOptions()
@@ -113,5 +113,6 @@ if __name__ == "__main__":
             init_state=init_state,
             options=options,
             nullspace_components=[],
+            verbose=True,
         )
         print(f"Solution configuration:\n{q_sol}\n")
