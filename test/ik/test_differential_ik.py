@@ -15,6 +15,39 @@ def load_panda_models():
     )
 
 
+def activate_panda_self_collision_pairs(collision_model):
+    collision_pair_names = [
+        ("panda_link0_0", "panda_link2_0"),
+        ("panda_link0_0", "panda_link3_0"),
+        ("panda_link0_0", "panda_link4_0"),
+        ("panda_link0_0", "panda_link5_0"),
+        ("panda_link0_0", "panda_link6_0"),
+        ("panda_link0_0", "panda_link7_0"),
+        ("panda_link1_0", "panda_link3_0"),
+        ("panda_link1_0", "panda_link4_0"),
+        ("panda_link1_0", "panda_link5_0"),
+        ("panda_link1_0", "panda_link6_0"),
+        ("panda_link1_0", "panda_link7_0"),
+        ("panda_link2_0", "panda_link4_0"),
+        ("panda_link2_0", "panda_link5_0"),
+        ("panda_link2_0", "panda_link6_0"),
+        ("panda_link2_0", "panda_link7_0"),
+        ("panda_link3_0", "panda_link5_0"),
+        ("panda_link3_0", "panda_link6_0"),
+        ("panda_link3_0", "panda_link7_0"),
+        ("panda_link4_0", "panda_link6_0"),
+        ("panda_link4_0", "panda_link7_0"),
+        ("panda_link5_0", "panda_link7_0"),
+    ]
+    for pair in collision_pair_names:
+        collision_model.addCollisionPair(
+            pinocchio.CollisionPair(
+                collision_model.getGeometryId(pair[0]),
+                collision_model.getGeometryId(pair[1]),
+            )
+        )
+
+
 def test_ik_solve_trivial_ik():
     model, _, _ = load_panda_models()
     data = model.createData()
@@ -29,7 +62,7 @@ def test_ik_solve_trivial_ik():
     target_tform = data.oMf[target_frame_id]
 
     # Solve
-    ik = DifferentialIk(model, data=None, visualizer=None, verbose=False)
+    ik = DifferentialIk(model, data=None, visualizer=None)
     options = DifferentialIkOptions()
     q_sol = ik.solve(
         target_frame,
@@ -59,7 +92,7 @@ def test_ik_solve_ik():
     target_tform.translation[2] = target_tform.translation[2] + offset
 
     # Solve it
-    ik = DifferentialIk(model, data=None, visualizer=None, verbose=False)
+    ik = DifferentialIk(model, data=None, visualizer=None)
     options = DifferentialIkOptions()
     q_sol = ik.solve(
         target_frame,
@@ -91,7 +124,7 @@ def test_ik_solve_impossible_ik():
     target_tform = pinocchio.SE3(R, T)
 
     # Solve
-    ik = DifferentialIk(model, data=None, visualizer=None, verbose=False)
+    ik = DifferentialIk(model, data=None, visualizer=None)
     options = DifferentialIkOptions()
     q_sol = ik.solve(
         target_frame,
@@ -102,3 +135,36 @@ def test_ik_solve_impossible_ik():
     )
 
     assert q_sol is None, "Solution should be impossible!"
+
+
+def test_ik_in_collision():
+    model, collision_model, _ = load_panda_models()
+    activate_panda_self_collision_pairs(collision_model)
+    target_frame = "panda_hand"
+
+    # Target is reachable, but in self-collision.
+    R = np.array(
+        [
+            [0.206636, -0.430153, 0.878789],
+            [-0.978337, -0.10235, 0.179946],
+            [0.0125395, -0.896935, -0.441984],
+        ],
+    )
+    T = np.array([0.155525, 0.0529695, 0.0259166])
+    target_tform = pinocchio.SE3(R, T)
+
+    # Solve
+    ik = DifferentialIk(
+        model, collision_model=collision_model, data=None, visualizer=None
+    )
+    options = DifferentialIkOptions()
+    q_sol = ik.solve(
+        target_frame,
+        target_tform,
+        init_state=None,
+        options=options,
+        nullspace_components=[],
+        verbose=False,
+    )
+
+    assert q_sol is None, "Solution should be in self-collision!"
