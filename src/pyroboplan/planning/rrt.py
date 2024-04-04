@@ -122,7 +122,7 @@ class RRTPlanner:
             # Add the node only if it is collision free.
             if check_collisions_at_state(self.model, self.collision_model, q_sample):
                 continue
-    
+
             path_to_node = discretize_joint_space_path(
                 nearest_node.q, q_sample, self.options.max_angle_step
             )
