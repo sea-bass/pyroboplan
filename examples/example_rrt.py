@@ -13,6 +13,38 @@ from pyroboplan.planning.utils import discretize_joint_space_path
 def prepare_scene(visual_model, collision_model):
     """Helper function to create a collision scene for this example."""
 
+    # Add self collisions
+    self_collision_pair_names = [
+        ("panda_link0_0", "panda_link2_0"),
+        ("panda_link0_0", "panda_link3_0"),
+        ("panda_link0_0", "panda_link4_0"),
+        ("panda_link0_0", "panda_link5_0"),
+        ("panda_link0_0", "panda_link6_0"),
+        ("panda_link0_0", "panda_link7_0"),
+        ("panda_link1_0", "panda_link3_0"),
+        ("panda_link1_0", "panda_link4_0"),
+        ("panda_link1_0", "panda_link5_0"),
+        ("panda_link1_0", "panda_link6_0"),
+        ("panda_link1_0", "panda_link7_0"),
+        ("panda_link2_0", "panda_link4_0"),
+        ("panda_link2_0", "panda_link5_0"),
+        ("panda_link2_0", "panda_link6_0"),
+        ("panda_link2_0", "panda_link7_0"),
+        ("panda_link3_0", "panda_link5_0"),
+        ("panda_link3_0", "panda_link6_0"),
+        ("panda_link3_0", "panda_link7_0"),
+        ("panda_link4_0", "panda_link6_0"),
+        ("panda_link4_0", "panda_link7_0"),
+        ("panda_link5_0", "panda_link7_0"),
+    ]
+    for pair in self_collision_pair_names:
+        collision_model.addCollisionPair(
+            pinocchio.CollisionPair(
+                collision_model.getGeometryId(pair[0]),
+                collision_model.getGeometryId(pair[1]),
+            )
+        )
+
     # Add collision objects
     ground_plane = pinocchio.GeometryObject(
         "ground_plane",
@@ -115,7 +147,7 @@ if __name__ == "__main__":
     options.max_angle_step = 0.05
     options.max_connection_dist = 0.1
     options.goal_biasing_probability = 0.15
-    options.max_planning_time = 5.0
+    options.max_planning_time = 10.0
     options.rrt_connect = True
     options.bidirectional_rrt = True
 

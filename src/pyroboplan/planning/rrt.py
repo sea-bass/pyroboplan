@@ -161,7 +161,7 @@ class RRTPlanner:
                 ):
                     goal_found = True
 
-                # Switch to the other tree
+                # Switch to the other tree next iteration, if bidirectional mode is enabled.
                 if options.bidirectional_rrt:
                     start_tree_phase = not start_tree_phase
 
