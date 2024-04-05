@@ -102,9 +102,10 @@ if __name__ == "__main__":
     # Search for a path
     options = RRTPlannerOptions()
     options.max_angle_step = 0.05
-    options.max_connection_dist = 0.5
+    options.max_connection_dist = 0.1
     options.goal_biasing_probability = 0.15
     options.max_planning_time = 5.0
+    options.rrt_connect = True
 
     planner = RRTPlanner(model, collision_model)
     path = planner.plan(q_start, q_end, options=options)

@@ -25,6 +25,15 @@ class RRTPlannerOptions:
     max_connection_dist = 0.2
     """ Maximum angular distance, in radians, for connecting nodes. """
 
+    rrt_connect = False
+    """ If true, enables the RRTConnect algorithm. """
+
+    bidirectional_rrt = False
+    """
+    If true, uses bidirectional RRTs from both start and goal nodes.
+    Otherwise, only grows a tree from the start node.
+    """
+
     max_planning_time = 10.0
     """ Maximum planning time, in seconds. """
 
@@ -38,7 +47,8 @@ class RRTPlanner:
     This is a sampling-based motion planner that finds collision-free paths from a start to a goal configuration.
 
     Some good resources:
-      * https://msl.cs.illinois.edu/~lavalle/papers/Lav98c.pdf
+      * Original RRT paper: https://msl.cs.illinois.edu/~lavalle/papers/Lav98c.pdf
+      * RRTConnect paper: https://www.cs.cmu.edu/afs/cs/academic/class/15494-s14/readings/kuffner_icra2000.pdf
     """
 
     def __init__(self, model, collision_model):
@@ -54,9 +64,13 @@ class RRTPlanner:
         """
         self.model = model
         self.collision_model = collision_model
+        self.reset()
 
+    def reset(self):
+        """Resets all the planning data structures."""
         self.latest_path = None
-        self.graph = Graph()
+        self.start_tree = Graph()
+        self.goal_tree = Graph()
 
     def plan(self, q_start, q_goal, options=RRTPlannerOptions()):
         """
@@ -71,11 +85,15 @@ class RRTPlanner:
             options : `RRTPlannerOptions`, optional
                 The options to use for planning. If not specified, default options are used.
         """
+        self.reset()
         t_start = time.time()
         self.options = options
-        self.graph = Graph()
+
         start_node = Node(q_start, parent=None)
-        self.graph.add_node(start_node)
+        self.start_tree.add_node(start_node)
+        if options.bidirectional_rrt:
+            goal_node = Node(q_goal, parent=None)
+            self.goal_tree.add_node(goal_node)
 
         goal_found = False
         latest_node = start_node
@@ -96,12 +114,12 @@ class RRTPlanner:
             self.model, self.collision_model, path_to_goal
         ):
             goal_node = Node(q_goal, parent=start_node)
-            self.graph.add_node(latest_node)
-            self.graph.add_edge(start_node, goal_node)
+            self.start_tree.add_node(latest_node)
+            self.start_tree.add_edge(start_node, goal_node)
             goal_found = True
 
         while not goal_found:
-            # Check for timeouts
+            # Check for timeouts.
             if time.time() - t_start > options.max_planning_time:
                 print(f"Planning timed out after {options.max_planning_time} seconds.")
                 break
@@ -111,29 +129,18 @@ class RRTPlanner:
                 q_sample = q_goal
             else:
                 q_sample = get_random_state(self.model)
-            nearest_node = self.graph.get_nearest_node(q_sample)
+            nearest_node = self.start_tree.get_nearest_node(q_sample)
 
-            # Clip the distance between nearest and sampled nodes to max connection distance.
-            distance = configuration_distance(q_sample, nearest_node.q)
-            if distance > self.options.max_connection_dist:
-                scale = self.options.max_connection_dist / distance
-                q_sample = nearest_node.q + scale * (q_sample - nearest_node.q)
+            # Run the extend or connect operation to connect the tree to the new node.
+            q_new = self.extend_or_connect(nearest_node, q_sample, options)
 
-            # Add the node only if it is collision free.
-            if check_collisions_at_state(self.model, self.collision_model, q_sample):
-                continue
+            # Only if extend/connect succeeded, add the new node to the tree.
+            if q_new is not None:
+                latest_node = Node(q_new, parent=nearest_node)
+                self.start_tree.add_node(latest_node)
+                self.start_tree.add_edge(nearest_node, latest_node)
 
-            path_to_node = discretize_joint_space_path(
-                nearest_node.q, q_sample, self.options.max_angle_step
-            )
-            if not check_collisions_along_path(
-                self.model, self.collision_model, path_to_node
-            ):
-                latest_node = Node(q_sample, parent=nearest_node)
-                self.graph.add_node(latest_node)
-                self.graph.add_edge(nearest_node, latest_node)
-
-                # Check if latest node connects directly to goal.
+                # Check if latest node connects directly to the other tree.
                 path_to_goal = discretize_joint_space_path(
                     latest_node.q, q_goal, self.options.max_angle_step
                 )
@@ -141,24 +148,113 @@ class RRTPlanner:
                     self.model, self.collision_model, path_to_goal
                 ):
                     goal_node = Node(q_goal, parent=latest_node)
-                    self.graph.add_node(goal_node)
-                    self.graph.add_edge(latest_node, goal_node)
+                    self.start_tree.add_node(goal_node)
+                    self.start_tree.add_edge(latest_node, goal_node)
                     goal_found = True
 
         # Back out the path by traversing the parents from the goal.
         self.latest_path = []
         if goal_found:
-            cur_node = goal_node
+            self.latest_path = self.extract_path_from_trees(goal_node)
+        return self.latest_path
+
+    def extend_or_connect(self, start_node, q_sample, options=RRTPlannerOptions()):
+        """
+        Extends a tree towards a sampled node with steps no larger than the maximum connection distance.
+
+        Parameters
+        ----------
+            start_node : `pyroboplan.planning.graph.Node`
+                The node from which to start extending or connecting towards the sample.
+            q_sample : array-like
+                The robot configuration sample to extend or connect towards.
+            options : `pyroboplan.planning.rrt.RRTPlannerOptions`, optional
+                The options to use for this operation.
+                These include whether to extend once or keep connecting (`options.rrt_connect`),
+                as well as the maximum angular connection distance (`options.max_connection_dist`).
+        """
+        q_diff = q_sample - start_node.q
+        q_increment = options.max_connection_dist * q_diff / np.linalg.norm(q_diff)
+
+        terminated = False
+        q_extend_found = False
+        q_cur = start_node.q
+        while not terminated:
+            # Clip the distance between nearest and sampled nodes to max connection distance.
+            # If we have reached the sampled node, this is the final iteration.
+            if (
+                configuration_distance(q_cur, q_sample)
+                > self.options.max_connection_dist
+            ):
+                q_extend = q_cur + q_increment
+            else:
+                q_extend = q_sample
+                terminated |= True
+
+            # Extension is successful only if the path is collision free.
+            q_extend_in_collision = check_collisions_at_state(
+                self.model, self.collision_model, q_extend
+            )
+            path_to_q_extend = discretize_joint_space_path(
+                q_cur, q_extend, self.options.max_angle_step
+            )
+            path_to_q_extend_in_collision = check_collisions_along_path(
+                self.model, self.collision_model, path_to_q_extend
+            )
+            if not q_extend_in_collision and not path_to_q_extend_in_collision:
+                q_cur = q_extend
+                q_extend_found |= True
+            else:
+                terminated |= True
+
+            # If RRTConnect is disabled, only one iteration is needed.
+            if not options.rrt_connect:
+                terminated |= True
+
+        if q_extend_found:
+            return q_extend
+        else:
+            return None
+
+    def extract_path_from_trees(self, start_tree_final_node, goal_tree_final_node=None):
+        """
+        Extracts the final path from the RRT trees.
+
+        Parameters
+        ----------
+            start_tree_final_node : `pyroboplan.planning.graph.Node`
+                The last node of the start tree.
+            goal_tree_final_node : `pyroboplan.planning.graph.Node`, optional
+                The last node of the goal tree.
+                If None, this means the goal tree is ignored.
+
+        Return
+        ------
+            list[array-like]
+                A list of robot configurations describing the path waypoints in order.
+        """
+        path = []
+        cur_node = start_tree_final_node
+        path_extracted = False
+        while not path_extracted:
+            if cur_node is None:
+                path_extracted = True
+            else:
+                path.append(cur_node.q)
+                cur_node = cur_node.parent
+        path.reverse()
+
+        if goal_tree_final_node is not None:
+            cur_node = goal_tree_final_node
             path_extracted = False
             while not path_extracted:
                 if cur_node is None:
                     path_extracted = True
                 else:
-                    self.latest_path.append(cur_node.q)
+                    path.append(cur_node.q)
                     cur_node = cur_node.parent
-            self.latest_path.reverse()
 
-        return self.latest_path
+        return path
 
     def visualize(
         self,
@@ -202,7 +298,7 @@ class RRTPlanner:
             )
 
         if show_tree:
-            for idx, edge in enumerate(self.graph.edges):
+            for idx, edge in enumerate(self.start_tree.edges):
                 q_path = discretize_joint_space_path(
                     edge.nodeA.q, edge.nodeB.q, self.options.max_angle_step
                 )
