@@ -14,6 +14,16 @@ def prepare_scene(visual_model, collision_model):
     """Helper function to create a collision scene for this example."""
 
     # Add collision objects
+    ground_plane = pinocchio.GeometryObject(
+        "ground_plane",
+        0,
+        hppfcl.Box(2.0, 2.0, 0.01),
+        pinocchio.SE3(np.eye(3), np.array([0.0, 0.0, -0.006])),
+    )
+    ground_plane.meshColor = np.array([0.5, 0.5, 0.5, 0.5])
+    visual_model.addGeometryObject(ground_plane)
+    collision_model.addGeometryObject(ground_plane)
+
     obstacle_sphere_1 = pinocchio.GeometryObject(
         "obstacle_sphere_1",
         0,
@@ -78,6 +88,7 @@ if __name__ == "__main__":
         cobj.name for cobj in collision_model.geometryObjects if "panda" in cobj.name
     ]
     obstacle_names = [
+        "ground_plane",
         "obstacle_box_1",
         "obstacle_box_2",
         "obstacle_sphere_1",
@@ -106,6 +117,7 @@ if __name__ == "__main__":
     options.goal_biasing_probability = 0.15
     options.max_planning_time = 5.0
     options.rrt_connect = True
+    options.bidirectional_rrt = True
 
     planner = RRTPlanner(model, collision_model)
     path = planner.plan(q_start, q_end, options=options)
