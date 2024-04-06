@@ -124,16 +124,12 @@ class RRTPlanner:
                 break
 
             # Choose variables based on whether we're growing the start or goal tree.
-            if start_tree_phase:
-                tree = self.start_tree
-                q_target = latest_goal_tree_node.q
-            else:
-                tree = self.goal_tree
-                q_target = latest_start_tree_node.q
+            tree = self.start_tree if start_tree_phase else self.goal_tree
+            other_tree = self.goal_tree if start_tree_phase else self.start_tree
 
             # Sample a new configuration.
             if np.random.random() < self.options.goal_biasing_probability:
-                q_sample = q_target
+                q_sample = q_goal if start_tree_phase else q_start
             else:
                 q_sample = get_random_state(self.model)
 
@@ -153,12 +149,17 @@ class RRTPlanner:
 
                 # Check if latest node connects directly to the other tree.
                 # If so, planning is complete.
-                path_to_goal = discretize_joint_space_path(
-                    q_new, q_target, self.options.max_angle_step
+                nearest_node_in_other_tree = other_tree.get_nearest_node(new_node.q)
+                path_to_other_tree = discretize_joint_space_path(
+                    q_new, nearest_node_in_other_tree.q, self.options.max_angle_step
                 )
                 if not check_collisions_along_path(
-                    self.model, self.collision_model, path_to_goal
+                    self.model, self.collision_model, path_to_other_tree
                 ):
+                    if start_tree_phase:
+                        latest_goal_tree_node = nearest_node_in_other_tree
+                    else:
+                        latest_start_tree_node = nearest_node_in_other_tree
                     goal_found = True
 
                 # Switch to the other tree next iteration, if bidirectional mode is enabled.
@@ -192,15 +193,12 @@ class RRTPlanner:
         q_increment = options.max_connection_dist * q_diff / np.linalg.norm(q_diff)
 
         terminated = False
-        q_extend_found = False
+        q_out = None
         q_cur = parent_node.q
         while not terminated:
             # Clip the distance between nearest and sampled nodes to max connection distance.
             # If we have reached the sampled node, this is the final iteration.
-            if (
-                configuration_distance(q_cur, q_sample)
-                > self.options.max_connection_dist
-            ):
+            if configuration_distance(q_cur, q_sample) > options.max_connection_dist:
                 q_extend = q_cur + q_increment
             else:
                 q_extend = q_sample
@@ -217,8 +215,7 @@ class RRTPlanner:
                 self.model, self.collision_model, path_to_q_extend
             )
             if not q_extend_in_collision and not path_to_q_extend_in_collision:
-                q_cur = q_extend
-                q_extend_found |= True
+                q_cur = q_out = q_extend
             else:
                 terminated |= True
 
@@ -226,10 +223,7 @@ class RRTPlanner:
             if not options.rrt_connect:
                 terminated |= True
 
-        if q_extend_found:
-            return q_extend
-        else:
-            return None
+        return q_out
 
     def extract_path_from_trees(self, start_tree_final_node, goal_tree_final_node):
         """

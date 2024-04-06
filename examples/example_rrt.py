@@ -145,7 +145,7 @@ if __name__ == "__main__":
     # Search for a path
     options = RRTPlannerOptions()
     options.max_angle_step = 0.05
-    options.max_connection_dist = 0.1
+    options.max_connection_dist = 0.25
     options.goal_biasing_probability = 0.15
     options.max_planning_time = 10.0
     options.rrt_connect = True
