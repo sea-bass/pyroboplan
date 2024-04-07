@@ -1,140 +1,29 @@
-import hppfcl
-import pinocchio
 from pinocchio.visualize import MeshcatVisualizer
-import numpy as np
-from os.path import dirname, join, abspath
 import time
 
 from pyroboplan.core.utils import get_random_collision_free_state
+from pyroboplan.models.panda import (
+    load_models,
+    add_self_collisions,
+    add_object_collisions,
+)
 from pyroboplan.planning.rrt import RRTPlanner, RRTPlannerOptions
 from pyroboplan.planning.utils import discretize_joint_space_path
 
 
-def prepare_scene(visual_model, collision_model):
-    """Helper function to create a collision scene for this example."""
-
-    # Add self collisions
-    self_collision_pair_names = [
-        ("panda_link0_0", "panda_link2_0"),
-        ("panda_link0_0", "panda_link3_0"),
-        ("panda_link0_0", "panda_link4_0"),
-        ("panda_link0_0", "panda_link5_0"),
-        ("panda_link0_0", "panda_link6_0"),
-        ("panda_link0_0", "panda_link7_0"),
-        ("panda_link1_0", "panda_link3_0"),
-        ("panda_link1_0", "panda_link4_0"),
-        ("panda_link1_0", "panda_link5_0"),
-        ("panda_link1_0", "panda_link6_0"),
-        ("panda_link1_0", "panda_link7_0"),
-        ("panda_link2_0", "panda_link4_0"),
-        ("panda_link2_0", "panda_link5_0"),
-        ("panda_link2_0", "panda_link6_0"),
-        ("panda_link2_0", "panda_link7_0"),
-        ("panda_link3_0", "panda_link5_0"),
-        ("panda_link3_0", "panda_link6_0"),
-        ("panda_link3_0", "panda_link7_0"),
-        ("panda_link4_0", "panda_link6_0"),
-        ("panda_link4_0", "panda_link7_0"),
-        ("panda_link5_0", "panda_link7_0"),
-    ]
-    for pair in self_collision_pair_names:
-        collision_model.addCollisionPair(
-            pinocchio.CollisionPair(
-                collision_model.getGeometryId(pair[0]),
-                collision_model.getGeometryId(pair[1]),
-            )
-        )
-
-    # Add collision objects
-    ground_plane = pinocchio.GeometryObject(
-        "ground_plane",
-        0,
-        hppfcl.Box(2.0, 2.0, 0.01),
-        pinocchio.SE3(np.eye(3), np.array([0.0, 0.0, -0.006])),
-    )
-    ground_plane.meshColor = np.array([0.5, 0.5, 0.5, 0.5])
-    visual_model.addGeometryObject(ground_plane)
-    collision_model.addGeometryObject(ground_plane)
-
-    obstacle_sphere_1 = pinocchio.GeometryObject(
-        "obstacle_sphere_1",
-        0,
-        hppfcl.Sphere(0.2),
-        pinocchio.SE3(np.eye(3), np.array([0.0, 0.1, 1.1])),
-    )
-    obstacle_sphere_1.meshColor = np.array([0.0, 1.0, 0.0, 0.5])
-    visual_model.addGeometryObject(obstacle_sphere_1)
-    collision_model.addGeometryObject(obstacle_sphere_1)
-
-    obstacle_sphere_2 = pinocchio.GeometryObject(
-        "obstacle_sphere_2",
-        0,
-        hppfcl.Sphere(0.25),
-        pinocchio.SE3(np.eye(3), np.array([0.5, 0.5, 0.5])),
-    )
-    obstacle_sphere_2.meshColor = np.array([1.0, 1.0, 0.0, 0.5])
-    visual_model.addGeometryObject(obstacle_sphere_2)
-    collision_model.addGeometryObject(obstacle_sphere_2)
-
-    obstacle_box_1 = pinocchio.GeometryObject(
-        "obstacle_box_1",
-        0,
-        hppfcl.Box(0.25, 0.25, 0.25),
-        pinocchio.SE3(np.eye(3), np.array([-0.5, 0.5, 0.7])),
-    )
-    obstacle_box_1.meshColor = np.array([1.0, 0.0, 0.0, 0.5])
-    visual_model.addGeometryObject(obstacle_box_1)
-    collision_model.addGeometryObject(obstacle_box_1)
-
-    obstacle_box_2 = pinocchio.GeometryObject(
-        "obstacle_box_2",
-        0,
-        hppfcl.Box(0.33, 0.33, 0.33),
-        pinocchio.SE3(np.eye(3), np.array([-0.5, -0.5, 0.75])),
-    )
-    obstacle_box_2.meshColor = np.array([0.0, 0.0, 1.0, 0.5])
-    visual_model.addGeometryObject(obstacle_box_2)
-    collision_model.addGeometryObject(obstacle_box_2)
-
-
 if __name__ == "__main__":
     # Create models and data
-    pinocchio_model_dir = join(dirname(str(abspath(__file__))), "..", "models")
-    package_dir = join(pinocchio_model_dir, "panda_description")
-    urdf_filename = join(package_dir, "urdf", "panda.urdf")
+    model, collision_model, visual_model = load_models()
+    add_self_collisions(collision_model)
+    add_object_collisions(collision_model, visual_model)
 
-    model, collision_model, visual_model = pinocchio.buildModelsFromUrdf(
-        urdf_filename, package_dirs=pinocchio_model_dir
-    )
     data = model.createData()
-
-    prepare_scene(visual_model, collision_model)
+    collision_data = collision_model.createData()
 
     # Initialize visualizer
     viz = MeshcatVisualizer(model, collision_model, visual_model, data=data)
     viz.initViewer(open=True)
     viz.loadViewerModel()
-
-    # Define the active collision pairs
-    collision_names = [
-        cobj.name for cobj in collision_model.geometryObjects if "panda" in cobj.name
-    ]
-    obstacle_names = [
-        "ground_plane",
-        "obstacle_box_1",
-        "obstacle_box_2",
-        "obstacle_sphere_1",
-        "obstacle_sphere_2",
-    ]
-    for obstacle_name in obstacle_names:
-        for collision_name in collision_names:
-            collision_model.addCollisionPair(
-                pinocchio.CollisionPair(
-                    collision_model.getGeometryId(collision_name),
-                    collision_model.getGeometryId(obstacle_name),
-                )
-            )
-    collision_data = pinocchio.GeometryData(collision_model)
 
     # Define the start and end configurations
     q_start = get_random_collision_free_state(model, collision_model)

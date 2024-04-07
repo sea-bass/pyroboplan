@@ -1,55 +1,13 @@
 import copy
-from os.path import dirname, join, abspath
 import numpy as np
 import pinocchio
 
 from pyroboplan.ik.differential_ik import DifferentialIk, DifferentialIkOptions
-
-
-def load_panda_models():
-    pinocchio_model_dir = join(dirname(str(abspath(__file__))), "..", "..", "models")
-    package_dir = join(pinocchio_model_dir, "panda_description")
-    urdf_filename = join(package_dir, "urdf", "panda.urdf")
-    return pinocchio.buildModelsFromUrdf(
-        urdf_filename, package_dirs=pinocchio_model_dir
-    )
-
-
-def activate_panda_self_collision_pairs(collision_model):
-    collision_pair_names = [
-        ("panda_link0_0", "panda_link2_0"),
-        ("panda_link0_0", "panda_link3_0"),
-        ("panda_link0_0", "panda_link4_0"),
-        ("panda_link0_0", "panda_link5_0"),
-        ("panda_link0_0", "panda_link6_0"),
-        ("panda_link0_0", "panda_link7_0"),
-        ("panda_link1_0", "panda_link3_0"),
-        ("panda_link1_0", "panda_link4_0"),
-        ("panda_link1_0", "panda_link5_0"),
-        ("panda_link1_0", "panda_link6_0"),
-        ("panda_link1_0", "panda_link7_0"),
-        ("panda_link2_0", "panda_link4_0"),
-        ("panda_link2_0", "panda_link5_0"),
-        ("panda_link2_0", "panda_link6_0"),
-        ("panda_link2_0", "panda_link7_0"),
-        ("panda_link3_0", "panda_link5_0"),
-        ("panda_link3_0", "panda_link6_0"),
-        ("panda_link3_0", "panda_link7_0"),
-        ("panda_link4_0", "panda_link6_0"),
-        ("panda_link4_0", "panda_link7_0"),
-        ("panda_link5_0", "panda_link7_0"),
-    ]
-    for pair in collision_pair_names:
-        collision_model.addCollisionPair(
-            pinocchio.CollisionPair(
-                collision_model.getGeometryId(pair[0]),
-                collision_model.getGeometryId(pair[1]),
-            )
-        )
+from pyroboplan.models.panda import load_models, add_self_collisions
 
 
 def test_ik_solve_trivial_ik():
-    model, _, _ = load_panda_models()
+    model, _, _ = load_models()
     data = model.createData()
     target_frame = "panda_hand"
 
@@ -77,7 +35,7 @@ def test_ik_solve_trivial_ik():
 
 
 def test_ik_solve_ik():
-    model, _, _ = load_panda_models()
+    model, _, _ = load_models()
     data = model.createData()
     target_frame = "panda_hand"
 
@@ -115,7 +73,7 @@ def test_ik_solve_ik():
 
 
 def test_ik_solve_impossible_ik():
-    model, _, _ = load_panda_models()
+    model, _, _ = load_models()
     target_frame = "panda_hand"
 
     # Target is unreachable by the panda
@@ -138,8 +96,8 @@ def test_ik_solve_impossible_ik():
 
 
 def test_ik_in_collision():
-    model, collision_model, _ = load_panda_models()
-    activate_panda_self_collision_pairs(collision_model)
+    model, collision_model, _ = load_models()
+    add_self_collisions(collision_model)
     target_frame = "panda_hand"
 
     # Target is reachable, but in self-collision.
