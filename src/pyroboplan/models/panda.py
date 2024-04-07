@@ -1,0 +1,148 @@
+""" Utilities to load example Franka Emika Panda model. """
+
+import hppfcl
+import numpy as np
+import os
+import pinocchio
+
+from .utils import get_example_models_folder
+
+
+def load_models():
+    """
+    Gets the example Panda models.
+
+    Returns
+    -------
+        tuple[`pinocchio.Model`]
+            A 3-tuple containing the model, collision geometry model, and visual geometry model.
+    """
+    models_folder = get_example_models_folder()
+    package_dir = os.path.join(models_folder, "panda_description")
+    urdf_filename = os.path.join(package_dir, "urdf", "panda.urdf")
+
+    return pinocchio.buildModelsFromUrdf(urdf_filename, package_dirs=models_folder)
+
+
+def add_self_collisions(collision_model):
+    """
+    Adds link self-collisions to the Panda collision model.
+
+    Parameters
+    ----------
+        collision_model : `pinocchio.Model`
+            The Panda collision geometry model.
+    """
+    self_collision_pair_names = [
+        ("panda_link0_0", "panda_link2_0"),
+        ("panda_link0_0", "panda_link3_0"),
+        ("panda_link0_0", "panda_link4_0"),
+        ("panda_link0_0", "panda_link5_0"),
+        ("panda_link0_0", "panda_link6_0"),
+        ("panda_link0_0", "panda_link7_0"),
+        ("panda_link1_0", "panda_link3_0"),
+        ("panda_link1_0", "panda_link4_0"),
+        ("panda_link1_0", "panda_link5_0"),
+        ("panda_link1_0", "panda_link6_0"),
+        ("panda_link1_0", "panda_link7_0"),
+        ("panda_link2_0", "panda_link4_0"),
+        ("panda_link2_0", "panda_link5_0"),
+        ("panda_link2_0", "panda_link6_0"),
+        ("panda_link2_0", "panda_link7_0"),
+        ("panda_link3_0", "panda_link5_0"),
+        ("panda_link3_0", "panda_link6_0"),
+        ("panda_link3_0", "panda_link7_0"),
+        ("panda_link4_0", "panda_link6_0"),
+        ("panda_link4_0", "panda_link7_0"),
+        ("panda_link5_0", "panda_link7_0"),
+    ]
+    for pair in self_collision_pair_names:
+        collision_model.addCollisionPair(
+            pinocchio.CollisionPair(
+                collision_model.getGeometryId(pair[0]),
+                collision_model.getGeometryId(pair[1]),
+            )
+        )
+
+
+def add_object_collisions(collision_model, visual_model):
+    """
+    Adds link self-collisions to the Panda collision model.
+
+    Parameters
+    ----------
+        collision_model : `pinocchio.Model`
+            The Panda collision geometry model.
+        visual_model : `pinocchio.Model`
+            The Panda visual geometry model.
+    """
+    # Add the collision objects
+    ground_plane = pinocchio.GeometryObject(
+        "ground_plane",
+        0,
+        hppfcl.Box(2.0, 2.0, 0.01),
+        pinocchio.SE3(np.eye(3), np.array([0.0, 0.0, -0.006])),
+    )
+    ground_plane.meshColor = np.array([0.5, 0.5, 0.5, 0.5])
+    visual_model.addGeometryObject(ground_plane)
+    collision_model.addGeometryObject(ground_plane)
+
+    obstacle_sphere_1 = pinocchio.GeometryObject(
+        "obstacle_sphere_1",
+        0,
+        hppfcl.Sphere(0.2),
+        pinocchio.SE3(np.eye(3), np.array([0.0, 0.1, 1.1])),
+    )
+    obstacle_sphere_1.meshColor = np.array([0.0, 1.0, 0.0, 0.5])
+    visual_model.addGeometryObject(obstacle_sphere_1)
+    collision_model.addGeometryObject(obstacle_sphere_1)
+
+    obstacle_sphere_2 = pinocchio.GeometryObject(
+        "obstacle_sphere_2",
+        0,
+        hppfcl.Sphere(0.25),
+        pinocchio.SE3(np.eye(3), np.array([0.5, 0.5, 0.5])),
+    )
+    obstacle_sphere_2.meshColor = np.array([1.0, 1.0, 0.0, 0.5])
+    visual_model.addGeometryObject(obstacle_sphere_2)
+    collision_model.addGeometryObject(obstacle_sphere_2)
+
+    obstacle_box_1 = pinocchio.GeometryObject(
+        "obstacle_box_1",
+        0,
+        hppfcl.Box(0.25, 0.25, 0.25),
+        pinocchio.SE3(np.eye(3), np.array([-0.5, 0.5, 0.7])),
+    )
+    obstacle_box_1.meshColor = np.array([1.0, 0.0, 0.0, 0.5])
+    visual_model.addGeometryObject(obstacle_box_1)
+    collision_model.addGeometryObject(obstacle_box_1)
+
+    obstacle_box_2 = pinocchio.GeometryObject(
+        "obstacle_box_2",
+        0,
+        hppfcl.Box(0.33, 0.33, 0.33),
+        pinocchio.SE3(np.eye(3), np.array([-0.5, -0.5, 0.75])),
+    )
+    obstacle_box_2.meshColor = np.array([0.0, 0.0, 1.0, 0.5])
+    visual_model.addGeometryObject(obstacle_box_2)
+    collision_model.addGeometryObject(obstacle_box_2)
+
+    # Define the active collision pairs between the robot and obstacle links.
+    collision_names = [
+        cobj.name for cobj in collision_model.geometryObjects if "panda" in cobj.name
+    ]
+    obstacle_names = [
+        "ground_plane",
+        "obstacle_box_1",
+        "obstacle_box_2",
+        "obstacle_sphere_1",
+        "obstacle_sphere_2",
+    ]
+    for obstacle_name in obstacle_names:
+        for collision_name in collision_names:
+            collision_model.addCollisionPair(
+                pinocchio.CollisionPair(
+                    collision_model.getGeometryId(collision_name),
+                    collision_model.getGeometryId(obstacle_name),
+                )
+            )

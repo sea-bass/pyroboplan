@@ -19,7 +19,7 @@ class Node:
             cost : float, optional
                 The cost associated with the node.
         """
-        self.q = q
+        self.q = np.array(q)
         self.parent = parent
         self.cost = cost
         self.neighbors = set()
@@ -77,11 +77,18 @@ class Graph:
                 The first node in the edge.
             nodeB : `pyroboplan.planning.graph.Node`
                 The second node in the edge.
+
+        Returns
+        -------
+            `pyroboplan.planning.graph.Edge`
+                The edge that was added.
         """
         cost = configuration_distance(nodeA.q, nodeB.q)
-        self.edges.add(Edge(nodeA, nodeB, cost))
+        edge = Edge(nodeA, nodeB, cost)
+        self.edges.add(edge)
         nodeA.neighbors.add(nodeB)
         nodeB.neighbors.add(nodeA)
+        return edge
 
     def get_nearest_node(self, q):
         """

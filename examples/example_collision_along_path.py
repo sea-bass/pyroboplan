@@ -3,10 +3,10 @@ import pinocchio
 from pinocchio.visualize import MeshcatVisualizer
 import meshcat.geometry as mg
 import numpy as np
-from os.path import dirname, join, abspath
 import time
 
 from pyroboplan.core.utils import extract_cartesian_poses
+from pyroboplan.models.panda import load_models, add_self_collisions
 from pyroboplan.planning.utils import discretize_joint_space_path
 from pyroboplan.visualization.meshcat_utils import visualize_frames
 
@@ -31,32 +31,11 @@ def prepare_collision_scene(collision_model):
     obstacle_1 = pinocchio.GeometryObject(
         "obstacle_1",
         0,
-        hppfcl.Box(0.25, 0.25, 0.25),
+        hppfcl.Box(0.3, 0.3, 0.3),
         pinocchio.SE3(np.eye(3), np.array([-0.5, 0.5, 0.7])),
     )
     obstacle_1.meshColor = np.array([0.0, 1.0, 0.0, 0.2])
     collision_model.addGeometryObject(obstacle_1)
-
-
-if __name__ == "__main__":
-    # Create models and data
-    pinocchio_model_dir = join(dirname(str(abspath(__file__))), "..", "models")
-    package_dir = join(pinocchio_model_dir, "panda_description")
-    urdf_filename = join(package_dir, "urdf", "panda.urdf")
-
-    model, collision_model, visual_model = pinocchio.buildModelsFromUrdf(
-        urdf_filename, package_dirs=pinocchio_model_dir
-    )
-    data = model.createData()
-
-    prepare_collision_scene(collision_model)
-
-    # Initialize visualizer
-    viz = MeshcatVisualizer(model, collision_model, visual_model, data=data)
-    viz.initViewer(open=True)
-    viz.loadViewerModel()
-    viz.displayCollisions(True)
-    viz.displayVisuals(False)
 
     # Define the active collision pairs
     collision_names = [
@@ -71,7 +50,23 @@ if __name__ == "__main__":
                     collision_model.getGeometryId(obstacle_name),
                 )
             )
-    collision_data = pinocchio.GeometryData(collision_model)
+
+
+if __name__ == "__main__":
+    # Create models and data
+    model, collision_model, visual_model = load_models()
+    add_self_collisions(collision_model)
+    prepare_collision_scene(collision_model)
+
+    data = model.createData()
+    collision_data = collision_model.createData()
+
+    # Initialize visualizer
+    viz = MeshcatVisualizer(model, collision_model, visual_model, data=data)
+    viz.initViewer(open=True)
+    viz.loadViewerModel()
+    viz.displayCollisions(True)
+    viz.displayVisuals(False)
 
     # Define a joint space path
     q_start = pinocchio.randomConfiguration(model)

@@ -1,4 +1,3 @@
-from os.path import dirname, join, abspath
 import numpy as np
 import pinocchio
 import pytest
@@ -12,52 +11,11 @@ from pyroboplan.core.utils import (
     get_random_state,
     get_random_transform,
 )
+from pyroboplan.models.panda import load_models, add_self_collisions
 
 
 # Use a fixed seed for random number generation in tests.
 np.random.seed(1234)
-
-
-def load_panda_models():
-    pinocchio_model_dir = join(dirname(str(abspath(__file__))), "..", "..", "models")
-    package_dir = join(pinocchio_model_dir, "panda_description")
-    urdf_filename = join(package_dir, "urdf", "panda.urdf")
-    return pinocchio.buildModelsFromUrdf(
-        urdf_filename, package_dirs=pinocchio_model_dir
-    )
-
-
-def activate_panda_self_collision_pairs(collision_model):
-    collision_pair_names = [
-        ("panda_link0_0", "panda_link2_0"),
-        ("panda_link0_0", "panda_link3_0"),
-        ("panda_link0_0", "panda_link4_0"),
-        ("panda_link0_0", "panda_link5_0"),
-        ("panda_link0_0", "panda_link6_0"),
-        ("panda_link0_0", "panda_link7_0"),
-        ("panda_link1_0", "panda_link3_0"),
-        ("panda_link1_0", "panda_link4_0"),
-        ("panda_link1_0", "panda_link5_0"),
-        ("panda_link1_0", "panda_link6_0"),
-        ("panda_link1_0", "panda_link7_0"),
-        ("panda_link2_0", "panda_link4_0"),
-        ("panda_link2_0", "panda_link5_0"),
-        ("panda_link2_0", "panda_link6_0"),
-        ("panda_link2_0", "panda_link7_0"),
-        ("panda_link3_0", "panda_link5_0"),
-        ("panda_link3_0", "panda_link6_0"),
-        ("panda_link3_0", "panda_link7_0"),
-        ("panda_link4_0", "panda_link6_0"),
-        ("panda_link4_0", "panda_link7_0"),
-        ("panda_link5_0", "panda_link7_0"),
-    ]
-    for pair in collision_pair_names:
-        collision_model.addCollisionPair(
-            pinocchio.CollisionPair(
-                collision_model.getGeometryId(pair[0]),
-                collision_model.getGeometryId(pair[1]),
-            )
-        )
 
 
 def test_configuration_distance():
@@ -67,7 +25,7 @@ def test_configuration_distance():
 
 
 def test_get_random_state():
-    model, _, _ = load_panda_models()
+    model, _, _ = load_models()
     for _ in range(10):
         state = get_random_state(model)
         assert np.all(state >= model.lowerPositionLimit)
@@ -75,7 +33,7 @@ def test_get_random_state():
 
 
 def test_get_random_state_with_scalar_padding():
-    model, _, _ = load_panda_models()
+    model, _, _ = load_models()
     padding = 0.01
     for _ in range(10):
         state = get_random_state(model, padding=padding)
@@ -84,7 +42,7 @@ def test_get_random_state_with_scalar_padding():
 
 
 def test_get_random_state_with_vector_padding():
-    model, _, _ = load_panda_models()
+    model, _, _ = load_models()
     padding = [0.1, 0.2, 0.1, 0.2, 0.1, 0.2, 0.1, 0.01, 0.01]
     for _ in range(10):
         state = get_random_state(model, padding=padding)
@@ -93,13 +51,13 @@ def test_get_random_state_with_vector_padding():
 
 
 def test_get_random_transform():
-    model, _, _ = load_panda_models()
+    model, _, _ = load_models()
     tform = get_random_transform(model, "panda_hand")
     assert isinstance(tform, pinocchio.SE3)
 
 
 def test_within_limits():
-    model, _, _ = load_panda_models()
+    model, _, _ = load_models()
 
     assert check_within_limits(model, get_random_state(model))
     assert not check_within_limits(model, model.upperPositionLimit + 0.2)
@@ -107,7 +65,7 @@ def test_within_limits():
 
 
 def test_extract_cartesian_poses():
-    model, _, _ = load_panda_models()
+    model, _, _ = load_models()
 
     q_vec = [get_random_state(model) for _ in range(5)]
     tforms = extract_cartesian_poses(model, "panda_hand", q_vec)
@@ -118,8 +76,8 @@ def test_extract_cartesian_poses():
 
 
 def test_check_collisions_at_state():
-    model, collision_model, _ = load_panda_models()
-    activate_panda_self_collision_pairs(collision_model)
+    model, collision_model, _ = load_models()
+    add_self_collisions(collision_model)
 
     collision_state = np.array(
         [
@@ -154,8 +112,8 @@ def test_check_collisions_at_state():
 
 
 def test_check_collisions_along_path():
-    model, collision_model, _ = load_panda_models()
-    activate_panda_self_collision_pairs(collision_model)
+    model, collision_model, _ = load_models()
+    add_self_collisions(collision_model)
 
     collision_state = np.array(
         [
