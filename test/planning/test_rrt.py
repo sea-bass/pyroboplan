@@ -1,5 +1,6 @@
 import numpy as np
 
+from pyroboplan.core.utils import get_path_length
 from pyroboplan.planning.rrt import RRTPlanner, RRTPlannerOptions
 from pyroboplan.models.panda import (
     load_models,
@@ -41,7 +42,7 @@ def test_plan_vanilla_rrt():
     planner = RRTPlanner(model, collision_model)
     path = planner.plan(q_start, q_goal)
 
-    # The path must exist and have more than
+    # The path must exist and have more than the start and goal nodes.
     assert path is not None
     assert len(path) > 2
     assert np.all(path[0] == q_start)
@@ -59,7 +60,7 @@ def test_plan_rrt_connect():
     add_self_collisions(collision_model)
     add_object_collisions(collision_model, visual_model)
 
-    # Plan with RRTConnect and bidirectional RRT
+    # Plan with RRTConnect and bidirectional RRT.
     q_start = np.array([0.0, 1.57, 0.0, 0.0, 1.57, 1.57, 0.0, 0.0, 0.0])
     q_goal = np.array([1.57, 1.57, 0.0, 0.0, 1.57, 1.57, 0.0, 0.0, 0.0])
 
@@ -70,7 +71,7 @@ def test_plan_rrt_connect():
     planner = RRTPlanner(model, collision_model)
     path = planner.plan(q_start, q_goal, options=options)
 
-    # The path must exist and have more than
+    # The path must exist and have more than the start and goal nodes.
     assert path is not None
     assert len(path) > 2
     assert np.all(path[0] == q_start)
@@ -81,3 +82,29 @@ def test_plan_rrt_connect():
     assert len(planner.start_tree.edges) > 1
     assert len(planner.goal_tree.nodes) > 1
     assert len(planner.goal_tree.edges) > 1
+
+
+def test_plan_rrt_star():
+    model, collision_model, visual_model = load_models()
+    add_self_collisions(collision_model)
+    add_object_collisions(collision_model, visual_model)
+
+    q_start = np.array([0.0, 1.57, 0.0, 0.0, 1.57, 1.57, 0.0, 0.0, 0.0])
+    q_goal = np.array([1.57, 1.57, 0.0, 0.0, 1.57, 1.57, 0.0, 0.0, 0.0])
+
+    # First, plan with regular RRT.
+    options = RRTPlannerOptions()
+    options.rrt_star = False
+    options.bidirectional_rrt = True
+    planner = RRTPlanner(model, collision_model)
+    path_original = planner.plan(q_start, q_goal, options=options)
+
+    # Then, plan with RRT* enabled (use maximum rewire distance for effect).
+    options.rrt_star = True
+    options.max_rewire_dist = np.inf
+    path_star = planner.plan(q_start, q_goal, options=options)
+
+    # The RRT* path must be shorter or of equal length, though it also took longer to plan.
+    assert path_original is not None
+    assert path_star is not None
+    assert get_path_length(path_star) <= get_path_length(path_original)

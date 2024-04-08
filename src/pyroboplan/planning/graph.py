@@ -90,6 +90,27 @@ class Graph:
         nodeB.neighbors.add(nodeA)
         return edge
 
+    def remove_edge(self, edge):
+        """
+        Attempts to remove an edge from a graph, if it exists.
+
+        Parameters
+        ----------
+            edge : `pyroboplan.planning.graph.Edge`
+                The edge to remove from the graph.
+
+        Returns
+        -------
+            bool
+                True if the edge was successfully removed, else False.
+
+        """
+        if edge not in self.edges:
+            return False
+
+        self.edges.remove(edge)
+        return True
+
     def get_nearest_node(self, q):
         """
         Gets the nearest node to a specified robot configuration.

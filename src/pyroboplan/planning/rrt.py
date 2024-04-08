@@ -34,6 +34,18 @@ class RRTPlannerOptions:
     Otherwise, only grows a tree from the start node.
     """
 
+    rrt_star = False
+    """
+    If true, enables the RRT* algorithm.
+    This in turn will use the `max_rewire_dist` parameter.
+    """
+
+    max_rewire_dist = np.inf
+    """
+    Maximum angular distance, in radians, to consider rewiring nodes for RRT*.
+    If set to `np.inf`, all nodes in the trees will be considering for rewiring.
+    """
+
     max_planning_time = 10.0
     """ Maximum planning time, in seconds. """
 
@@ -49,6 +61,7 @@ class RRTPlanner:
     Some good resources:
       * Original RRT paper: https://msl.cs.illinois.edu/~lavalle/papers/Lav98c.pdf
       * RRTConnect paper: https://www.cs.cmu.edu/afs/cs/academic/class/15494-s14/readings/kuffner_icra2000.pdf
+      * RRT* and PRM* paper: https://arxiv.org/abs/1105.1186
     """
 
     def __init__(self, model, collision_model):
@@ -89,9 +102,9 @@ class RRTPlanner:
         t_start = time.time()
         self.options = options
 
-        start_node = Node(q_start, parent=None)
+        start_node = Node(q_start, parent=None, cost=0.0)
         self.start_tree.add_node(start_node)
-        goal_node = Node(q_goal, parent=None)
+        goal_node = Node(q_goal, parent=None, cost=0.0)
         self.goal_tree.add_node(goal_node)
 
         goal_found = False
@@ -139,27 +152,32 @@ class RRTPlanner:
 
             # Only if extend/connect succeeded, add the new node to the tree.
             if q_new is not None:
-                new_node = Node(q_new, parent=nearest_node)
-                tree.add_node(new_node)
-                tree.add_edge(nearest_node, new_node)
+                new_node = self.add_node_to_tree(tree, q_new, nearest_node, options)
                 if start_tree_phase:
                     latest_start_tree_node = new_node
                 else:
                     latest_goal_tree_node = new_node
 
                 # Check if latest node connects directly to the other tree.
-                # If so, planning is complete.
+                # If so, add it to the tree and mark planning as complete.
                 nearest_node_in_other_tree = other_tree.get_nearest_node(new_node.q)
                 path_to_other_tree = discretize_joint_space_path(
-                    q_new, nearest_node_in_other_tree.q, self.options.max_angle_step
+                    new_node.q,
+                    nearest_node_in_other_tree.q,
+                    self.options.max_angle_step,
                 )
                 if not check_collisions_along_path(
                     self.model, self.collision_model, path_to_other_tree
                 ):
+                    new_node = self.add_node_to_tree(
+                        tree, nearest_node_in_other_tree.q, new_node, options
+                    )
                     if start_tree_phase:
+                        latest_start_tree_node = new_node
                         latest_goal_tree_node = nearest_node_in_other_tree
                     else:
                         latest_start_tree_node = nearest_node_in_other_tree
+                        latest_goal_tree_node = new_node
                     goal_found = True
 
                 # Switch to the other tree next iteration, if bidirectional mode is enabled.
@@ -263,6 +281,44 @@ class RRTPlanner:
                 cur_node = cur_node.parent
 
         return path
+
+    def add_node_to_tree(self, tree, q_new, parent_node, options=RRTPlannerOptions()):
+        """
+        Add a new node to the tree. If the RRT* algorithm is enabled, will also rewire.
+        """
+        # Add the new node to the tree
+        new_node = Node(q_new, parent=parent_node)
+        tree.add_node(new_node)
+        edge = tree.add_edge(parent_node, new_node)
+        new_node.cost = parent_node.cost + edge.cost
+
+        # If RRT* is enable it, rewire that node in the tree.
+        if options.rrt_star:
+            min_cost = new_node.cost
+            for other_node in tree.nodes:
+                # Do not consider trivial nodes.
+                if other_node == new_node or other_node == parent_node:
+                    continue
+                # Do not consider nodes farther than the configured rewire distance,
+                new_distance = configuration_distance(other_node.q, q_new)
+                if new_distance > options.max_rewire_dist:
+                    continue
+                # Rewire if this new connections would be of lower cost and is collision free.
+                new_cost = other_node.cost + new_distance
+                if new_cost < min_cost:
+                    new_path = discretize_joint_space_path(
+                        q_new, other_node.q, options.max_angle_step
+                    )
+                    if not check_collisions_along_path(
+                        self.model, self.collision_model, new_path
+                    ):
+                        new_node.parent = other_node
+                        new_node.cost = new_cost
+                        tree.remove_edge(edge)
+                        edge = tree.add_edge(other_node, new_node)
+                        min_cost = new_cost
+
+        return new_node
 
     def visualize(
         self,

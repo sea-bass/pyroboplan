@@ -8,6 +8,7 @@ from pyroboplan.core.utils import (
     check_within_limits,
     configuration_distance,
     extract_cartesian_poses,
+    get_path_length,
     get_random_state,
     get_random_transform,
 )
@@ -22,6 +23,16 @@ def test_configuration_distance():
     q_start = np.array([0.0, 0.0, 0.0, 0.0, 0.0])
     q_end = np.array([0.3, 0.0, -0.4, 0.0, 0.0])
     assert configuration_distance(q_start, q_end) == pytest.approx(0.5)
+
+
+def test_get_path_length():
+    q_path = [
+        np.array([0.0, 0.0, 0.0, 0.0, 0.0]),
+        np.array([0.3, 0.0, -0.4, 0.0, 0.0]),
+        np.array([0.3, 1.0, -0.4, 0.0, 0.0]),
+        np.array([0.3, 1.0, -0.4, 0.0, 10.0]),
+    ]
+    assert get_path_length(q_path) == pytest.approx(11.5)
 
 
 def test_get_random_state():
