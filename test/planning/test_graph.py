@@ -90,6 +90,24 @@ def test_add_edges():
     assert edgeAC.cost == pytest.approx(np.linalg.norm([6.0, 6.0, 6.0]))
 
 
+def test_remove_edges():
+    nodeA = Node([1.0, 2.0, 3.0])
+    nodeB = Node([4.0, 5.0, 6.0])
+    graph = Graph()
+    graph.add_node(nodeA)
+    graph.add_node(nodeB)
+    edgeAB = graph.add_edge(nodeA, nodeB)
+    assert len(graph.edges) == 1
+
+    # Remove a valid edge.
+    assert graph.remove_edge(edgeAB)
+    assert len(graph.edges) == 0
+
+    # Remove an edge that was already removed.
+    assert not graph.remove_edge(edgeAB)
+    assert len(graph.edges) == 0
+
+
 def test_get_nearest_node():
     nodeA = Node([1.0, 2.0, 3.0])
     nodeB = Node([4.0, 5.0, 6.0])

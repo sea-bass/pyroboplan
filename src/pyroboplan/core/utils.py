@@ -84,6 +84,26 @@ def configuration_distance(q_start, q_end):
     return np.linalg.norm(q_end - q_start)
 
 
+def get_path_length(q_path):
+    """
+    Returns the configuration distance of a path.
+
+    Parameters
+    ----------
+        q_path : list[array-like]
+            A list of joint configurations describing a path.
+
+    Returns
+    -------
+        float
+            The total configuration distance of the entire path.
+    """
+    total_distance = 0.0
+    for idx in range(1, len(q_path)):
+        total_distance += configuration_distance(q_path[idx - 1], q_path[idx])
+    return total_distance
+
+
 def get_random_state(model, padding=0.0):
     """
     Returns a random state that is within the model's joint limits.

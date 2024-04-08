@@ -37,8 +37,10 @@ if __name__ == "__main__":
     options.max_connection_dist = 0.25
     options.goal_biasing_probability = 0.15
     options.max_planning_time = 10.0
-    options.rrt_connect = True
-    options.bidirectional_rrt = True
+    options.rrt_connect = False
+    options.bidirectional_rrt = False
+    options.rrt_star = False
+    options.max_rewire_dist = 3.0
 
     planner = RRTPlanner(model, collision_model)
     path = planner.plan(q_start, q_end, options=options)
