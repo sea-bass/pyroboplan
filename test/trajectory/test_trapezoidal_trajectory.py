@@ -10,16 +10,20 @@ q = np.array(
         [0.0, 1.0, 0.0, -1.0, 0.0],
     ]
 )
-qd_max = np.array([
-    1.5,
-    0.5,
-    0.7,
-])
-qdd_max = np.array([
-    1.0,
-    1.5,
-    0.9,
-])
+qd_max = np.array(
+    [
+        1.5,
+        0.5,
+        0.7,
+    ]
+)
+qdd_max = np.array(
+    [
+        1.0,
+        1.5,
+        0.9,
+    ]
+)
 
 t = TrapezoidalVelocityTrajectory(q, qd_max, qdd_max)
 print(t.single_dof_trajectories[0].times)
