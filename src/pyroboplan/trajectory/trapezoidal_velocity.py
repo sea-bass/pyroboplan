@@ -42,7 +42,7 @@ class TrapezoidalVelocityTrajectory:
         """
 
         if len(q.shape) == 1:
-            q = q[:, np.newaxis]
+            q = q[np.newaxis, :]
         self.waypoints = q
         self.num_dims = q.shape[0]
 

@@ -5,12 +5,11 @@ from pyroboplan.trajectory.trapezoidal_velocity import TrapezoidalVelocityTrajec
 
 
 def test_single_dof_trajectory():
-    q = np.array([[1.0, 2.0, 2.0, 2.4, 5.0]])
+    q = np.array([1.0, 2.0, 2.0, 2.4, 5.0])
     qd_max = 1.0
     qdd_max = 1.0
 
     t = TrapezoidalVelocityTrajectory(q, qd_max, qdd_max)
-    # t.visualize(dt=0.01)
 
     # Check that the segments are as follows:
     # 2-segment, 0-segment (no motion), 2-segment, 3-segment
@@ -33,7 +32,6 @@ def test_multi_dof_trajectory_scalar_limits():
     qdd_max = 1.0
 
     t = TrapezoidalVelocityTrajectory(q, qd_max, qdd_max)
-    # t.visualize(dt=0.01)
 
     assert len(t.segment_times) == 5
     for traj in t.single_dof_trajectories:
@@ -53,7 +51,6 @@ def test_multi_dof_trajectory_vector_limits():
     qdd_max = np.array([1.0, 1.5, 0.9])
 
     t = TrapezoidalVelocityTrajectory(q, qd_max, qdd_max)
-    # t.visualize(dt=0.01)
 
     assert len(t.segment_times) == 5
     for dim, traj in enumerate(t.single_dof_trajectories):
@@ -62,7 +59,7 @@ def test_multi_dof_trajectory_vector_limits():
 
 
 def test_evaluate_bad_time_values():
-    q = np.array([[1.0, 2.0, 2.0, 2.4, 5.0]])
+    q = np.array([1.0, 2.0, 2.0, 2.4, 5.0])
     qd_max = 1.5
     qdd_max = 1.0
     t = TrapezoidalVelocityTrajectory(q, qd_max, qdd_max)
@@ -75,11 +72,10 @@ def test_evaluate_bad_time_values():
 
 
 def test_evaluate_single_dof():
-    q = np.array([[1.0, 2.0, 2.0, 2.4, 5.0]])
+    q = np.array([1.0, 2.0, 2.0, 2.4, 5.0])
     qd_max = 1.5
     qdd_max = 1.0
     t = TrapezoidalVelocityTrajectory(q, qd_max, qdd_max)
-    # t.visualize(dt=0.01)
 
     q, qd, qdd = t.evaluate(0.0)
     assert q == pytest.approx(1.0)
@@ -103,7 +99,6 @@ def test_evaluate_multi_dof():
     qd_max = 1.0
     qdd_max = 1.0
     t = TrapezoidalVelocityTrajectory(q, qd_max, qdd_max)
-    # t.visualize(dt=0.01)
 
     q, qd, qdd = t.evaluate(0.0)
 
@@ -122,6 +117,38 @@ def test_evaluate_multi_dof():
     assert q[2] == pytest.approx(0.0)
     assert qd[2] == pytest.approx(0.0)
     assert qdd[2] == pytest.approx(1.0)
+
+
+def test_generate_single_dof():
+    q = np.array([1.0, 2.0, 2.0, 2.4, 5.0])
+    qd_max = 1.5
+    qdd_max = 1.0
+    t = TrapezoidalVelocityTrajectory(q, qd_max, qdd_max)
+
+    t_vec, q, qd, qdd = t.generate(dt=0.01)
+    num_pts = len(t_vec)
+    assert q.shape == (1, num_pts)
+    assert qd.shape == (1, num_pts)
+    assert qdd.shape == (1, num_pts)
+
+
+def test_generate_multi_dof():
+    q = np.array(
+        [
+            [1.0, 2.0, 2.0, 2.4, 5.0],
+            [1.0, 0.0, -1.0, 0.5, 2.0],
+            [0.0, 1.0, 0.0, -1.0, 0.0],
+        ]
+    )
+    qd_max = np.array([1.5, 0.5, 0.7])
+    qdd_max = np.array([1.0, 1.5, 0.9])
+    t = TrapezoidalVelocityTrajectory(q, qd_max, qdd_max)
+
+    t_vec, q, qd, qdd = t.generate(dt=0.01)
+    num_pts = len(t_vec)
+    assert q.shape == (3, num_pts)
+    assert qd.shape == (3, num_pts)
+    assert qdd.shape == (3, num_pts)
 
 
 if __name__ == "__main__":
