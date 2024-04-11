@@ -262,8 +262,9 @@ class TrapezoidalVelocityTrajectory:
         """
 
         # Initialize the data structure
+        t_start = self.segment_times[0]
         t_final = self.segment_times[-1]
-        t_vec = np.arange(0.0, t_final, dt)
+        t_vec = np.arange(t_start, t_final, dt)
         if t_vec[-1] != t_final:
             t_vec = np.append(t_vec, t_final)
         num_pts = len(t_vec)
