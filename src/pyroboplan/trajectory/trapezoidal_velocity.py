@@ -32,7 +32,7 @@ class TrapezoidalVelocityTrajectory:
         Parameters
         ----------
             q : array-like
-                A N-by-M array of N waypoints and M dimensions.
+                A M-by-N array of M dimensions and N waypoints.
             qd_max : array-like or float
                 The maximum velocity for each dimension (size N-by-1), or scalar for all dimensions.
             qdd_max : array-like or float
