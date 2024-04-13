@@ -1,13 +1,18 @@
+"""
+Implementations of polynomial trajectories.
+
+Some good resources:
+  * Video with derivation: https://robotacademy.net.au/lesson/1d-polynomial-trajectory
+  * Chapter 9 of this book: https://hades.mech.northwestern.edu/images/7/7f/MR.pdf
+"""
+
 import numpy as np
 import warnings
 
-"""
-* https://robotacademy.net.au/lesson/1d-polynomial-trajectory
-* Chapter 9 of this book: https://hades.mech.northwestern.edu/images/7/7f/MR.pdf
-"""
-
 
 class CubicPolynomialTrajectory:
+    """Describes a cubic (3rd-order) polynomial trajectory."""
+
     def __init__(self, q, qd=0.0):
         """
         Creates a cubic (3rd-order) polynomial trajectory.
@@ -27,6 +32,8 @@ class CubicPolynomialTrajectory:
 
 
 class QuinticPolynomialTrajectory:
+    """Describes a quintic (5th-order) polynomial trajectory."""
+
     def __init__(self, t, q, qd=0.0, qdd=0.0):
         """
         Creates a quintic (5th-order) polynomial trajectory.
