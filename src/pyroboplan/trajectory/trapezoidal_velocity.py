@@ -40,7 +40,6 @@ class TrapezoidalVelocityTrajectory:
             t_start : float, optional
                 The start time of the trajectory. Defaults to zero.
         """
-
         if len(q.shape) == 1:
             q = q[np.newaxis, :]
         self.waypoints = q
@@ -298,7 +297,7 @@ class TrapezoidalVelocityTrajectory:
 
         return t_vec, q, qd, qdd
 
-    def visualize(self, dt=0.01):
+    def visualize(self, dt=0.01, joint_names=None):
         """
         Visualizes a generated trajectory with one figure window per dimension.
 
@@ -307,14 +306,20 @@ class TrapezoidalVelocityTrajectory:
             dt : float, optional
                 The sample time at which to generate the trajectory.
                 This is needed to produce the position curve.
+            joint_names : list[str], optional
+                The joint names to use for the figure titles.
+                If unset, uses the text "Dimension 1", "Dimension 2", etc.
         """
         import matplotlib.pyplot as plt
 
         vertical_line_scale_factor = 1.2
         t_vec, q, _, _ = self.generate(dt)
         for dim, traj in enumerate(self.single_dof_trajectories):
-
-            plt.figure(f"Dimension {dim + 1}")
+            if joint_names is not None:
+                title = joint_names[dim]
+            else:
+                title = f"Dimension {dim + 1}"
+            plt.figure(title)
 
             # Positions, velocities, and accelerations
             plt.plot(t_vec, q[dim, :])

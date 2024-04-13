@@ -202,7 +202,7 @@ def check_within_limits(model, q):
     )
 
 
-def extract_cartesian_poses(model, target_frame, q_vec):
+def extract_cartesian_poses(model, target_frame, q_vec, data=None):
     """
     Extracts the Cartesian poses of a specified model frame given a list of joint configurations.
 
@@ -220,7 +220,8 @@ def extract_cartesian_poses(model, target_frame, q_vec):
         list[`pinocchio.SE3`]
             A list of transforms describing the Cartesian poses of the specified frame at the provided joint configurations.
     """
-    data = model.createData()
+    if data is None:
+        data = model.createData()
     target_frame_id = model.getFrameId(target_frame)
     tforms = []
     for q in q_vec:
