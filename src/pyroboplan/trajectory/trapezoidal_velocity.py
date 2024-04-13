@@ -32,7 +32,7 @@ class TrapezoidalVelocityTrajectory:
         Parameters
         ----------
             q : array-like
-                A N-by-M array of N waypoints and M dimensions.
+                A M-by-N array of M dimensions and N waypoints.
             qd_max : array-like or float
                 The maximum velocity for each dimension (size N-by-1), or scalar for all dimensions.
             qdd_max : array-like or float
@@ -238,7 +238,7 @@ class TrapezoidalVelocityTrajectory:
             else:
                 segment_idx += 1
 
-        # If the trajectory is single-DOF, return the values as scalars
+        # If the trajectory is single-DOF, return the values as scalars.
         if len(q) == 1:
             q = q[0]
             qd = qd[0]
@@ -298,13 +298,13 @@ class TrapezoidalVelocityTrajectory:
 
         return t_vec, q, qd, qdd
 
-    def visualize(self, dt):
+    def visualize(self, dt=0.01):
         """
         Visualizes a generated trajectory with one figure window per dimension.
 
         Parameters
         ----------
-            dt : float
+            dt : float, optional
                 The sample time at which to generate the trajectory.
                 This is needed to produce the position curve.
         """
@@ -316,15 +316,11 @@ class TrapezoidalVelocityTrajectory:
 
             plt.figure(f"Dimension {dim + 1}")
 
-            # Positions
-            plt.plot(self.segment_times, self.waypoints[dim], "rx")
+            # Positions, velocities, and accelerations
             plt.plot(t_vec, q[dim, :])
-
-            # Velocities
             plt.plot(traj.times, traj.velocities)
-
-            # Accelerations
             plt.stairs(traj.accelerations, edges=traj.times)
+            plt.legend(["Position", "Velocity", "Acceleration"])
 
             # Times
             min_val = vertical_line_scale_factor * min(
@@ -345,7 +341,5 @@ class TrapezoidalVelocityTrajectory:
                 linestyles=":",
                 linewidth=1.0,
             )
-
-            plt.legend(["_nolegend_", "Position", "Velocity", "Acceleration"])
 
         plt.show()
