@@ -5,7 +5,10 @@ import pinocchio
 from pinocchio.visualize import MeshcatVisualizer
 import time
 
-from pyroboplan.core.utils import get_random_collision_free_state
+from pyroboplan.core.utils import (
+    get_random_collision_free_state,
+    extract_cartesian_poses,
+)
 from pyroboplan.models.panda import (
     load_models,
     add_self_collisions,
@@ -54,11 +57,7 @@ if __name__ == "__main__":
     traj.visualize(dt=dt, joint_names=model.names[1:])
     time.sleep(0.5)
 
-    tforms = []
-    target_frame_id = model.getFrameId("panda_hand")
-    for q in [q_start, q_mid, q_end]:
-        pinocchio.framesForwardKinematics(model, data, q)
-        tforms.append(copy.deepcopy(data.oMf[target_frame_id]))
+    tforms = extract_cartesian_poses(model, "panda_hand", [q_start, q_mid, q_end])
     viz.display(q_start)
     visualize_frames(viz, "waypoints", tforms)
     time.sleep(1.0)
