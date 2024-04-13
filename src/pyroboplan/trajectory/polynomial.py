@@ -6,108 +6,13 @@ Some good resources:
   * Chapter 9 of this book: https://hades.mech.northwestern.edu/images/7/7f/MR.pdf
 """
 
+from abc import ABC
 import numpy as np
 import warnings
 
 
-class CubicPolynomialTrajectory:
-    """Describes a cubic (3rd-order) polynomial trajectory."""
-
-    def __init__(self, q, qd=0.0):
-        """
-        Creates a cubic (3rd-order) polynomial trajectory.
-
-        Parameters
-        ----------
-            t : array-like
-                An array of length N corresponding to the time breakpoints.
-            q : array-like
-                A M-by-N array of M dimensions and N waypoints corresponding to the position breakpoints.
-            qd : array-like, optional
-                A M-by-N array of M dimensions and N waypoints corresponding to the velocity breakpoints.
-                It can also be a scalar or a 1D array to copy to all dimensions/breakpoints.
-                Defaults to zero endpoint velocities.
-        """
-        pass
-
-
-class QuinticPolynomialTrajectory:
-    """Describes a quintic (5th-order) polynomial trajectory."""
-
-    def __init__(self, t, q, qd=0.0, qdd=0.0):
-        """
-        Creates a quintic (5th-order) polynomial trajectory.
-
-        Parameters
-        ----------
-            t : array-like
-                An array of length N corresponding to the time breakpoints.
-            q : array-like
-                A M-by-N array of M dimensions and N waypoints corresponding to the position breakpoints.
-            qd : array-like, optional
-                A M-by-N array of M dimensions and N waypoints corresponding to the velocity breakpoints.
-                It can also be a scalar or a 1D array to copy to all dimensions/breakpoints.
-                Defaults to zero endpoint velocities.
-            qdd : array-like, optional
-                A M-by-N array of M dimensions and N waypoints corresponding to the acceleration breakpoints.
-                It can also be a scalar or a 1D array to copy to all dimensions/breakpoints.
-                Defaults to zero endpoint accelerations.
-        """
-
-        num_segments = len(t) - 1
-
-        if len(q.shape) == 1:
-            q = q[np.newaxis, :]
-        if q.shape[1] != num_segments + 1:
-            raise ValueError(
-                "Position breakpoints must have the same number of columns as the time breakpoints."
-            )
-        self.num_dims = q.shape[0]
-
-        if isinstance(qd, float):
-            qd = qd * np.ones_like(q)
-        if len(qd.shape) == 1:
-            qd = qd[np.newaxis, :]
-
-        if isinstance(qdd, float):
-            qdd = qdd * np.ones_like(q)
-        if len(qdd.shape) == 1:
-            qdd = qdd[np.newaxis, :]
-
-        self.segment_times = []
-        self.coeffs = [[] for _ in range(self.num_dims)]
-
-        # Fit quintic trajectory coefficients to each segment
-        for idx in range(num_segments):
-            t_breakpoints = [t[idx], t[idx + 1]]
-            self.segment_times.append(t_breakpoints)
-
-            for dim in range(self.num_dims):
-                # These are in the form
-                # q[0], q[T], qd[0], qd[T], qdd[0], qdd[T]
-                endpoints = np.array(
-                    [
-                        q[dim, idx],
-                        q[dim, idx + 1],
-                        qd[dim, idx],
-                        qd[dim, idx + 1],
-                        qdd[dim, idx],
-                        qdd[dim, idx + 1],
-                    ]
-                )
-                T = t_breakpoints[1] - t_breakpoints[0]
-                M = np.array(
-                    [
-                        [0, 0, 0, 0, 0, 1],
-                        [T**5, T**4, T**3, T**2, T, 1],
-                        [0, 0, 0, 0, 1, 0],
-                        [5 * T**4, 4 * T**3, 3 * T**2, 2 * T, 1, 0],
-                        [0, 0, 0, 2, 0, 0],
-                        [20 * T**3, 12 * T**2, 6 * T, 2, 0, 0],
-                    ]
-                )
-                coeffs = np.linalg.solve(M, endpoints)
-                self.coeffs[dim].append(coeffs)
+class PolynomialTrajectoryBase(ABC):
+    """Abstract base class for polynomial trajectories."""
 
     def evaluate(self, t):
         """
@@ -251,3 +156,146 @@ class QuinticPolynomialTrajectory:
             )
 
         plt.show()
+
+
+class CubicPolynomialTrajectory(PolynomialTrajectoryBase):
+    """Describes a cubic (3rd-order) polynomial trajectory."""
+
+    def __init__(self, t, q, qd=0.0):
+        """
+        Creates a cubic (3rd-order) polynomial trajectory.
+
+        Parameters
+        ----------
+            t : array-like
+                An array of length N corresponding to the time breakpoints.
+            q : array-like
+                A M-by-N array of M dimensions and N waypoints corresponding to the position breakpoints.
+            qd : array-like, optional
+                A M-by-N array of M dimensions and N waypoints corresponding to the velocity breakpoints.
+                It can also be a scalar or a 1D array to copy to all dimensions/breakpoints.
+                Defaults to zero endpoint velocities.
+        """
+        # Validate inputs.
+        num_segments = len(t) - 1
+
+        if len(q.shape) == 1:
+            q = q[np.newaxis, :]
+        if q.shape[1] != num_segments + 1:
+            raise ValueError(
+                "Position breakpoints must have the same number of columns as the time breakpoints."
+            )
+        self.num_dims = q.shape[0]
+
+        if isinstance(qd, float):
+            qd = qd * np.ones_like(q)
+        if len(qd.shape) == 1:
+            qd = qd[np.newaxis, :]
+
+        # Fit cubic trajectory coefficients to each segment.
+        self.segment_times = []
+        self.coeffs = [[] for _ in range(self.num_dims)]
+        for idx in range(num_segments):
+            t_breakpoints = [t[idx], t[idx + 1]]
+            self.segment_times.append(t_breakpoints)
+
+            for dim in range(self.num_dims):
+                # These are in the form:
+                # q[0], q[T], qd[0], qd[T]
+                endpoints = np.array(
+                    [
+                        q[dim, idx],
+                        q[dim, idx + 1],
+                        qd[dim, idx],
+                        qd[dim, idx + 1],
+                    ]
+                )
+                T = t_breakpoints[1] - t_breakpoints[0]
+                M = np.array(
+                    [
+                        [0, 0, 0, 1],
+                        [T**3, T**2, T, 1],
+                        [0, 0, 1, 0],
+                        [3 * T**2, 2 * T, 1, 0],
+                    ]
+                )
+                coeffs = np.linalg.solve(M, endpoints)
+                self.coeffs[dim].append(coeffs)
+
+
+class QuinticPolynomialTrajectory(PolynomialTrajectoryBase):
+    """Describes a quintic (5th-order) polynomial trajectory."""
+
+    def __init__(self, t, q, qd=0.0, qdd=0.0):
+        """
+        Creates a quintic (5th-order) polynomial trajectory.
+
+        Parameters
+        ----------
+            t : array-like
+                An array of length N corresponding to the time breakpoints.
+            q : array-like
+                A M-by-N array of M dimensions and N waypoints corresponding to the position breakpoints.
+            qd : array-like, optional
+                A M-by-N array of M dimensions and N waypoints corresponding to the velocity breakpoints.
+                It can also be a scalar or a 1D array to copy to all dimensions/breakpoints.
+                Defaults to zero endpoint velocities.
+            qdd : array-like, optional
+                A M-by-N array of M dimensions and N waypoints corresponding to the acceleration breakpoints.
+                It can also be a scalar or a 1D array to copy to all dimensions/breakpoints.
+                Defaults to zero endpoint accelerations.
+        """
+        # Validate inputs.
+        num_segments = len(t) - 1
+
+        if len(q.shape) == 1:
+            q = q[np.newaxis, :]
+        if q.shape[1] != num_segments + 1:
+            raise ValueError(
+                "Position breakpoints must have the same number of columns as the time breakpoints."
+            )
+        self.num_dims = q.shape[0]
+
+        if isinstance(qd, float):
+            qd = qd * np.ones_like(q)
+        if len(qd.shape) == 1:
+            qd = qd[np.newaxis, :]
+
+        if isinstance(qdd, float):
+            qdd = qdd * np.ones_like(q)
+        if len(qdd.shape) == 1:
+            qdd = qdd[np.newaxis, :]
+
+        # Fit quintic trajectory coefficients to each segment.
+        self.segment_times = []
+        self.coeffs = [[] for _ in range(self.num_dims)]
+        for idx in range(num_segments):
+            t_breakpoints = [t[idx], t[idx + 1]]
+            self.segment_times.append(t_breakpoints)
+
+            for dim in range(self.num_dims):
+                # These are in the form:
+                # q[0], q[T], qd[0], qd[T], qdd[0], qdd[T]
+                endpoints = np.array(
+                    [
+                        q[dim, idx],
+                        q[dim, idx + 1],
+                        qd[dim, idx],
+                        qd[dim, idx + 1],
+                        qdd[dim, idx],
+                        qdd[dim, idx + 1],
+                    ]
+                )
+                T = t_breakpoints[1] - t_breakpoints[0]
+                M = np.array(
+                    [
+                        [0, 0, 0, 0, 0, 1],
+                        [T**5, T**4, T**3, T**2, T, 1],
+                        [0, 0, 0, 0, 1, 0],
+                        [5 * T**4, 4 * T**3, 3 * T**2, 2 * T, 1, 0],
+                        [0, 0, 0, 2, 0, 0],
+                        [20 * T**3, 12 * T**2, 6 * T, 2, 0, 0],
+                    ]
+                )
+                coeffs = np.linalg.solve(M, endpoints)
+                self.coeffs[dim].append(coeffs)
