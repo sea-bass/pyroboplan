@@ -112,7 +112,7 @@ class PolynomialTrajectoryBase(ABC):
 
         return t_vec, q, qd, qdd
 
-    def visualize(self, dt=0.01):
+    def visualize(self, dt=0.01, joint_names=None):
         """
         Visualizes a generated trajectory with one figure window per dimension.
 
@@ -120,6 +120,9 @@ class PolynomialTrajectoryBase(ABC):
         ----------
             dt : float, optional
                 The sample time at which to generate the trajectory by evaluating the polynomial.
+            joint_names : list[str], optional
+                The joint names to use for the figure titles.
+                If unset, uses the text "Dimension 1", "Dimension 2", etc.
         """
         import matplotlib.pyplot as plt
 
@@ -127,7 +130,11 @@ class PolynomialTrajectoryBase(ABC):
         vertical_line_scale_factor = 1.2
 
         for dim in range(self.num_dims):
-            plt.figure(f"Dimension {dim + 1}")
+            if joint_names is not None:
+                title = joint_names[dim]
+            else:
+                title = f"Dimension {dim + 1}"
+            plt.figure(title)
 
             # Positions, velocities, and accelerations
             plt.plot(t_vec, q[dim, :])
