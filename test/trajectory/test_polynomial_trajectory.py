@@ -4,7 +4,7 @@ import pytest
 from pyroboplan.trajectory.polynomial import QuinticPolynomialTrajectory
 
 
-def test_single_dof_trajectory():
+def test_single_dof_quintic_trajectory():
     t = np.array([0.0, 3.0, 6.0, 9.0])
     q = np.array([0.0, 1.0, -1.2, 0.25])
     qd = np.array([0.0, -0.1, 0.1, 0.0])
@@ -14,7 +14,7 @@ def test_single_dof_trajectory():
     traj.visualize()
 
 
-def test_multi_dof_trajectory():
+def test_multi_dof_quintic_trajectory():
     t = np.array([0.0, 3.0, 6.0, 9.0])
     q = np.array(
         [
@@ -35,4 +35,4 @@ def test_multi_dof_trajectory():
 
 
 if __name__ == "__main__":
-    test_multi_dof_trajectory()
+    test_multi_dof_quintic_trajectory()
