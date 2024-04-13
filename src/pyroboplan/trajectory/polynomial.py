@@ -129,14 +129,35 @@ class QuinticPolynomialTrajectory:
         qdd = np.zeros(self.num_dims)
 
         # Handle edge cases.
-        if t < self.segment_times[0]:
+        if t < self.segment_times[0][0]:
             warnings.warn("Cannot evaluate trajectory before its start time.")
             return None
-        elif t > self.segment_times[-1]:
+        elif t > self.segment_times[-1][-1]:
             warnings.warn("Cannot evaluate trajectory after its end time.")
             return None
 
-        pass  # TODO
+        segment_idx = 0
+        evaluated = False
+        while not evaluated:
+            t_segment_start = self.segment_times[segment_idx][0]
+            t_segment_final = self.segment_times[segment_idx][-1]
+            if t <= t_segment_final:
+                for dim in range(self.num_dims):
+                    coeffs = self.coeffs[dim][segment_idx]
+                    dt = t - t_segment_start
+                    q[dim] = np.polyval(coeffs, dt)
+                    qd[dim] = np.polyval(np.polyder(coeffs, 1), dt)
+                    qdd[dim] = np.polyval(np.polyder(coeffs, 2), dt)
+                evaluated = True
+            else:
+                segment_idx += 1
+
+        # If the trajectory is single-DOF, return the values as scalars.
+        if len(q) == 1:
+            q = q[0]
+            qd = qd[0]
+            qdd = qdd[0]
+        return q, qd, qdd
 
     def generate(self, dt):
         """
@@ -187,6 +208,14 @@ class QuinticPolynomialTrajectory:
         return t_vec, q, qd, qdd
 
     def visualize(self, dt=0.01):
+        """
+        Visualizes a generated trajectory with one figure window per dimension.
+
+        Parameters
+        ----------
+            dt : float, optional
+                The sample time at which to generate the trajectory by evaluating the polynomial.
+        """
         import matplotlib.pyplot as plt
 
         t_vec, q, qd, qdd = self.generate(dt)
@@ -194,6 +223,8 @@ class QuinticPolynomialTrajectory:
 
         for dim in range(self.num_dims):
             plt.figure(f"Dimension {dim + 1}")
+
+            # Positions, velocities, and accelerations
             plt.plot(t_vec, q[dim, :])
             plt.plot(t_vec, qd[dim, :])
             plt.plot(t_vec, qdd[dim, :])
