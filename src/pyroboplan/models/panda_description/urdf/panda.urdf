@@ -56,9 +56,6 @@
             <geometry>
                 <mesh filename="package://panda_description/meshes/collision/link2.stl" />
             </geometry>
-            <geometry>
-                <mesh filename="package://panda_description/meshes/collision/link2.stl" />
-            </geometry>
         </collision>
     </link>
     <joint name="panda_joint2" type="revolute">
