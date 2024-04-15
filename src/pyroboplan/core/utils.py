@@ -228,3 +228,69 @@ def extract_cartesian_poses(model, target_frame, q_vec, data=None):
         pinocchio.framesForwardKinematics(model, data, q)
         tforms.append(copy.deepcopy(data.oMf[target_frame_id]))
     return tforms
+
+
+def get_collision_geometry_ids(model, collision_model, body):
+    """
+    Gets a list of collision geometry model IDs for a specified body name.
+
+    Parameters
+    ----------
+        model : `pinocchio.Model`
+            The model to use for getting frame IDs.
+        collision_model : `pinocchio.Model`
+            The model to use for collision checking.
+        body : str
+            The name of the body.
+            This can be directly the name of a geometry in the collision model,
+            or it can be the name of the frame in the main model.
+
+    Return
+    ------
+        list[int]
+            A list of collision geometry IDs corresponding to the body name.
+    """
+    body_collision_geom_ids = []
+
+    # First, check if this is directly a collision geometry.
+    body_collision_geom_id = collision_model.getGeometryId(body)
+    if body_collision_geom_id < collision_model.ngeoms:
+        body_collision_geom_ids.append(body_collision_geom_id)
+    else:
+        # Otherwise, look for the frame name in the model and return its associated collision objects.
+        body_frame_id = model.getFrameId(body)
+        if body_frame_id < model.nframes:
+            for id, obj in enumerate(collision_model.geometryObjects):
+                if obj.parentFrame == body_frame_id:
+                    body_collision_geom_ids.append(id)
+
+    return body_collision_geom_ids
+
+
+def set_collisions(model, collision_model, body1, body2, enable):
+    """
+    Sets collision checking between two bodies by searching for their corresponding geometry objects in the collision model.
+
+    Parameters
+    ----------
+        model : `pinocchio.Model`
+            The model to use for getting frame IDs.
+        collision_model : `pinocchio.Model`
+            The model to use for collision checking.
+        body1 : str
+            The name of the first body.
+        body2 : str
+            The name of the second body.
+        enable : bool
+            If True, enables collisions. If False, disables collisions.
+    """
+    body1_collision_ids = get_collision_geometry_ids(model, collision_model, body1)
+    body2_collision_ids = get_collision_geometry_ids(model, collision_model, body2)
+
+    for id1 in body1_collision_ids:
+        for id2 in body2_collision_ids:
+            pair = pinocchio.CollisionPair(id1, id2)
+            if enable:
+                collision_model.addCollisionPair(pair)
+            else:
+                collision_model.removeCollisionPair(pair)

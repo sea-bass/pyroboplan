@@ -97,7 +97,7 @@ def test_ik_solve_impossible_ik():
 
 def test_ik_in_collision():
     model, collision_model, _ = load_models()
-    add_self_collisions(collision_model)
+    add_self_collisions(model, collision_model)
     target_frame = "panda_hand"
 
     # Target is reachable, but in self-collision.

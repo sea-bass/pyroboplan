@@ -8,9 +8,11 @@ from pyroboplan.core.utils import (
     check_within_limits,
     configuration_distance,
     extract_cartesian_poses,
+    get_collision_geometry_ids,
     get_path_length,
     get_random_state,
     get_random_transform,
+    set_collisions,
 )
 from pyroboplan.models.panda import load_models, add_self_collisions
 
@@ -88,7 +90,7 @@ def test_extract_cartesian_poses():
 
 def test_check_collisions_at_state():
     model, collision_model, _ = load_models()
-    add_self_collisions(collision_model)
+    add_self_collisions(model, collision_model)
 
     collision_state = np.array(
         [
@@ -124,7 +126,7 @@ def test_check_collisions_at_state():
 
 def test_check_collisions_along_path():
     model, collision_model, _ = load_models()
-    add_self_collisions(collision_model)
+    add_self_collisions(model, collision_model)
 
     collision_state = np.array(
         [
@@ -174,3 +176,37 @@ def test_check_collisions_along_path():
     assert not check_collisions_along_path(
         model, collision_model, [free_state_1, free_state_2, free_state_1]
     )
+
+
+def test_get_collision_geometry_ids():
+    model, collision_model, _ = load_models()
+
+    # This is directly the name of a collision geometry.
+    body = "panda_link1_0"
+    ids = get_collision_geometry_ids(model, collision_model, body)
+    assert ids == [collision_model.getGeometryId(body)]
+
+    # This is the name of a frame in the main model.
+    body = "panda_link3"
+    ids = get_collision_geometry_ids(model, collision_model, body)
+    assert ids == [collision_model.getGeometryId("panda_link3_0")]
+
+    # This is not a valid body name.
+    body = "panda_link1000"
+    ids = get_collision_geometry_ids(model, collision_model, body)
+    assert ids == []
+
+
+def test_set_collisions():
+    model, collision_model, _ = load_models()
+    assert len(collision_model.collisionPairs) == 0
+
+    # Enable the collisions
+    set_collisions(model, collision_model, "panda_link4", "panda_link5", True)
+    assert len(collision_model.collisionPairs) == 1
+    assert collision_model.collisionPairs[0].first == 4
+    assert collision_model.collisionPairs[0].second == 5
+
+    # Disable the collisions
+    set_collisions(model, collision_model, "panda_link4", "panda_link5", False)
+    assert len(collision_model.collisionPairs) == 0

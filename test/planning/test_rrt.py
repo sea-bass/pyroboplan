@@ -32,8 +32,8 @@ def test_plan_trivial_rrt():
 
 def test_plan_vanilla_rrt():
     model, collision_model, visual_model = load_models()
-    add_self_collisions(collision_model)
-    add_object_collisions(collision_model, visual_model)
+    add_self_collisions(model, collision_model)
+    add_object_collisions(model, collision_model, visual_model)
 
     # Plan with default parameters
     q_start = np.array([0.0, 1.57, 0.0, 0.0, 1.57, 1.57, 0.0, 0.0, 0.0])
@@ -57,8 +57,8 @@ def test_plan_vanilla_rrt():
 
 def test_plan_rrt_connect():
     model, collision_model, visual_model = load_models()
-    add_self_collisions(collision_model)
-    add_object_collisions(collision_model, visual_model)
+    add_self_collisions(model, collision_model)
+    add_object_collisions(model, collision_model, visual_model)
 
     # Plan with RRTConnect and bidirectional RRT.
     q_start = np.array([0.0, 1.57, 0.0, 0.0, 1.57, 1.57, 0.0, 0.0, 0.0])
@@ -86,8 +86,8 @@ def test_plan_rrt_connect():
 
 def test_plan_rrt_star():
     model, collision_model, visual_model = load_models()
-    add_self_collisions(collision_model)
-    add_object_collisions(collision_model, visual_model)
+    add_self_collisions(model, collision_model)
+    add_object_collisions(model, collision_model, visual_model)
 
     q_start = np.array([0.0, 1.57, 0.0, 0.0, 1.57, 1.57, 0.0, 0.0, 0.0])
     q_goal = np.array([1.57, 1.57, 0.0, 0.0, 1.57, 1.57, 0.0, 0.0, 0.0])

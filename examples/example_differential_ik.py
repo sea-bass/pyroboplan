@@ -14,8 +14,8 @@ from pyroboplan.models.panda import (
 if __name__ == "__main__":
     # Create models and data
     model, collision_model, visual_model = load_models()
-    add_self_collisions(collision_model)
-    add_object_collisions(collision_model, visual_model)
+    add_self_collisions(model, collision_model)
+    add_object_collisions(model, collision_model, visual_model)
 
     data = model.createData()
     collision_data = collision_model.createData()
