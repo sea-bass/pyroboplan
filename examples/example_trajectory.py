@@ -1,7 +1,5 @@
-import copy
 import matplotlib.pyplot as plt
 import numpy as np
-import pinocchio
 from pinocchio.visualize import MeshcatVisualizer
 import time
 
@@ -21,7 +19,7 @@ from pyroboplan.visualization.meshcat_utils import visualize_frames
 if __name__ == "__main__":
     # Create models and data
     model, collision_model, visual_model = load_models()
-    add_self_collisions(collision_model)
+    add_self_collisions(model, collision_model)
     data = model.createData()
     collision_data = collision_model.createData()
 

@@ -5,6 +5,7 @@ import numpy as np
 import os
 import pinocchio
 
+from ..core.utils import set_collisions
 from .utils import get_example_models_folder
 
 
@@ -24,53 +25,52 @@ def load_models():
     return pinocchio.buildModelsFromUrdf(urdf_filename, package_dirs=models_folder)
 
 
-def add_self_collisions(collision_model):
+def add_self_collisions(model, collision_model):
     """
     Adds link self-collisions to the Panda collision model.
 
     Parameters
     ----------
+        model : `pinocchio.Model`
+            The Panda model.
         collision_model : `pinocchio.Model`
             The Panda collision geometry model.
     """
     self_collision_pair_names = [
-        ("panda_link0_0", "panda_link2_0"),
-        ("panda_link0_0", "panda_link3_0"),
-        ("panda_link0_0", "panda_link4_0"),
-        ("panda_link0_0", "panda_link5_0"),
-        ("panda_link0_0", "panda_link6_0"),
-        ("panda_link0_0", "panda_link7_0"),
-        ("panda_link1_0", "panda_link3_0"),
-        ("panda_link1_0", "panda_link4_0"),
-        ("panda_link1_0", "panda_link5_0"),
-        ("panda_link1_0", "panda_link6_0"),
-        ("panda_link1_0", "panda_link7_0"),
-        ("panda_link2_0", "panda_link4_0"),
-        ("panda_link2_0", "panda_link5_0"),
-        ("panda_link2_0", "panda_link6_0"),
-        ("panda_link2_0", "panda_link7_0"),
-        ("panda_link3_0", "panda_link5_0"),
-        ("panda_link3_0", "panda_link6_0"),
-        ("panda_link3_0", "panda_link7_0"),
-        ("panda_link4_0", "panda_link6_0"),
-        ("panda_link4_0", "panda_link7_0"),
-        ("panda_link5_0", "panda_link7_0"),
+        ("panda_link0", "panda_link2"),
+        ("panda_link0", "panda_link3"),
+        ("panda_link0", "panda_link4"),
+        ("panda_link0", "panda_link5"),
+        ("panda_link0", "panda_link6"),
+        ("panda_link0", "panda_link7"),
+        ("panda_link1", "panda_link3"),
+        ("panda_link1", "panda_link4"),
+        ("panda_link1", "panda_link5"),
+        ("panda_link1", "panda_link6"),
+        ("panda_link1", "panda_link7"),
+        ("panda_link2", "panda_link4"),
+        ("panda_link2", "panda_link5"),
+        ("panda_link2", "panda_link6"),
+        ("panda_link2", "panda_link7"),
+        ("panda_link3", "panda_link5"),
+        ("panda_link3", "panda_link6"),
+        ("panda_link3", "panda_link7"),
+        ("panda_link4", "panda_link6"),
+        ("panda_link4", "panda_link7"),
+        ("panda_link5", "panda_link7"),
     ]
     for pair in self_collision_pair_names:
-        collision_model.addCollisionPair(
-            pinocchio.CollisionPair(
-                collision_model.getGeometryId(pair[0]),
-                collision_model.getGeometryId(pair[1]),
-            )
-        )
+        set_collisions(model, collision_model, pair[0], pair[1], True)
 
 
-def add_object_collisions(collision_model, visual_model):
+def add_object_collisions(model, collision_model, visual_model):
     """
     Adds link self-collisions to the Panda collision model.
 
     Parameters
     ----------
+        model : `pinocchio.Model`
+            The Panda model.
         collision_model : `pinocchio.Model`
             The Panda collision geometry model.
         visual_model : `pinocchio.Model`
@@ -140,9 +140,4 @@ def add_object_collisions(collision_model, visual_model):
     ]
     for obstacle_name in obstacle_names:
         for collision_name in collision_names:
-            collision_model.addCollisionPair(
-                pinocchio.CollisionPair(
-                    collision_model.getGeometryId(collision_name),
-                    collision_model.getGeometryId(obstacle_name),
-                )
-            )
+            set_collisions(model, collision_model, obstacle_name, collision_name, True)

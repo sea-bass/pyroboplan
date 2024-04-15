@@ -5,13 +5,13 @@ import meshcat.geometry as mg
 import numpy as np
 import time
 
-from pyroboplan.core.utils import extract_cartesian_poses
+from pyroboplan.core.utils import extract_cartesian_poses, set_collisions
 from pyroboplan.models.panda import load_models, add_self_collisions
 from pyroboplan.planning.utils import discretize_joint_space_path
 from pyroboplan.visualization.meshcat_utils import visualize_frames
 
 
-def prepare_collision_scene(collision_model):
+def prepare_collision_scene(model, collision_model):
     """Helper function to create a collision scene for this example."""
 
     # Modify the collision model so all the Panda links are translucent
@@ -44,19 +44,14 @@ def prepare_collision_scene(collision_model):
     obstacle_names = ["obstacle_0", "obstacle_1"]
     for obstacle_name in obstacle_names:
         for collision_name in collision_names:
-            collision_model.addCollisionPair(
-                pinocchio.CollisionPair(
-                    collision_model.getGeometryId(collision_name),
-                    collision_model.getGeometryId(obstacle_name),
-                )
-            )
+            set_collisions(model, collision_model, obstacle_name, collision_name, True)
 
 
 if __name__ == "__main__":
     # Create models and data
     model, collision_model, visual_model = load_models()
-    add_self_collisions(collision_model)
-    prepare_collision_scene(collision_model)
+    add_self_collisions(model, collision_model)
+    prepare_collision_scene(model, collision_model)
 
     data = model.createData()
     collision_data = collision_model.createData()
