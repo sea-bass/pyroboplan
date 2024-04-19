@@ -7,10 +7,10 @@ from pyroboplan.trajectory.trapezoidal_velocity import TrapezoidalVelocityTrajec
 
 class CartesianPlannerOptions:
     def __init__(self):
-        self.max_linear_velocity = 0.1
-        self.max_linear_acceleration = 0.5
-
-        self.max_angular_velocity = 0.5
+        self.use_trapezoidal_scaling = True
+        self.max_linear_velocity = 1.0
+        self.max_linear_acceleration = 1.0
+        self.max_angular_velocity = 1.0
         self.max_angular_acceleration = 1.0
 
 
@@ -32,38 +32,53 @@ class CartesianPlanner:
             tform_start = tforms[idx - 1]
             tform_end = tforms[idx]
 
-            # Figure out a time scaling using a trapezoidal velocity profile.
+            # Figure out a time scaling.
             tform_diff = tform_end.actInv(tform_start)
             linear_distance = np.linalg.norm(tform_diff.translation)
             angular_distance = Rotation.from_matrix(tform_diff.rotation).magnitude()
 
-            if linear_distance > 0:
-                normalized_linear_accel = (
-                    options.max_linear_acceleration / linear_distance
+            if options.use_trapezoidal_scaling:
+                # Use trapezoidal scaling limited by both the linear and angular velocities and accelerations.
+                if linear_distance > 0:
+                    normalized_linear_accel = (
+                        options.max_linear_acceleration / linear_distance
+                    )
+                    normalized_linear_vel = (
+                        options.max_linear_velocity / linear_distance
+                    )
+                else:
+                    normalized_linear_accel = normalized_linear_vel = np.inf
+
+                if angular_distance > 0:
+                    normalized_angular_accel = (
+                        options.max_angular_acceleration / angular_distance
+                    )
+                    normalized_angular_vel = (
+                        options.max_angular_velocity / angular_distance
+                    )
+                else:
+                    normalized_angular_accel = normalized_angular_vel = np.inf
+
+                max_normalized_accel = min(
+                    normalized_linear_accel, normalized_angular_accel
                 )
-                normalized_linear_vel = options.max_linear_velocity / linear_distance
-            else:
-                normalized_linear_accel = normalized_linear_vel = np.inf
+                max_normalized_vel = min(normalized_linear_vel, normalized_angular_vel)
 
-            if angular_distance > 0:
-                normalized_angular_accel = (
-                    options.max_angular_acceleration / angular_distance
+                traj = TrapezoidalVelocityTrajectory(
+                    np.array([0.0, 1.0]), max_normalized_vel, max_normalized_accel
                 )
-                normalized_angular_vel = options.max_angular_velocity / angular_distance
+                final_time = cur_time + traj.segment_times[-1]
+                self.segments.append((traj, final_time))
             else:
-                normalized_angular_accel = normalized_angular_vel = np.inf
+                # Use constant velocity at the specified max
+                constant_vel_time = max(
+                    linear_distance / options.max_linear_velocity,
+                    angular_distance / options.max_angular_velocity,
+                )
+                final_time = cur_time + constant_vel_time
+                self.segments.append((None, final_time))
 
-            max_normalized_accel = min(
-                normalized_linear_accel, normalized_angular_accel
-            )
-            max_normalized_vel = min(normalized_linear_vel, normalized_angular_vel)
-
-            traj = TrapezoidalVelocityTrajectory(
-                np.array([0.0, 1.0]), max_normalized_vel, max_normalized_accel
-            )
-            final_time = cur_time + traj.segment_times[-1]
             cur_time = final_time
-            self.segments.append((traj, cur_time))
 
     def generate(self, q_init, dt):
         """Generates at a particular sample time."""
@@ -104,8 +119,11 @@ class CartesianPlanner:
             if t <= t_final_cur:
                 # Find the normalized interpolation time.
                 dt = t - t_prev
-                dt = min(dt, traj_cur.segment_times[-1])  # Avoids numerical issues?
-                alpha, _, _ = traj_cur.evaluate(dt)
+                if self.options.use_trapezoidal_scaling:
+                    dt = min(dt, traj_cur.segment_times[-1])  # Avoids numerical issues?
+                    alpha, _, _ = traj_cur.evaluate(dt)
+                else:
+                    alpha = dt / (t_final_cur - t_prev)
 
                 # Interpolate position and rotation separately.
                 p = (
