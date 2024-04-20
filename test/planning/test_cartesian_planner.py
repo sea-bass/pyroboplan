@@ -6,15 +6,20 @@ from scipy.spatial.transform import Rotation
 from pyroboplan.core.utils import extract_cartesian_pose
 from pyroboplan.ik.differential_ik import DifferentialIk
 from pyroboplan.models.panda import load_models, add_self_collisions
-from pyroboplan.planning.cartesian_planner import CartesianPlanner, CartesianPlannerOptions
+from pyroboplan.planning.cartesian_planner import (
+    CartesianPlanner,
+    CartesianPlannerOptions,
+)
 
 
 @pytest.mark.parametrize(
     "max_vals",
-    [(0.0, 1.0, 1.0, 1.0),
-     (1.0, 0.0, 1.0, 1.0),
-     (1.0, 1.0, 0.0, 1.0),
-     (1.0, 1.0, 1.0, 0.0)],
+    [
+        (0.0, 1.0, 1.0, 1.0),
+        (1.0, 0.0, 1.0, 1.0),
+        (1.0, 1.0, 0.0, 1.0),
+        (1.0, 1.0, 1.0, 0.0),
+    ],
 )
 def test_invalid_cartesian_planner_options(max_vals):
     with pytest.raises(ValueError):
@@ -24,6 +29,7 @@ def test_invalid_cartesian_planner_options(max_vals):
             max_angular_velocity=max_vals[2],
             max_angular_acceleration=max_vals[3],
         )
+
 
 @pytest.mark.parametrize("use_trapezoidal_scaling", [(True,), (False,)])
 def test_cartesian_planner(use_trapezoidal_scaling):
@@ -41,7 +47,7 @@ def test_cartesian_planner(use_trapezoidal_scaling):
         init * pinocchio.SE3(rot, np.array([0.0, 0.0, 0.2])),
         init * pinocchio.SE3(np.eye(3), np.array([0.0, 0.2, 0.2])),
     ]
-    
+
     # Define the IK solve to use.
     ik = DifferentialIk(
         model,
@@ -76,7 +82,7 @@ def test_cartesian_planner_failure():
         init,
         init * pinocchio.SE3(np.eye(3), np.array([10.0, 10.0, 1.0])),
     ]
-    
+
     # Define the IK solve to use.
     ik = DifferentialIk(
         model,

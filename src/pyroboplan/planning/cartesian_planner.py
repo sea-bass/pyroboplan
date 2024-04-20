@@ -60,7 +60,8 @@ class CartesianPlanner:
     robot joint configurations to achieve this task-space trajectory.
 
     Some good resources:
-      *
+      * Slides: https://www.diag.uniroma1.it/~deluca/rob1_en/14_TrajectoryPlanningCartesian.pdf
+      * PickNik blog: https://picknik.ai/cartesian%20planners/moveit/motion%20planning/2021/01/07/guide-to-cartesian-planners-in-moveit.html
     """
 
     def __init__(
