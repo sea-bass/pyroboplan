@@ -214,6 +214,8 @@ def extract_cartesian_pose(model, target_frame, q, data=None):
             The name of the target frame.
         q : array-like
             The joint configuration values describing the robot state.
+        data : `pinocchio.Data`, optional
+            The model data to use. If not set, one will be created.
 
     Returns
     -------
@@ -239,6 +241,8 @@ def extract_cartesian_poses(model, target_frame, q_vec, data=None):
             The name of the target frame.
         q_vec : array-like
             A list of joint configuration values describing the path.
+        data : `pinocchio.Data`, optional
+            The model data to use. If not set, one will be created.
 
     Returns
     -------

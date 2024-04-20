@@ -1,3 +1,5 @@
+""" Utilities for Cartesian (or task space) motion planning. """
+
 import numpy as np
 import pinocchio
 from scipy.spatial.transform import Rotation, Slerp
@@ -6,24 +8,86 @@ from pyroboplan.trajectory.trapezoidal_velocity import TrapezoidalVelocityTrajec
 
 
 class CartesianPlannerOptions:
-    def __init__(self):
-        self.use_trapezoidal_scaling = True
-        self.max_linear_velocity = 1.0
-        self.max_linear_acceleration = 1.0
-        self.max_angular_velocity = 1.0
-        self.max_angular_acceleration = 1.0
+    """Options for Cartesian planning."""
+
+    def __init__(
+        self,
+        use_trapezoidal_scaling=True,
+        max_linear_velocity=1.0,
+        max_linear_acceleration=1.0,
+        max_angular_velocity=1.0,
+        max_angular_acceleration=1.0,
+    ):
+        """
+        Initializes a set of Cartesian planning options.
+
+        Parameters
+        ----------
+            use_trapezoidal_scaling : bool
+                If True, uses trapezoidal velocity time scaling.
+                Otherwise, uses linear time scaling.
+            max_linear_velocity : float
+                The maximum linear velocity magnitude, in meters per second.
+            max_linear_acceleration : float
+                The maximum linear acceleration magnitude, in meters per second squared.
+            max_angular_velocity : float
+                The maximum angular velocity magnitude, in radians per second.
+            max_angular_acceleration : float
+                The maximum angular acceleration magnitude, in radians per second squared.
+        """
+        self.use_trapezoidal_scaling = use_trapezoidal_scaling
+
+        if max_linear_velocity <= 0:
+            raise ValueError("Max linear velocity must be positive.")
+        self.max_linear_velocity = max_linear_velocity
+        if max_linear_acceleration <= 0:
+            raise ValueError("Max linear acceleration must be positive.")
+        self.max_linear_acceleration = max_linear_acceleration
+        if max_angular_velocity <= 0:
+            raise ValueError("Max angular velocity must be positive.")
+        self.max_angular_velocity = max_angular_velocity
+        if max_angular_acceleration <= 0:
+            raise ValueError("Max angular acceleration must be positive.")
+        self.max_angular_acceleration = max_angular_acceleration
 
 
 class CartesianPlanner:
+    """
+    Cartesian (or task space) motion planner.
+
+    This tool will plan a Cartesian trajectory through a set of poses,
+    and then use an inverse kinematics solver to incrementally solve for valid
+    robot joint configurations to achieve this task-space trajectory.
+
+    Some good resources:
+      *
+    """
+
     def __init__(
         self, model, target_frame, tforms, ik_solver, options=CartesianPlannerOptions()
     ):
+        """
+        Initializes a Cartesian motion planner instance.
+
+        Parameters
+        ----------
+            model : `pinocchio.Model`
+                The model to use for motion planning.
+            target_frame : str
+                The name of the target frame in the model defining the Cartesian motion.
+            tforms : list[`pinocchio.SE3`]
+                A list of pose waypoints, in SE3, for the target frame to move through.
+            ik_solver : any
+                Any valid inverse kinematics solver from this library.
+            options : `pyroboplan.planning.cartesian_planner.CartesianPlannerOptions`, optional
+                A set of Cartesian planning options.
+                If not set, a default set of options will be used.
+        """
         self.model = model
-        self.options = options
-        self.num_dofs = 9
         self.target_frame = target_frame
         self.tforms = tforms
         self.ik_solver = ik_solver
+        self.options = options
 
         # Generate the segments
         cur_time = 0.0
@@ -81,7 +145,23 @@ class CartesianPlanner:
             cur_time = final_time
 
     def generate(self, q_init, dt):
-        """Generates at a particular sample time."""
+        """
+        Generates a set of joint trajectories from the Cartesian plan at a specified sample time.
+
+        Parameters
+        ----------
+            q_init : array-like
+                The starting joint configuration for the robot.
+                This is used as the initial condition for solving inverse kinematics.
+            dt : float
+                The sample time to use for trajectory generation, in seconds.
+
+        Returns
+        -------
+            tuple(bool, array-like, array-like)
+                The tuple of (success, t_vec, q_vec) corresponding to a success metric,
+                the vector of times, and vector of joint positions, respectively.
+        """
         self.generated_tforms = []
 
         t_start = 0
@@ -91,7 +171,7 @@ class CartesianPlanner:
             t_vec = np.append(t_vec, t_final)
         num_pts = len(t_vec)
 
-        q = np.zeros([self.num_dofs, num_pts])
+        q = np.zeros([self.model.nq, num_pts])
         q[:, 0] = q_init
 
         q_cur = q_init
