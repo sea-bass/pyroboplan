@@ -1,12 +1,12 @@
 import numpy as np
 
 from pyroboplan.core.utils import get_path_length
-from pyroboplan.planning.rrt import RRTPlanner, RRTPlannerOptions
 from pyroboplan.models.panda import (
     load_models,
     add_self_collisions,
     add_object_collisions,
 )
+from pyroboplan.planning.rrt import RRTPlanner, RRTPlannerOptions
 
 
 # Use a fixed seed for random number generation in tests.
