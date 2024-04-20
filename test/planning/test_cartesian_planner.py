@@ -80,7 +80,7 @@ def test_cartesian_planner_failure():
     init = extract_cartesian_pose(model, target_frame, q_start, data=data)
     tforms = [
         init,
-        init * pinocchio.SE3(np.eye(3), np.array([10.0, 10.0, 1.0])),
+        init * pinocchio.SE3(np.eye(3), np.array([10.0, 10.0, 10.0])),
     ]
 
     # Define the IK solve to use.
