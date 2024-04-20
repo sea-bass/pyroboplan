@@ -137,7 +137,7 @@ class DifferentialIk:
             self.visualizer.display(q_cur)
             time.sleep(VIZ_INITIAL_RENDER_TIME)  # Needed to render
 
-        while n_tries < options.max_retries:
+        while n_tries <= options.max_retries:
             n_iters = 0
             while n_iters < options.max_iters:
                 # Compute forward kinematics at the current state

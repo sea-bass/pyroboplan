@@ -202,6 +202,33 @@ def check_within_limits(model, q):
     )
 
 
+def extract_cartesian_pose(model, target_frame, q, data=None):
+    """
+    Extracts the Cartesian pose of a specified model frame given a joint configuration.
+
+    Parameters
+    ----------
+        model : `pinocchio.Model`
+            The model from which to perform forward kinematics.
+        target_frame : str
+            The name of the target frame.
+        q : array-like
+            The joint configuration values describing the robot state.
+        data : `pinocchio.Data`, optional
+            The model data to use. If not set, one will be created.
+
+    Returns
+    -------
+        `pinocchio.SE3`
+            The transform describing the Cartesian pose of the specified frame at the provided joint configuration.
+    """
+    if data is None:
+        data = model.createData()
+    target_frame_id = model.getFrameId(target_frame)
+    pinocchio.framesForwardKinematics(model, data, q)
+    return copy.deepcopy(data.oMf[target_frame_id])
+
+
 def extract_cartesian_poses(model, target_frame, q_vec, data=None):
     """
     Extracts the Cartesian poses of a specified model frame given a list of joint configurations.
@@ -214,6 +241,8 @@ def extract_cartesian_poses(model, target_frame, q_vec, data=None):
             The name of the target frame.
         q_vec : array-like
             A list of joint configuration values describing the path.
+        data : `pinocchio.Data`, optional
+            The model data to use. If not set, one will be created.
 
     Returns
     -------

@@ -1,7 +1,7 @@
 # PyRoboPlan
 
 [![PyRoboPlan Tests](https://github.com/sea-bass/pyroboplan/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/sea-bass/pyroboplan/actions/workflows/tests.yml)
-[![Documentation Status](https://readthedocs.org/projects/pyroboplan/badge/?version=latest)](https://pyrobosim.readthedocs.io/en/latest/?badge=latest)
+[![Documentation Status](https://readthedocs.org/projects/pyroboplan/badge/?version=latest)](https://pyroboplan.readthedocs.io/en/latest/?badge=latest)
 ![Coverage Status](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/sea-bass/e5e091166a18c68b26338793917d3bab/raw/pyroboplan-test-coverage.json)
 
 Educational Python library for manipulator motion planning.

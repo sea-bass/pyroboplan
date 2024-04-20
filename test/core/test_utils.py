@@ -7,6 +7,7 @@ from pyroboplan.core.utils import (
     check_collisions_along_path,
     check_within_limits,
     configuration_distance,
+    extract_cartesian_pose,
     extract_cartesian_poses,
     get_collision_geometry_ids,
     get_path_length,
@@ -75,6 +76,15 @@ def test_within_limits():
     assert check_within_limits(model, get_random_state(model))
     assert not check_within_limits(model, model.upperPositionLimit + 0.2)
     assert not check_within_limits(model, model.lowerPositionLimit - 0.2)
+
+
+def test_extract_cartesian_pose():
+    model, _, _ = load_models()
+
+    q = get_random_state(model)
+    tform = extract_cartesian_pose(model, "panda_hand", q)
+
+    assert isinstance(tform, pinocchio.SE3)
 
 
 def test_extract_cartesian_poses():

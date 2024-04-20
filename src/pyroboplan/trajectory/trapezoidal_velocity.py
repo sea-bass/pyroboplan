@@ -234,8 +234,8 @@ class TrapezoidalVelocityTrajectory:
                     qd[dim] = v_prev + dv
                     qdd[dim] = traj.accelerations[segment_idx]
                     evaluated_segment = True
-            else:
-                segment_idx += 1
+                else:
+                    segment_idx += 1
 
         # If the trajectory is single-DOF, return the values as scalars.
         if len(q) == 1:
