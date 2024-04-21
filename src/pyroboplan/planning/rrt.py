@@ -19,38 +19,51 @@ from .utils import discretize_joint_space_path
 class RRTPlannerOptions:
     """Options for Rapidly-expanding Random Tree (RRT) planning."""
 
-    max_angle_step = 0.05
-    """ Maximum angle step, in radians, for collision checking along path segments. """
+    def __init__(
+        self,
+        max_angle_step=0.05,
+        max_connection_dist=0.2,
+        rrt_connect=False,
+        bidirectional_rrt=False,
+        rrt_star=False,
+        max_rewire_dist=np.inf,
+        max_planning_time=10.0,
+        goal_biasing_probability=0.0,
+    ):
+        """
+        Initializes a set of RRT planner options.
 
-    max_connection_dist = 0.2
-    """ Maximum angular distance, in radians, for connecting nodes. """
-
-    rrt_connect = False
-    """ If true, enables the RRTConnect algorithm. """
-
-    bidirectional_rrt = False
-    """
-    If true, uses bidirectional RRTs from both start and goal nodes.
-    Otherwise, only grows a tree from the start node.
-    """
-
-    rrt_star = False
-    """
-    If true, enables the RRT* algorithm.
-    This in turn will use the `max_rewire_dist` parameter.
-    """
-
-    max_rewire_dist = np.inf
-    """
-    Maximum angular distance, in radians, to consider rewiring nodes for RRT*.
-    If set to `np.inf`, all nodes in the trees will be considering for rewiring.
-    """
-
-    max_planning_time = 10.0
-    """ Maximum planning time, in seconds. """
-
-    goal_biasing_probability = 0.0
-    """ Probability of sampling the goal configuration itself, which can help planning converge. """
+        Parameters
+        ----------
+            max_angle_step : float
+                Maximum angle step, in radians, for collision checking along path segments.
+            max_connection_dist : float
+                Maximum angular distance, in radians, for connecting nodes.
+            rrt_connect : bool
+                If true, uses bidirectional RRTs from both start and goal nodes.
+                Otherwise, only grows a tree from the start node.
+            bidirectional_rrt : bool
+                If true, enables the RRTConnect algorithm, which continues extending
+                nodes towards a random node until an invalid state is reached.
+            rrt_star : bool
+                If true, enables the RRT* algorithm to shortcut node connections during planning.
+                This in turn will use the `max_rewire_dist` parameter.
+            max_rewire_dist : float
+                Maximum angular distance, in radians, to consider rewiring nodes for RRT*.
+                If set to `np.inf`, all nodes in the trees will be considered for rewiring.
+            max_planning_time : float
+                Maximum planning time, in seconds.
+            goal_biasing_probability : float
+                Probability of sampling the goal configuration itself, which can help planning converge.
+        """
+        self.max_angle_step = max_angle_step
+        self.max_connection_dist = max_connection_dist
+        self.rrt_connect = rrt_connect
+        self.bidirectional_rrt = bidirectional_rrt
+        self.rrt_star = rrt_star
+        self.max_rewire_dist = max_rewire_dist
+        self.max_planning_time = max_planning_time
+        self.goal_biasing_probability = goal_biasing_probability
 
 
 class RRTPlanner:
@@ -64,7 +77,7 @@ class RRTPlanner:
       * RRT* and PRM* paper: https://arxiv.org/abs/1105.1186
     """
 
-    def __init__(self, model, collision_model):
+    def __init__(self, model, collision_model, options=RRTPlannerOptions()):
         """
         Creates an instance of an RRT planner.
 
@@ -74,9 +87,12 @@ class RRTPlanner:
                 The model to use for this solver.
             collision_model : `pinocchio.Model`
                 The model to use for collision checking.
+            options : `RRTPlannerOptions`, optional
+                The options to use for planning. If not specified, default options are used.
         """
         self.model = model
         self.collision_model = collision_model
+        self.options = options
         self.reset()
 
     def reset(self):
@@ -85,7 +101,7 @@ class RRTPlanner:
         self.start_tree = Graph()
         self.goal_tree = Graph()
 
-    def plan(self, q_start, q_goal, options=RRTPlannerOptions()):
+    def plan(self, q_start, q_goal):
         """
         Plans a path from a start to a goal configuration.
 
@@ -95,12 +111,9 @@ class RRTPlanner:
                 The starting robot configuration.
             q_start : array-like
                 The goal robot configuration.
-            options : `RRTPlannerOptions`, optional
-                The options to use for planning. If not specified, default options are used.
         """
         self.reset()
         t_start = time.time()
-        self.options = options
 
         start_node = Node(q_start, parent=None, cost=0.0)
         self.start_tree.add_node(start_node)
@@ -132,8 +145,10 @@ class RRTPlanner:
         start_tree_phase = True
         while not goal_found:
             # Check for timeouts.
-            if time.time() - t_start > options.max_planning_time:
-                print(f"Planning timed out after {options.max_planning_time} seconds.")
+            if time.time() - t_start > self.options.max_planning_time:
+                print(
+                    f"Planning timed out after {self.options.max_planning_time} seconds."
+                )
                 break
 
             # Choose variables based on whether we're growing the start or goal tree.
@@ -148,11 +163,11 @@ class RRTPlanner:
 
             # Run the extend or connect operation to connect the tree to the new node.
             nearest_node = tree.get_nearest_node(q_sample)
-            q_new = self.extend_or_connect(nearest_node, q_sample, options)
+            q_new = self.extend_or_connect(nearest_node, q_sample)
 
             # Only if extend/connect succeeded, add the new node to the tree.
             if q_new is not None:
-                new_node = self.add_node_to_tree(tree, q_new, nearest_node, options)
+                new_node = self.add_node_to_tree(tree, q_new, nearest_node)
                 if start_tree_phase:
                     latest_start_tree_node = new_node
                 else:
@@ -170,7 +185,7 @@ class RRTPlanner:
                     self.model, self.collision_model, path_to_other_tree
                 ):
                     new_node = self.add_node_to_tree(
-                        tree, nearest_node_in_other_tree.q, new_node, options
+                        tree, nearest_node_in_other_tree.q, new_node
                     )
                     if start_tree_phase:
                         latest_start_tree_node = new_node
@@ -181,7 +196,7 @@ class RRTPlanner:
                     goal_found = True
 
                 # Switch to the other tree next iteration, if bidirectional mode is enabled.
-                if options.bidirectional_rrt:
+                if self.options.bidirectional_rrt:
                     start_tree_phase = not start_tree_phase
 
         # Back out the path by traversing the parents from the goal.
@@ -192,7 +207,7 @@ class RRTPlanner:
             )
         return self.latest_path
 
-    def extend_or_connect(self, parent_node, q_sample, options=RRTPlannerOptions()):
+    def extend_or_connect(self, parent_node, q_sample):
         """
         Extends a tree towards a sampled node with steps no larger than the maximum connection distance.
 
@@ -202,13 +217,9 @@ class RRTPlanner:
                 The node from which to start extending or connecting towards the sample.
             q_sample : array-like
                 The robot configuration sample to extend or connect towards.
-            options : `pyroboplan.planning.rrt.RRTPlannerOptions`, optional
-                The options to use for this operation.
-                These include whether to extend once or keep connecting (`options.rrt_connect`),
-                as well as the maximum angular connection distance (`options.max_connection_dist`).
         """
         q_diff = q_sample - parent_node.q
-        q_increment = options.max_connection_dist * q_diff / np.linalg.norm(q_diff)
+        q_increment = self.options.max_connection_dist * q_diff / np.linalg.norm(q_diff)
 
         terminated = False
         q_out = None
@@ -216,7 +227,10 @@ class RRTPlanner:
         while not terminated:
             # Clip the distance between nearest and sampled nodes to max connection distance.
             # If we have reached the sampled node, this is the final iteration.
-            if configuration_distance(q_cur, q_sample) > options.max_connection_dist:
+            if (
+                configuration_distance(q_cur, q_sample)
+                > self.options.max_connection_dist
+            ):
                 q_extend = q_cur + q_increment
             else:
                 q_extend = q_sample
@@ -238,7 +252,7 @@ class RRTPlanner:
                 terminated |= True
 
             # If RRTConnect is disabled, only one iteration is needed.
-            if not options.rrt_connect:
+            if not self.options.rrt_connect:
                 terminated |= True
 
         return q_out
@@ -282,9 +296,23 @@ class RRTPlanner:
 
         return path
 
-    def add_node_to_tree(self, tree, q_new, parent_node, options=RRTPlannerOptions()):
+    def add_node_to_tree(self, tree, q_new, parent_node):
         """
         Add a new node to the tree. If the RRT* algorithm is enabled, will also rewire.
+
+        Parameters
+        ----------
+            tree : `pyroboplan.planning.graph.Graph`
+                The tree to which to add the new node.
+            q_new : array-like
+                The robot configuration from which to create a new tree node.
+            parent_node : `pyroboplan.planning.graph.Node`
+                The parent node to connect the new node to.
+
+        Returns
+        -------
+            `pyroboplan.planning.graph.Node`
+                The new node that was added to the tree.
         """
         # Add the new node to the tree
         new_node = Node(q_new, parent=parent_node)
@@ -293,7 +321,7 @@ class RRTPlanner:
         new_node.cost = parent_node.cost + edge.cost
 
         # If RRT* is enable it, rewire that node in the tree.
-        if options.rrt_star:
+        if self.options.rrt_star:
             min_cost = new_node.cost
             for other_node in tree.nodes:
                 # Do not consider trivial nodes.
@@ -301,13 +329,13 @@ class RRTPlanner:
                     continue
                 # Do not consider nodes farther than the configured rewire distance,
                 new_distance = configuration_distance(other_node.q, q_new)
-                if new_distance > options.max_rewire_dist:
+                if new_distance > self.options.max_rewire_dist:
                     continue
                 # Rewire if this new connections would be of lower cost and is collision free.
                 new_cost = other_node.cost + new_distance
                 if new_cost < min_cost:
                     new_path = discretize_joint_space_path(
-                        q_new, other_node.q, options.max_angle_step
+                        q_new, other_node.q, self.options.max_angle_step
                     )
                     if not check_collisions_along_path(
                         self.model, self.collision_model, new_path

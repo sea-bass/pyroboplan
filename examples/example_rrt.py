@@ -32,18 +32,19 @@ if __name__ == "__main__":
     time.sleep(1.0)
 
     # Search for a path
-    options = RRTPlannerOptions()
-    options.max_angle_step = 0.05
-    options.max_connection_dist = 0.25
-    options.goal_biasing_probability = 0.15
-    options.max_planning_time = 10.0
-    options.rrt_connect = False
-    options.bidirectional_rrt = False
-    options.rrt_star = False
-    options.max_rewire_dist = 3.0
+    options = RRTPlannerOptions(
+        max_angle_step=0.05,
+        max_connection_dist=0.25,
+        goal_biasing_probability=0.15,
+        max_planning_time=10.0,
+        rrt_connect=False,
+        bidirectional_rrt=False,
+        rrt_star=False,
+        max_rewire_dist=3.0,
+    )
 
-    planner = RRTPlanner(model, collision_model)
-    path = planner.plan(q_start, q_end, options=options)
+    planner = RRTPlanner(model, collision_model, options=options)
+    path = planner.plan(q_start, q_end)
     planner.visualize(viz, "panda_hand", show_tree=True)
 
     # Animate the path
