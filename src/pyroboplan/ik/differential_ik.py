@@ -18,35 +18,47 @@ VIZ_SLEEP_TIME = 0.05
 class DifferentialIkOptions:
     """Options for differential IK."""
 
-    max_iters = 200
-    """ Maximum number of iterations per try. """
+    def __init__(
+        self,
+        max_iters=200,
+        max_retries=10,
+        max_translation_error=1e-3,
+        max_rotation_error=1e-3,
+        damping=1e-3,
+        min_step_size=0.1,
+        max_step_size=0.5,
+    ):
+        """
+        Initializes a set of differential IK options.
 
-    max_retries = 10
-    """ Maximum number of tries. """
-
-    max_translation_error = 1e-3
-    """ Maximum translation error magnitude. """
-
-    max_rotation_error = 1e-3
-    """ Maximum rotation error magnitude. """
-
-    damping = 1e-3
-    """
-    Damping value, between 0 and 1, for the Jacobian pseudoinverse.
-    Setting this to a nonzero value is using Levenberg-Marquardt.
-    """
-
-    min_step_size = 0.1
-    """
-    Minimum gradient step, between 0 and 1, based on ratio of current distance to target to initial distance to target.
-    To use a fixed step size, set both minimum and maximum values to be equal.
-    """
-
-    max_step_size = 0.5
-    """
-    Maximum gradient step, between 0 and 1, based on ratio of current distance to target to initial distance to target.
-    To use a fixed step size, set both minimum and maximum values to be equal.
-    """
+        Parameters
+        ----------
+            max_iters : int
+                Maximum number of iterations per try.
+            max_retries : int
+                Maximum number of retries with random restarts.
+                If set to 0, only the initial state provided will be used.
+            max_translation_error : float
+                Maximum translation error, in meters, to consider IK solved.
+            max_rotation_error : float
+                Maximum rotation error, in radians, to consider IK solved.
+            damping : float
+                Damping value, between 0 and 1, for the Jacobian pseudoinverse.
+                Setting this to a nonzero value is using Levenberg-Marquardt.
+            min_step_size : float
+                Minimum gradient step, between 0 and 1, based on ratio of current distance to target to initial distance to target.
+                To use a fixed step size, set both minimum and maximum values to be equal.
+            max_step_size : float
+                Maximum gradient step, between 0 and 1, based on ratio of current distance to target to initial distance to target.
+                To use a fixed step size, set both minimum and maximum values to be equal.
+        """
+        self.max_iters = max_iters
+        self.max_retries = max_retries
+        self.max_translation_error = max_translation_error
+        self.max_rotation_error = max_rotation_error
+        self.damping = damping
+        self.min_step_size = min_step_size
+        self.max_step_size = max_step_size
 
 
 class DifferentialIk:
@@ -61,7 +73,14 @@ class DifferentialIk:
       * https://www.cs.cmu.edu/~15464-s13/lectures/lecture6/iksurvey.pdf
     """
 
-    def __init__(self, model, collision_model=None, data=None, visualizer=None):
+    def __init__(
+        self,
+        model,
+        collision_model=None,
+        data=None,
+        visualizer=None,
+        options=DifferentialIkOptions(),
+    ):
         """
         Creates an instance of a DifferentialIk solver.
 
@@ -75,22 +94,24 @@ class DifferentialIk:
                 The model data to use for this solver. If None, data is created automatically.
             visualizer : `pinocchio.visualize.meshcat_visualizer.MeshcatVisualizer`, optional
                 The visualizer to use for this solver.
+            options : `DifferentialIkOptions`, optional
+                The options to use for solving IK. If not specified, default options are used.
         """
         self.model = model
+        self.collision_model = collision_model
+
         if not data:
             data = model.createData()
         self.data = data
 
-        self.collision_model = collision_model
-
         self.visualizer = visualizer
+        self.options = options
 
     def solve(
         self,
         target_frame,
         target_tform,
         init_state=None,
-        options=DifferentialIkOptions(),
         nullspace_components=[],
         verbose=False,
     ):
@@ -105,8 +126,6 @@ class DifferentialIk:
                 The desired transformation of the target frame in the model.
             init_state : array-like, optional
                 The initial state to solve from. If not specified, a random initial state will be selected.
-            options : `DifferentialIkOptions`, optional
-                The options to use for solving IK. If not specified, default options are used.
             nullspace_components : list[function], optional
                 An optional list of nullspace components to use when solving.
                 These components must take the form `lambda model, q: component(model, q, <other_args>)`.
@@ -137,9 +156,9 @@ class DifferentialIk:
             self.visualizer.display(q_cur)
             time.sleep(VIZ_INITIAL_RENDER_TIME)  # Needed to render
 
-        while n_tries <= options.max_retries:
+        while n_tries <= self.options.max_retries:
             n_iters = 0
-            while n_iters < options.max_iters:
+            while n_iters < self.options.max_iters:
                 # Compute forward kinematics at the current state
                 pinocchio.framesForwardKinematics(self.model, self.data, q_cur)
                 cur_tform = self.data.oMf[target_frame_id]
@@ -148,8 +167,8 @@ class DifferentialIk:
                 error = target_tform.actInv(cur_tform)
                 error = -pinocchio.log(error).vector
                 if (
-                    np.linalg.norm(error[:3]) < options.max_translation_error
-                    and np.linalg.norm(error[3:]) < options.max_rotation_error
+                    np.linalg.norm(error[:3]) < self.options.max_translation_error
+                    and np.linalg.norm(error[3:]) < self.options.max_rotation_error
                 ):
                     # Wrap to the range -/+ pi, and then check joint limits and collision.
                     q_cur = (q_cur + np.pi) % (2 * np.pi) - np.pi
@@ -188,15 +207,15 @@ class DifferentialIk:
 
                 # Solve for the gradient using damping and nullspace components,
                 # as specified
-                jjt = J.dot(J.T) + options.damping**2 * np.eye(6)
+                jjt = J.dot(J.T) + self.options.damping**2 * np.eye(6)
 
                 # Compute the gradient descent step size
                 error_norm = np.linalg.norm(error)
                 if not initial_error_norm:
                     initial_error_norm = error_norm
-                alpha = options.min_step_size + (
+                alpha = self.options.min_step_size + (
                     1.0 - error_norm / initial_error_norm
-                ) * (options.max_step_size - options.min_step_size)
+                ) * (self.options.max_step_size - self.options.min_step_size)
 
                 # Gradient descent step
                 if not nullspace_components:

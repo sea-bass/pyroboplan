@@ -13,9 +13,15 @@ from pyroboplan.core.utils import (
     get_path_length,
     get_random_state,
     get_random_transform,
+    get_random_collision_free_state,
+    get_random_collision_free_transform,
     set_collisions,
 )
-from pyroboplan.models.panda import load_models, add_self_collisions
+from pyroboplan.models.panda import (
+    load_models,
+    add_self_collisions,
+    add_object_collisions,
+)
 
 
 # Use a fixed seed for random number generation in tests.
@@ -67,6 +73,25 @@ def test_get_random_state_with_vector_padding():
 def test_get_random_transform():
     model, _, _ = load_models()
     tform = get_random_transform(model, "panda_hand")
+    assert isinstance(tform, pinocchio.SE3)
+
+
+def test_get_random_collision_free_state():
+    model, collision_model, visual_model = load_models()
+    add_self_collisions(model, collision_model)
+    add_object_collisions(model, collision_model, visual_model)
+
+    state = get_random_collision_free_state(model, collision_model)
+    assert np.all(state >= model.lowerPositionLimit)
+    assert np.all(state <= model.upperPositionLimit)
+
+
+def test_get_random_collision_free_ransform():
+    model, collision_model, visual_model = load_models()
+    add_self_collisions(model, collision_model)
+    add_object_collisions(model, collision_model, visual_model)
+
+    tform = get_random_collision_free_transform(model, collision_model, "panda_hand")
     assert isinstance(tform, pinocchio.SE3)
 
 

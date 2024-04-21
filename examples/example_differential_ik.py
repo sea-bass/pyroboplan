@@ -1,7 +1,10 @@
 from pinocchio.visualize import MeshcatVisualizer
 import numpy as np
 
-from pyroboplan.core.utils import get_random_state, get_random_transform
+from pyroboplan.core.utils import (
+    get_random_collision_free_state,
+    get_random_collision_free_transform,
+)
 from pyroboplan.ik.differential_ik import DifferentialIk, DifferentialIkOptions
 from pyroboplan.ik.nullspace_components import joint_limit_nullspace_component
 from pyroboplan.models.panda import (
@@ -27,24 +30,29 @@ if __name__ == "__main__":
     np.set_printoptions(precision=3)
 
     # Set up the IK solver
+    options = DifferentialIkOptions()
     ik = DifferentialIk(
-        model, data=data, collision_model=collision_model, visualizer=viz
+        model,
+        data=data,
+        collision_model=collision_model,
+        options=options,
+        visualizer=viz,
     )
     target_frame = "panda_hand"
-    options = DifferentialIkOptions()
     nullspace_components = [
         lambda model, q: joint_limit_nullspace_component(model, q, gain=0.5)
     ]
 
     # Solve IK several times and print the results
     for _ in range(10):
-        init_state = get_random_state(model)
-        target_tform = get_random_transform(model, target_frame)
+        init_state = get_random_collision_free_state(model, collision_model)
+        target_tform = get_random_collision_free_transform(
+            model, collision_model, target_frame
+        )
         q_sol = ik.solve(
             target_frame,
             target_tform,
             init_state=init_state,
-            options=options,
             nullspace_components=[],
             verbose=True,
         )
