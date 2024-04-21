@@ -64,12 +64,12 @@ def test_plan_rrt_connect():
     q_start = np.array([0.0, 1.57, 0.0, 0.0, 1.57, 1.57, 0.0, 0.0, 0.0])
     q_goal = np.array([1.57, 1.57, 0.0, 0.0, 1.57, 1.57, 0.0, 0.0, 0.0])
 
-    options = RRTPlannerOptions()
-    options.rrt_connect = True
-    options.bidirectional_rrt = True
-
-    planner = RRTPlanner(model, collision_model)
-    path = planner.plan(q_start, q_goal, options=options)
+    options = RRTPlannerOptions(
+        rrt_connect=True,
+        bidirectional_rrt=True,
+    )
+    planner = RRTPlanner(model, collision_model, options=options)
+    path = planner.plan(q_start, q_goal)
 
     # The path must exist and have more than the start and goal nodes.
     assert path is not None
@@ -96,13 +96,14 @@ def test_plan_rrt_star():
     options = RRTPlannerOptions()
     options.rrt_star = False
     options.bidirectional_rrt = True
-    planner = RRTPlanner(model, collision_model)
-    path_original = planner.plan(q_start, q_goal, options=options)
+    planner = RRTPlanner(model, collision_model, options=options)
+    path_original = planner.plan(q_start, q_goal)
 
     # Then, plan with RRT* enabled (use maximum rewire distance for effect).
     options.rrt_star = True
     options.max_rewire_dist = np.inf
-    path_star = planner.plan(q_start, q_goal, options=options)
+    planner = RRTPlanner(model, collision_model, options=options)
+    path_star = planner.plan(q_start, q_goal)
 
     # The RRT* path must be shorter or of equal length, though it also took longer to plan.
     assert path_original is not None
