@@ -50,9 +50,9 @@ ik = DifferentialIk(
     model,
     data=data,
     collision_model=collision_model,
+    options=DifferentialIkOptions(max_retries=5),
 )
-ik_options = DifferentialIkOptions()
-ik_options.max_retries = 5
+
 
 # Create the Cartesian Planner over the entire desired path.
 options = CartesianPlannerOptions(

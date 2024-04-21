@@ -19,14 +19,13 @@ def test_ik_solve_trivial_ik():
     pinocchio.framesForwardKinematics(model, data, q)
     target_tform = data.oMf[target_frame_id]
 
-    # Solve
-    ik = DifferentialIk(model, data=None, visualizer=None)
+    # Solve IK
     options = DifferentialIkOptions()
+    ik = DifferentialIk(model, data=None, options=options, visualizer=None)
     q_sol = ik.solve(
         target_frame,
         target_tform,
         init_state=q,
-        options=options,
         nullspace_components=[],
     )
 
@@ -49,14 +48,13 @@ def test_ik_solve_ik():
     target_tform = copy.deepcopy(data.oMf[target_frame_id])
     target_tform.translation[2] = target_tform.translation[2] + offset
 
-    # Solve it
-    ik = DifferentialIk(model, data=None, visualizer=None)
+    # Solve IK
     options = DifferentialIkOptions()
+    ik = DifferentialIk(model, data=None, options=options, visualizer=None)
     q_sol = ik.solve(
         target_frame,
         target_tform,
         init_state=q_init,
-        options=options,
         nullspace_components=[],
     )
     assert q_sol is not None
@@ -81,14 +79,13 @@ def test_ik_solve_impossible_ik():
     T = np.array([10.0, 10.0, 10.0])
     target_tform = pinocchio.SE3(R, T)
 
-    # Solve
-    ik = DifferentialIk(model, data=None, visualizer=None)
+    # Solve IK
     options = DifferentialIkOptions()
+    ik = DifferentialIk(model, data=None, options=options, visualizer=None)
     q_sol = ik.solve(
         target_frame,
         target_tform,
         init_state=None,
-        options=options,
         nullspace_components=[],
     )
 
@@ -111,16 +108,19 @@ def test_ik_in_collision():
     T = np.array([0.155525, 0.0529695, 0.0259166])
     target_tform = pinocchio.SE3(R, T)
 
-    # Solve
-    ik = DifferentialIk(
-        model, collision_model=collision_model, data=None, visualizer=None
-    )
+    # Solve IK
     options = DifferentialIkOptions()
+    ik = DifferentialIk(
+        model,
+        collision_model=collision_model,
+        data=None,
+        options=options,
+        visualizer=None,
+    )
     q_sol = ik.solve(
         target_frame,
         target_tform,
         init_state=None,
-        options=options,
         nullspace_components=[],
         verbose=False,
     )

@@ -181,6 +181,39 @@ def get_random_transform(model, target_frame, joint_padding=0.0):
     return data.oMf[target_frame_id]
 
 
+def get_random_collision_free_transform(
+    model, collision_model, target_frame, joint_padding=0.0, max_tries=100
+):
+    """
+    Returns a random transform for a target frame that is within the model's joint limits and is collision-free.
+
+    Parameters
+    ----------
+        model : `pinocchio.Model`
+            The model from which to generate a random transform.
+        collision_model : `pinocchio.Model`
+            The model to use for collision checking.
+        target_frame : str
+            The name of the frame for which to generate a random transform.
+        joint_padding : float or array-like, optional
+            The padding to use around the sampled joint limits.
+        max_tries : int, optional
+            The maximum number of tries for sampling a collision-free state.
+
+    Returns
+    -------
+        `pinocchio.SE3`
+            A randomly generated transform for the specified target frame.
+    """
+    q_target = get_random_collision_free_state(
+        model, collision_model, joint_padding, max_tries
+    )
+    data = model.createData()
+    target_frame_id = model.getFrameId(target_frame)
+    pinocchio.framesForwardKinematics(model, data, q_target)
+    return data.oMf[target_frame_id]
+
+
 def check_within_limits(model, q):
     """
     Checks whether a particular joint configuration is within the model's joint limits.
