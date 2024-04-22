@@ -65,11 +65,26 @@ class TrapezoidalVelocityTrajectory:
         for idx in range(delta_q_vec.shape[1]):
             t_prev = self.segment_times[-1]
             delta_q = delta_q_vec[:, idx]
+            delta_q_abs = np.abs(delta_q)
 
-            # First calculate the time bottleneck of all the joints by computing
-            # the time needed for "bang-bang" control at constant acceleration.
+            # Find the limiting velocity and acceleration by normalizing.
+            # This can lead to divisions by zero, which we can ignore here.
+            with np.errstate(divide="ignore"):
+                qd_max_norm = np.min(qd_max / delta_q_abs)
+                qdd_max_norm = np.min(qdd_max / delta_q_abs)
+
+            # If there is a zero displacement segment, skip it!
+            if not np.isfinite(qd_max_norm) or not np.isfinite(qdd_max_norm):
+                continue
+
+            accel = qdd_max_norm * delta_q
+
+            # Check if "bang-bang" control at constant acceleration is feasible.
+            # This is determined by seeing if the position moved by ramping up
+            # to max velocity and then immediately back down is greater than 1,
+            # in normalized coordinates.
             #
-            #      -------- qd_peak
+            #      -------- qd_max
             #     /\
             #    /  \  <--- slope = qdd_max
             #   /    \
@@ -77,94 +92,75 @@ class TrapezoidalVelocityTrajectory:
             #  t_segment
             #
             # Some key equations:
-            #  qdd_max = 2 * qd_peak / t_segment    (slope at constant acceleration)
-            #  delta_q = 0.5 * t_segment * qd_peak  (area under the triangle)
+            #  qdd_max = 2 * qd_max / t_segment          (slope at constant acceleration)
+            #  delta_q = 0.5 * t_segment * qd_max = 1.0  (area under the triangle)
             #
-            # Solving for the minimum t_segment:
+            # By using normalized positions and substituting in the equations above,
+            # this is equivalent to checking that:
+            #  qd_max ^ 2 >= qdd_max
 
-            t_min = 2.0 * np.sqrt(np.abs(delta_q) / qdd_max)
+            if qd_max_norm**2 >= qdd_max_norm:
+                # This is possible without a zero-acceleration segment.
+                # We must now find the qd_peak value, which could be less than
+                # the maximum, to achieve a (normalized) delta_q value of 1.0.
+                #
+                #      -------- qd_peak
+                #     /\
+                #    /  \  <--- slope = qdd_peak
+                #   /    \
+                #   <----> ---- 0.0
+                #  t_segment
+                #
+                # The equations are the same as above:
+                #  qdd_max = 2 * qd_peak / t_segment          (slope at constant acceleration)
+                #  delta_q = 0.5 * t_segment * qd_peak = 1.0  (area under the triangle)
 
-            # If the peak velocity above exceeded the maximum velocity, this
-            # needs to be done with a 3-segment trapezoidal velocity segment
-            # whose maximum speed is necessarily qd_max.
-            #
-            #      ---------     --- qd_max
-            #     /         \
-            #    /           \   <--- slope = qdd_max
-            #   /             \
-            #      |<----->|     --- 0
-            #     t_zero_accel
-            #  |<------------->|
-            #      t_segment
-            #
-            # We can similarly solve for the time spent in zero acceleration
-            # (constant velocity) since the total distance traveled is the area
-            # of the entire trapezoid.
+                qd_peak_norm = np.sqrt(qdd_max_norm)
+                t_segment = 2.0 * qd_peak_norm / qdd_max_norm
 
-            q_peak = qdd_max * t_min / 2.0
-            for dim in range(self.num_dims):
-                if np.abs(q_peak[dim]) > qd_max[dim]:
-                    t_const_accel = 2.0 * qd_max[dim] / qdd_max[dim]
-                    delta_q_const_accel = 0.5 * qd_max[dim] * t_const_accel
-                    delta_q_zero_accel = np.abs(delta_q[dim]) - delta_q_const_accel
-                    t_zero_accel = delta_q_zero_accel / qd_max[dim]
-                    t_min[dim] = t_zero_accel + t_const_accel
+                # Unpack into the separate dimensions by unnormalizing speed and acceleration.
+                qd_peak = qd_peak_norm * delta_q
+                for dim in range(self.num_dims):
+                    q_prev = self.single_dof_trajectories[dim].positions[-1]
 
-            # Now that we have the minimum times needed for each segment,
-            # choose the maximum of all these times over all dimensions.
-            # If this is zero, meaning no motion is needed, skip this iteration.
-            t_segment = max(t_min)
-            if t_segment <= 0:
-                self.segment_times.append(t_prev)
-                continue
-
-            # Using this max time, fit trajectory segments to each of these by
-            # always using constant acceleration.
-            for dim in range(self.num_dims):
-                q_prev = self.single_dof_trajectories[dim].positions[-1]
-
-                # Compute the acceleration direction
-                dir = np.sign(delta_q[dim])
-                accel = dir * qdd_max[dim]
-
-                qd_peak_limit = 0.5 * t_segment * accel
-                if np.abs(qd_peak_limit) <= qd_max[dim]:
-                    # This is a 2-segment trajectory.
-                    qd_peak = 2.0 * delta_q[dim] / t_segment
                     times = [t_prev + t_segment / 2.0, t_prev + t_segment]
                     positions = [
                         q_prev + delta_q[dim] / 2.0,
                         q_prev + delta_q[dim],
                     ]
-                    velocities = [qd_peak, 0.0]
-                    accelerations = [accel, -accel]
-                else:
-                    # This is a 3-segment trajectory.
-                    # The equations to scale down this trajectory to the
-                    # specified segment time end up being quadratic.
-                    #
-                    #  t_segment = t_const_accel + t_zero_accel
-                    #    (total time must be preserved)
-                    #  delta_q = delta_q_const_accel + delta_q_zero_accel
-                    #    (total distance must be preserved)
-                    #  delta_q_const_accel = 0.5 * t_const_accel * qd_peak
-                    #    (area under curve for max acceleration phases, i.e., 2 triangles)
-                    #  delta_q_zero_accel = t_zero_accel * qd_peak
-                    #    (area under curve for constant acceleration phase, i.e., rectangle)
-                    #  qdd_max = 2 * qd_peak / t_const_accel
-                    #    (slope of the triangle during constant acceleration)
-                    #
-                    # This results in a quadratic formula in peak velocity:
-                    #  (1/qdd_max) * qd_peak ^ 2 + (-t_segment) * qd_peak + delta_q = 0
-                    qd_peak_solutions = np.roots(
-                        [1.0 / qdd_max[dim], -t_segment, np.abs(delta_q[dim])]
-                    )
-                    qd_peak = dir * min(qd_peak_solutions)  # Minimize velocity
+                    velocities = [qd_peak[dim], 0.0]
+                    accelerations = [accel[dim], -accel[dim]]
 
-                    t_const_accel = 2 * np.abs(qd_peak / accel)
-                    t_zero_accel = t_segment - t_const_accel
-                    delta_q_const_accel = 0.25 * t_const_accel**2 * accel
-                    delta_q_zero_accel = delta_q[dim] - delta_q_const_accel
+                    self.single_dof_trajectories[dim].times.extend(times)
+                    self.single_dof_trajectories[dim].positions.extend(positions)
+                    self.single_dof_trajectories[dim].velocities.extend(velocities)
+                    self.single_dof_trajectories[dim].accelerations.extend(
+                        accelerations
+                    )
+            else:
+                # This requires a zero-acceleration segment as follows.
+                #
+                #      ---------     --- qd_max
+                #     /         \
+                #    /           \   <--- slope = qdd_max
+                #   /             \
+                #      |<----->|     --- 0
+                #     t_zero_accel
+                #  |<------------->|
+                #      t_segment
+
+                t_const_accel = 2.0 * qd_max_norm / qdd_max_norm
+                delta_q_norm_const_accel = 0.5 * t_const_accel * qd_max_norm
+                delta_q_norm_zero_accel = 1.0 - delta_q_norm_const_accel
+                t_zero_accel = delta_q_norm_zero_accel / qd_max_norm
+                t_segment = t_const_accel + t_zero_accel
+
+                # Unpack into the separate dimensions by unnormalizing speed and acceleration.
+                qd_peak = qd_max_norm * delta_q
+                delta_q_const_accel = delta_q_norm_const_accel * delta_q
+                delta_q_zero_accel = delta_q_norm_zero_accel * delta_q
+                for dim in range(self.num_dims):
+                    q_prev = self.single_dof_trajectories[dim].positions[-1]
 
                     times = [
                         t_prev + t_const_accel / 2.0,
@@ -172,18 +168,21 @@ class TrapezoidalVelocityTrajectory:
                         t_prev + t_const_accel + t_zero_accel,
                     ]
                     positions = [
-                        q_prev + delta_q_const_accel / 2.0,
-                        q_prev + delta_q_const_accel / 2.0 + delta_q_zero_accel,
+                        q_prev + delta_q_const_accel[dim] / 2.0,
+                        q_prev
+                        + delta_q_const_accel[dim] / 2.0
+                        + delta_q_zero_accel[dim],
                         q_prev + delta_q[dim],
                     ]
-                    velocities = [qd_peak, qd_peak, 0.0]
-                    accelerations = [accel, 0.0, -accel]
+                    velocities = [qd_peak[dim], qd_peak[dim], 0.0]
+                    accelerations = [accel[dim], 0.0, -accel[dim]]
 
-                # Add all segments to this dimension's trajectory.
-                self.single_dof_trajectories[dim].times.extend(times)
-                self.single_dof_trajectories[dim].positions.extend(positions)
-                self.single_dof_trajectories[dim].velocities.extend(velocities)
-                self.single_dof_trajectories[dim].accelerations.extend(accelerations)
+                    self.single_dof_trajectories[dim].times.extend(times)
+                    self.single_dof_trajectories[dim].positions.extend(positions)
+                    self.single_dof_trajectories[dim].velocities.extend(velocities)
+                    self.single_dof_trajectories[dim].accelerations.extend(
+                        accelerations
+                    )
 
             self.segment_times.append(t_prev + t_segment)
 
@@ -278,7 +277,11 @@ class TrapezoidalVelocityTrajectory:
             t_idx = 0
             while t_idx < num_pts:
                 t_cur = t_vec[t_idx]
-                t_next = traj.times[segment_idx + 1]
+                if segment_idx < len(traj.times) - 1:
+                    t_next = traj.times[segment_idx + 1]
+                else:
+                    t_next = t_final
+                    segment_idx -= 1
                 t_prev = traj.times[segment_idx]
 
                 if t_cur <= t_next:
