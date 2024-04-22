@@ -13,7 +13,7 @@ def test_single_dof_trajectory():
 
     # Check that the segments are as follows:
     # 2-segment, 0-segment (no motion), 2-segment, 3-segment
-    assert len(traj.segment_times) == 5
+    assert len(traj.segment_times) == 4
     traj_0 = traj.single_dof_trajectories[0]
     assert len(traj_0.times) == 8
     assert not np.any(np.abs(traj_0.velocities) > qd_max)
