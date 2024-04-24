@@ -53,6 +53,14 @@ repos:
         types: [text]
         files: \.(yml|yaml)$
 
+  # Regenerates the docs.
+  - repo: local
+    hooks:
+      - name: generate-docs
+        id: generate-docs
+        entry: bash -c 'docs/generate_docs.bash'
+        language: system
+
   # Checks links in markdown files.
   - repo: https://github.com/tcort/markdown-link-check
     rev: v3.12.1
