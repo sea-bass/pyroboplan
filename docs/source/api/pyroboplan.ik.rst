@@ -1,6 +1,11 @@
 pyroboplan.ik package
 =====================
 
+.. automodule:: pyroboplan.ik
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 Submodules
 ----------
 
@@ -16,14 +21,6 @@ pyroboplan.ik.nullspace\_components module
 ------------------------------------------
 
 .. automodule:: pyroboplan.ik.nullspace_components
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-Module contents
----------------
-
-.. automodule:: pyroboplan.ik
    :members:
    :undoc-members:
    :show-inheritance:

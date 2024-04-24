@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Generate Sphinx documentation
+# Generates Sphinx documentation.
 #
 # Note that you may need some additional Python packages:
 # pip3 install sphinx sphinx-rtd-theme
@@ -14,7 +14,7 @@ rm -rf source/modules.rst
 rm -rf source/pyroboplan*
 
 # Regenerate the API docs
-sphinx-apidoc -f -o source ../src/pyroboplan
+sphinx-apidoc -f --module-first -H "API Documentation" -o source/api/ ../src/pyroboplan/
 
 # Build the docs
 make html

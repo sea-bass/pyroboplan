@@ -1,5 +1,3 @@
-.. pyroboplan documentation master file
-
 pyroboplan
 ==========
 
@@ -14,7 +12,9 @@ It is not designed for performance, but rather to teach newcomers the fundamenta
    :maxdepth: 2
    :caption: Contents:
 
-   modules
+   design
+   motion_planning
+   api/modules
 
 Indices and tables
 ==================
