@@ -10,6 +10,7 @@ This model must describe:
 * Robot kinematics (and possibly its dynamics).
 * Geometries of the robot and its environment for visualization and collision checking.
 * Names of joints and/or coordinate frames that are used for motion planning.
+* Support for importing standard robot description file formats such as `URDF <https://wiki.ros.org/urdf>`_.
 
 One software package that has all these capabilities is `Pinocchio <https://github.com/stack-of-tasks/pinocchio>`_.
 It is actively maintained and therefore open to contributions, and is performant because it written in C++ with first-class Python bindings.
@@ -37,6 +38,13 @@ The goal of this library is **learning and education**, and as such its design p
 
 Of course, motion planning is a vast field and this library will never have all the implementations available.
 This is where we hope that you will be inspired by this project to do some learning yourself, implement new capabilities, and share your contributions with the community.
+
+If you are looking for motion planning libraries that are less education-focused and more capable, some of the standard ones used in practice are:
+
+* `Drake <https://drake.mit.edu/>`_: Contains tools for system modeling and optimization-based planning and control.
+* `MoveIt <https://moveit.picknik.ai/>`_: A ROS based framework with a plugin-based system for inverse kinematics, motion planning, and pre-/post-processing. Best known for its interface to `Open Motion Planning Library (OMPL) <https://ompl.kavrakilab.org/>`_ for sampling-based motion planning.
+* `Tesseract <https://tesseract-docs.readthedocs.io/>`_: A library inspired by MoveIt concepts, but written to better decouple the code functionality and ROS interfaces, and with a bigger focus on trajectory optimization.
+* `OCS2 <https://leggedrobotics.github.io/ocs2/>`_ and `Crocoddyl <https://cmastalli.github.io/publications/crocoddyl20icra.html>`_: Packages based on Pinocchio for optimization-based online control.
 
 
 Software Practices
