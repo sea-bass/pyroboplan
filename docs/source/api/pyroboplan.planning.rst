@@ -1,8 +1,21 @@
 pyroboplan.planning package
 ===========================
 
+.. automodule:: pyroboplan.planning
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 Submodules
 ----------
+
+pyroboplan.planning.cartesian\_planner module
+---------------------------------------------
+
+.. automodule:: pyroboplan.planning.cartesian_planner
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
 pyroboplan.planning.graph module
 --------------------------------
@@ -24,14 +37,6 @@ pyroboplan.planning.utils module
 --------------------------------
 
 .. automodule:: pyroboplan.planning.utils
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-Module contents
----------------
-
-.. automodule:: pyroboplan.planning
    :members:
    :undoc-members:
    :show-inheritance:

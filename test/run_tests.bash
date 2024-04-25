@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Runs all unit tests
+# Runs all unit tests and generates results.
 
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 TEST_RESULTS_DIR="${SCRIPT_DIR}/results"
