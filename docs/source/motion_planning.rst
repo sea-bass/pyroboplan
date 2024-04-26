@@ -105,6 +105,10 @@ The `pyroboplan.planning module <api/pyroboplan.planning.html>`_ contains implem
     :width: 600
     :alt: Bidirectional RRT* finding a successful collision-free path.
 
+.. image:: _static/images/cartesian_planning.png
+    :width: 600
+    :alt: Path output from a Cartesian planner.
+
 
 Trajectory Generation
 ^^^^^^^^^^^^^^^^^^^^^

@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "pyroboplan"
-version = "0.0.0"
+version = "1.0.0"
 dependencies = [
   "pin == 2.7.0",
   "matplotlib == 3.8.4",
