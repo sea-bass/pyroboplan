@@ -1,7 +1,7 @@
 """
 This example loads a model of a UR5 arm from a URDF file.
 It then demonstrates basic capabilities in Pinocchio such as forward kinematics,
-Jacobian computation, collision-checking, and dynamics simulation.
+Jacobian computation, collision checking, and dynamics simulation.
 """
 
 import pinocchio
