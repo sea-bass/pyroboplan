@@ -15,6 +15,9 @@ import time
 def create_model():
     model = pinocchio.Model()
 
+    max_effort = np.array([100.0])
+    max_velocity = np.array([10.0])
+
     #################
     # Create Link 0 #
     #################
@@ -23,6 +26,10 @@ def create_model():
         pinocchio.JointModelRZ(),  # Revolute about Z
         pinocchio.SE3(np.eye(3), np.array([0.0, 0.0, 0.0])),  # Joint placement
         "joint0",  # name
+        max_effort,
+        max_velocity,
+        np.array([-np.pi]),  # Min position
+        np.array([np.pi]),  # Max position
     )
     # Add a body to the joint
     body0 = model.appendBodyToJoint(
@@ -40,8 +47,8 @@ def create_model():
     frame0 = pinocchio.Frame(
         "joint0",  # name
         jid0,  # Joint parent
-        model.nframes - 1,  # Previous frame
-        pinocchio.SE3.Identity(),  # Relative tform,
+        model.getFrameId("universe"),  # Parent frame
+        pinocchio.SE3.Identity(),  # Relative tform
         pinocchio.FrameType.OP_FRAME,  # Frame type
     )
     model.addFrame(frame0, False)
@@ -54,6 +61,10 @@ def create_model():
         pinocchio.JointModelRY(),  # Revolute about Y
         pinocchio.SE3(np.eye(3), np.array([0.0, 0.0, 0.2])),  # Joint placement
         "joint1",  # name
+        max_effort,
+        max_velocity,
+        np.array([-np.pi / 2.0]),  # Min position
+        np.array([np.pi / 2.0]),  # Max position
     )
     # Add a body to the joint
     body1 = model.appendBodyToJoint(
@@ -71,8 +82,8 @@ def create_model():
     frame1 = pinocchio.Frame(
         "joint1",  # name
         jid1,  # Joint parent
-        model.nframes - 1,  # Previous frame
-        pinocchio.SE3.Identity(),  # Relative tform,
+        model.getFrameId("joint0"),  # Parent frame
+        pinocchio.SE3.Identity(),  # Relative tform
         pinocchio.FrameType.OP_FRAME,  # Frame type
     )
     model.addFrame(frame1, False)
@@ -85,6 +96,10 @@ def create_model():
         pinocchio.JointModelRY(),  # Revolute about Y
         pinocchio.SE3(np.eye(3), np.array([0.0, 0.0, 0.5])),  # Joint placement
         "joint2",  # name
+        max_effort,
+        max_velocity,
+        np.array([-np.pi / 2.0]),  # Min position
+        np.array([np.pi / 2.0]),  # Max position
     )
     # Add a body to the joint
     body2 = model.appendBodyToJoint(
@@ -102,8 +117,8 @@ def create_model():
     frame2 = pinocchio.Frame(
         "joint2",  # name
         jid2,  # Joint parent
-        model.nframes - 1,  # Previous frame
-        pinocchio.SE3.Identity(),  # Relative tform,
+        model.getFrameId("joint1"),  # Parent frame
+        pinocchio.SE3.Identity(),  # Relative tform
         pinocchio.FrameType.OP_FRAME,  # Frame type
     )
     model.addFrame(frame2, False)
@@ -116,6 +131,10 @@ def create_model():
         pinocchio.JointModelRZ(),  # Revolute about Z
         pinocchio.SE3(np.eye(3), np.array([0.0, 0.0, 0.5])),  # Joint placement
         "joint3",  # name
+        max_effort,
+        max_velocity,
+        np.array([-np.pi]),  # Min position
+        np.array([np.pi]),  # Max position
     )
     # Add a body to the joint
     body3 = model.appendBodyToJoint(
@@ -133,8 +152,8 @@ def create_model():
     frame3 = pinocchio.Frame(
         "joint3",  # name
         jid3,  # Joint parent
-        model.nframes - 1,  # Previous frame
-        pinocchio.SE3.Identity(),  # Relative tform,
+        model.getFrameId("joint2"),  # Parent frame
+        pinocchio.SE3.Identity(),  # Relative tform
         pinocchio.FrameType.OP_FRAME,  # Frame type
     )
     model.addFrame(frame3, False)
@@ -147,6 +166,10 @@ def create_model():
         pinocchio.JointModelRX(),  # Revolute about X
         pinocchio.SE3(np.eye(3), np.array([0.0, 0.0, 0.1])),  # Joint placement
         "joint4",  # name
+        max_effort,
+        max_velocity,
+        np.array([-np.pi / 2.0]),  # Min position
+        np.array([np.pi / 2.0]),  # Max position
     )
     # Add a body to the joint
     body4 = model.appendBodyToJoint(
@@ -164,8 +187,8 @@ def create_model():
     frame4 = pinocchio.Frame(
         "joint4",  # name
         jid4,  # Joint parent
-        model.nframes - 1,  # Previous frame
-        pinocchio.SE3.Identity(),  # Relative tform,
+        model.getFrameId("joint3"),  # Parent frame
+        pinocchio.SE3.Identity(),  # Relative tform
         pinocchio.FrameType.OP_FRAME,  # Frame type
     )
     model.addFrame(frame4, False)
@@ -178,6 +201,10 @@ def create_model():
         pinocchio.JointModelRZ(),  # Revolute about Z
         pinocchio.SE3(np.eye(3), np.array([0.0, 0.0, 0.1])),  # Joint placement
         "joint5",  # name
+        max_effort,
+        max_velocity,
+        np.array([-np.pi]),  # Min position
+        np.array([np.pi]),  # Max position
     )
     # Add a body to the joint
     body5 = model.appendBodyToJoint(
@@ -195,8 +222,8 @@ def create_model():
     frame5 = pinocchio.Frame(
         "joint5",  # name
         jid5,  # Joint parent
-        model.nframes - 1,  # Previous frame
-        pinocchio.SE3.Identity(),  # Relative tform,
+        model.getFrameId("joint4"),  # Parent frame
+        pinocchio.SE3.Identity(),  # Relative tform
         pinocchio.FrameType.OP_FRAME,  # Frame type
     )
     model.addFrame(frame5, False)
@@ -207,13 +234,12 @@ def create_model():
     hand_frame = pinocchio.Frame(
         "hand",  # name
         jid5,  # Joint parent
-        model.nframes - 1,  # Previous frame
+        model.getFrameId("joint5"),  # Parent frame
         pinocchio.SE3(np.eye(3), np.array([0.0, 0.0, 0.2])),  # Relative tform,
         pinocchio.FrameType.OP_FRAME,  # Frame type
     )
     model.addFrame(hand_frame, False)
 
-    print(model)
     return model
 
 
@@ -306,13 +332,76 @@ def create_visual_model(model, alpha=0.5):
     return visual_model
 
 
+def setup_collisions(collision_model):
+    collision_pairs = [
+        ("link0", "link2"),
+        ("link0", "link3"),
+        ("link0", "link4"),
+        ("link0", "link5"),
+        ("link0", "ee_base"),
+        ("link0", "ee_left"),
+        ("link0", "ee_right"),
+        ("link1", "link3"),
+        ("link1", "link4"),
+        ("link1", "link5"),
+        ("link1", "ee_base"),
+        ("link1", "ee_left"),
+        ("link1", "ee_right"),
+        ("link2", "link4"),
+        ("link2", "link5"),
+        ("link2", "ee_base"),
+        ("link2", "ee_left"),
+        ("link2", "ee_right"),
+        ("link3", "ee_base"),
+        ("link3", "ee_left"),
+        ("link3", "ee_right"),
+        ("link4", "ee_base"),
+        ("link4", "ee_left"),
+        ("link4", "ee_right"),
+    ]
+    for pair in collision_pairs:
+        collision_model.addCollisionPair(
+            pinocchio.CollisionPair(
+                collision_model.getGeometryId(pair[0]),
+                collision_model.getGeometryId(pair[1]),
+            )
+        )
+
+
+def print_collisions(collision_model, collision_data):
+    num_collisions = 0
+    for k in range(len(collision_model.collisionPairs)):
+        cr = collision_data.collisionResults[k]
+        cp = collision_model.collisionPairs[k]
+        if cr.isCollision():
+            num_collisions += 1
+            print(
+                "collision between:",
+                collision_model.geometryObjects[cp.first].name,
+                " and ",
+                collision_model.geometryObjects[cp.second].name,
+            )
+    if num_collisions == 0:
+        print("No collisions found!")
+
+
 if __name__ == "__main__":
     model = create_model()
     visual_model = create_visual_model(model)
     collision_model = visual_model  # Use the same models in this case
 
-    data = model.createData()
+    # Setup collisions
+    add_all_collisions = False
+    if add_all_collisions:
+        collision_model.addAllCollisionPairs()
+    else:
+        setup_collisions(collision_model)
 
+    # Create model data
+    data = model.createData()
+    collision_data = collision_model.createData()
+
+    # Set up visualization using MeshCat
     viz = MeshcatVisualizer(model, collision_model, visual_model)
     viz.initViewer(open=True)
     viz.loadViewerModel()
@@ -320,7 +409,7 @@ if __name__ == "__main__":
 
     for idx in range(20):
         print(f"\nITERATION {idx}\n")
-        q = np.pi * np.random.random(model.nq)
+        q = np.random.uniform(model.lowerPositionLimit, model.upperPositionLimit)
         print(f"Joint configuration: {q}\n")
 
         target_frame_id = model.getFrameId("hand")
@@ -337,6 +426,12 @@ if __name__ == "__main__":
             pinocchio.ReferenceFrame.LOCAL,
         )
         print(f"Hand frame Jacobian:\n{J}")
+
+        # Calculate the collision information.
+        pinocchio.computeCollisions(
+            model, data, collision_model, collision_data, q, False
+        )
+        print_collisions(collision_model, collision_data)
 
         viz.display(q)
         time.sleep(1.0)
