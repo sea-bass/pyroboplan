@@ -12,9 +12,9 @@ For more information, refer to the [full documentation](https://pyroboplan.readt
 
 By Sebastian Castro, 2024
 
-![RRT based motion planning and trajectory execution](./docs/source/_static/gifs/pyroboplan_rrt_traj.gif)
+![RRT based motion planning and trajectory execution](https://media.githubusercontent.com/media/sea-bass/pyroboplan/main/docs/source/_static/gifs/pyroboplan_rrt_traj.gif)
 
-![Cartesian motion planning](./docs/source/_static/gifs/pyroboplan_cartesian_path.gif)
+![Cartesian motion planning](https://media.githubusercontent.com/media/sea-bass/pyroboplan/main/docs/source/_static/gifs/pyroboplan_cartesian_path.gif)
 
 ---
 
