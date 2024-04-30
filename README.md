@@ -20,6 +20,20 @@ By Sebastian Castro, 2024
 
 ## Setup
 
+### From PyPi
+
+```bash
+pip3 install pyroboplan
+```
+
+### From Source
+
+Clone this repository.
+
+```bash
+git clone https://github.com/sea-bass/pyroboplan.git
+```
+
 (Optional) Set up a virtual environment and install dependencies.
 
 ```bash
