@@ -1,3 +1,9 @@
+"""
+This example shows PyRoboPlan capabilities for inverse kinematics (IK).
+IK defines the task of finding a set of joint positions for a robot model to
+achieve a desired target pose for a specific coordinate frame.
+"""
+
 from pinocchio.visualize import MeshcatVisualizer
 import numpy as np
 

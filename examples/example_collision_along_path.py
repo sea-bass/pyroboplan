@@ -1,3 +1,10 @@
+"""
+This example shows PyRoboPlan capabilities around Pinocchio to import a model
+and perform collision checking along a predefined path.
+These capabilities form the basis of collision checking for validating other
+motion planning components such as inverse kinematics and path planning.
+"""
+
 import hppfcl
 import pinocchio
 from pinocchio.visualize import MeshcatVisualizer

@@ -22,6 +22,7 @@ sys.path.insert(0, os.path.abspath("../../src/"))
 extensions = [
     "sphinx_rtd_theme",
     "sphinx.ext.autodoc",
+    "sphinx.ext.extlinks",
     "sphinx.ext.napoleon",
 ]
 
@@ -32,8 +33,16 @@ napoleon_use_ivar = True
 templates_path = ["_templates"]
 exclude_patterns = ["build", "Thumbs.db", ".DS_Store"]
 
+# External links
+extlinks = {
+    "examples": ("https://github.com/sea-bass/pyroboplan/tree/main/examples/%s", ""),
+    "source": (
+        "https://github.com/sea-bass/pyroboplan/tree/main/src/pyroboplan/%s",
+        "",
+    ),
+}
 
-# -- Options for HTML output -------------------------------------------------
+# Options for HTML output
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
 html_theme = "sphinx_rtd_theme"

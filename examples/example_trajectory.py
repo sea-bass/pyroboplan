@@ -1,3 +1,8 @@
+"""
+This example shows PyRoboPlan capabilities for trajectory generation giving
+various time scaling approaches, such as polynomial and trapezoidal velocity.
+"""
+
 import matplotlib.pyplot as plt
 import numpy as np
 from pinocchio.visualize import MeshcatVisualizer
