@@ -1,3 +1,8 @@
+"""
+This example shows PyRoboPlan capabilities for path planning using
+Rapidly-Expanding Random Tree (RRT) algorithm.
+"""
+
 from pinocchio.visualize import MeshcatVisualizer
 import time
 

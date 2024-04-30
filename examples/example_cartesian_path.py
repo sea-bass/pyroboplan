@@ -1,3 +1,8 @@
+"""
+This example shows PyRoboPlan capabilities for Cartesian planning to track
+task-space, or operational space, motions with straight-line interpolation.
+"""
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pinocchio
@@ -52,7 +57,6 @@ ik = DifferentialIk(
     collision_model=collision_model,
     options=DifferentialIkOptions(max_retries=5),
 )
-
 
 # Create the Cartesian Planner over the entire desired path.
 options = CartesianPlannerOptions(

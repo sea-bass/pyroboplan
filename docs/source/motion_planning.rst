@@ -50,7 +50,10 @@ Some tools like the `MoveIt Setup Assistant <https://moveit.picknik.ai/main/doc/
         model, data, collision_model, collision_data, q, False,
     )
 
-The `pyroboplan.core module <api/pyroboplan.core.html>`_ contains several tools that abstract away such common Pinocchio operations for motion planning.
+The :examples:`Introduction to Pinocchio examples folder <intro_pinocchio>` includes code examples for robot models that are manually created and automatically imported from URDF.
+
+Additionally, the `pyroboplan.core module <api/pyroboplan.core.html>`_ contains several tools that abstract away such common Pinocchio operations for motion planning.
+One example can be found :examples:`here <example_collision_along_path.py>`.
 
 .. image:: _static/images/collision_checking.png
     :width: 600
@@ -73,6 +76,7 @@ However, for most robotics applications, we rely on **numerical methods** instea
 * Additional constraints, such as joint limits, Cartesian pose limits, or collision avoidance, are difficult to enforce analytically.
 
 The `pyroboplan.ik module <api/pyroboplan.ik.html>`_ contains implementations for IK solvers.
+You can also try running the :examples:`differential IK example <example_differential_ik.py>`.
 
 .. image:: _static/images/inverse_kinematics.png
     :width: 600
@@ -100,6 +104,7 @@ Currently, all the planners in ``pyroboplan`` (such as RRT and Cartesian interpo
 Online planning and control is often done through optimization techniques like Model Predictive Control (MPC).
 
 The `pyroboplan.planning module <api/pyroboplan.planning.html>`_ contains implementations for motion planners.
+You can also try running the :examples:`RRT example <example_rrt.py>` and :examples:`Cartesian planning example <example_cartesian_path.py>`.
 
 .. image:: _static/images/bidirectional_rrt_star.png
     :width: 600
@@ -118,6 +123,7 @@ Often, a fixed set of kinematic (position/velocity/acceleration/jerk) and dynami
 Sometimes, these limits can also be task-dependent; for example, if manipulating fragile objects or objects that cannot be placed in certain configurations (e.g., moving a glass of water without spilling).
 
 The `pyroboplan.trajectory module <api/pyroboplan.trajectory.html>`_ contains trajectory generation implementations.
+You can also try running the :examples:`trajectory generation example <example_trajectory.py>`.
 
 .. image:: _static/images/trajectory_generation.png
     :width: 720
