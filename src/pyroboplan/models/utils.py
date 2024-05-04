@@ -13,4 +13,5 @@ def get_example_models_folder():
         str
             The path to the `pyroboplan` example models folder.
     """
-    return importlib.resources.path(pyroboplan, "models").as_posix()
+    resource_path = importlib.resources.files(pyroboplan) / "models"
+    return resource_path.as_posix()
