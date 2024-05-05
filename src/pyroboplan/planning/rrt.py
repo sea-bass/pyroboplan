@@ -1,4 +1,4 @@
-""" Utilities for manipulation-specific Rapidly-Expanding Random Trees (RRTs). """
+""" Utilities for manipulation-specific Rapidly-Exploring Random Trees (RRTs). """
 
 import numpy as np
 import time
@@ -17,7 +17,7 @@ from .utils import discretize_joint_space_path
 
 
 class RRTPlannerOptions:
-    """Options for Rapidly-expanding Random Tree (RRT) planning."""
+    """Options for Rapidly-exploring Random Tree (RRT) planning."""
 
     def __init__(
         self,
