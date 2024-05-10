@@ -36,21 +36,12 @@ def test_create_edge():
     assert edge.cost == 0.0
 
 
-def test_object_equalities():
+def test_node_equalities():
     nodeA = Node([1.0, 1.0], 1.0)
     nodeB = Node([1.0, 1.0], 1.0)
     nodeC = Node([2.0, 2.0], 2.0)
     assert nodeA == nodeB
     assert nodeA != nodeC
-
-    edgeAC1 = Edge(nodeA, nodeC, 1.0)
-    edgeAC2 = Edge(nodeA, nodeC, 2.0)
-    edgeCA = Edge(nodeC, nodeA, 1.0)
-    edgeCA_dup = Edge(nodeC, nodeA, 1.0)
-
-    assert edgeAC1 != edgeCA
-    assert edgeAC1 != edgeAC2
-    assert edgeCA == edgeCA_dup
 
 
 def test_create_edge_nondefault_args():
@@ -159,13 +150,15 @@ def test_str_and_parse():
     assert sA != sB
     assert nodeA == Node.parse(sA)
     assert nodeA != Node.parse(sB)
-    assert edgeAB == Edge.parse(eAB)
+
+    chk_edge = Edge.parse(eAB)
+    assert nodeA == chk_edge.nodeA
+    assert nodeB == chk_edge.nodeB
 
 
 def test_save_and_load():
     nodeA = Node([1.0, 1.0], cost=1.0)
     nodeB = Node([1.0, 2.0], cost=1.0)
-    edgeAB = Edge(nodeA, nodeB, 1.0)
     g = Graph()
     g.add_node(nodeA)
     g.add_node(nodeB)
@@ -181,4 +174,3 @@ def test_save_and_load():
     assert len(g_check.edges) == 1
     assert nodeA in g_check.nodes
     assert nodeB in g_check.nodes
-    assert edgeAB in g_check.edges
