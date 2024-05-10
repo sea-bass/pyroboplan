@@ -1,5 +1,6 @@
+from pyroboplan.core.utils import configuration_distance
 from pyroboplan.planning.graph import Node, Graph
-from pyroboplan.planning.graph_search import dfs
+from pyroboplan.planning.graph_search import astar, dfs
 
 
 def construct_graph(N):
@@ -13,7 +14,7 @@ def construct_graph(N):
 
     for node in g.nodes:
         x, y = node.q[0], node.q[1]
-        for px, py in [(x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)]:
+        for px, py in [(x + 1, y), (x, y + 1)]:
             neighbor = Node([px, py])
             if neighbor in g.nodes:
                 g.add_edge(node, neighbor)
@@ -32,3 +33,19 @@ def test_dfs():
     assert path is not None
     assert path[0] == start_pose
     assert path[-1] == goal_pose
+
+
+def test_astar():
+    heuristic = lambda n1, n2: configuration_distance(n1.q, n2.q)
+    g = construct_graph(5)
+
+    start_pose = Node([1, 1])
+    goal_pose = Node([5, 5])
+
+    path = astar(g, start_pose, goal_pose, heuristic)
+
+    assert path is not None
+    assert path[0] == start_pose
+    assert path[-1] == goal_pose
+    assert path[-1].cost == 8.0
+    assert len(path) == 9
