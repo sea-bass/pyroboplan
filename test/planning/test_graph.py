@@ -121,6 +121,8 @@ def test_remove_edges():
     # Remove a valid edge.
     assert graph.remove_edge(edgeAB)
     assert len(graph.edges) == 0
+    assert nodeB not in nodeA.neighbors
+    assert nodeA not in nodeB.neighbors
 
     # Remove an edge that was already removed.
     assert not graph.remove_edge(edgeAB)
@@ -161,7 +163,6 @@ def test_str_and_parse():
 
 
 def atest_save_and_load():
-    # Construct simple graph.
     nodeA = Node([1.0, 1.0], cost=1.0)
     nodeB = Node([1.0, 2.0], cost=1.0)
     edgeAB = Edge(nodeA, nodeB, 1.0)
@@ -170,7 +171,7 @@ def atest_save_and_load():
     g.add_node(nodeB)
     g.add_edge(nodeA, nodeB)
 
-    # Save to tempfile.
+    # Construct simple graph and save to tempfile.
     f = os.path.join(tempfile.mkdtemp(), "graph")
     g.save_to_file(f)
 

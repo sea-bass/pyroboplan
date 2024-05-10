@@ -24,7 +24,9 @@ class Node:
         self.q = np.array(q)
         self.parent = parent
         self.cost = cost
-        self.neighbors = set()
+
+        # Dictionary of neighboring nodes and their distances
+        self.neighbors = {}
 
     def __hash__(self):
         """Hash on joint configurations only."""
@@ -157,8 +159,8 @@ class Graph:
         cost = configuration_distance(nodeA.q, nodeB.q)
         edge = Edge(nodeA, nodeB, cost)
         self.edges.add(edge)
-        nodeA.neighbors.add(nodeB)
-        nodeB.neighbors.add(nodeA)
+        nodeA.neighbors[nodeB] = cost
+        nodeB.neighbors[nodeA] = cost
         return edge
 
     def remove_edge(self, edge):
@@ -179,8 +181,8 @@ class Graph:
         if edge not in self.edges:
             return False
 
-        self.nodes[edge.nodeA].neighbors.remove(edge.nodeB)
-        self.nodes[edge.nodeB].neighbors.remove(edge.nodeA)
+        del self.nodes[edge.nodeA].neighbors[edge.nodeB]
+        del self.nodes[edge.nodeB].neighbors[edge.nodeA]
         self.edges.remove(edge)
         return True
 
