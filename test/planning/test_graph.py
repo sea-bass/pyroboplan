@@ -162,7 +162,7 @@ def test_str_and_parse():
     assert edgeAB == Edge.parse(eAB)
 
 
-def atest_save_and_load():
+def test_save_and_load():
     nodeA = Node([1.0, 1.0], cost=1.0)
     nodeB = Node([1.0, 2.0], cost=1.0)
     edgeAB = Edge(nodeA, nodeB, 1.0)
