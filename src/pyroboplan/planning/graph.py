@@ -106,7 +106,7 @@ class Graph:
         """
         Creates a graph instance with no edges or nodes.
         """
-        self.nodes = set()
+        self.nodes = {}
         self.edges = set()
 
     def add_node(self, node):
@@ -118,7 +118,20 @@ class Graph:
             node : `pyroboplan.planning.graph.Node`
                 The node to add to the graph.
         """
-        self.nodes.add(node)
+        if node in self.nodes:
+            return
+
+        self.nodes[node] = node
+
+    def get_node(self, q):
+        """
+        Returns the node corresponding to the provided robot configuration, or None if not present.
+        """
+        node = Node(q)
+        if node in self.nodes:
+            return self.nodes[node]
+        else:
+            return None
 
     def add_edge(self, nodeA, nodeB):
         """
@@ -136,6 +149,11 @@ class Graph:
             `pyroboplan.planning.graph.Edge`
                 The edge that was added.
         """
+        if nodeA not in self.nodes or nodeB not in self.nodes:
+            raise ValueError("Specified nodes are not in Graph, cannot add edge.")
+        nodeA = self.nodes[nodeA]
+        nodeB = self.nodes[nodeB]
+
         cost = configuration_distance(nodeA.q, nodeB.q)
         edge = Edge(nodeA, nodeB, cost)
         self.edges.add(edge)
@@ -161,6 +179,8 @@ class Graph:
         if edge not in self.edges:
             return False
 
+        self.nodes[edge.nodeA].neighbors.remove(edge.nodeB)
+        self.nodes[edge.nodeB].neighbors.remove(edge.nodeA)
         self.edges.remove(edge)
         return True
 
