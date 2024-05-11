@@ -7,7 +7,7 @@ def construct_square_graph(n):
     """
     Creates a connected n x n square graph for testing.
 
-    Each node in the graph will be connected to it's vertical and horizontal neighbor.
+    Each node in the graph will be connected to its vertical and horizontal neighbor.
     For example, for n == 3:
 
     Graph
