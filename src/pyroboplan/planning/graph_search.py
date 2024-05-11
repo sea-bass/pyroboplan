@@ -4,16 +4,7 @@ import numpy as np
 
 from heapq import heappop, heappush
 
-
-def reconstruct_path(goal):
-    """Constructs a path back to the start node from the goal node."""
-    path = []
-    current = goal
-    while current:
-        path.append(current)
-        current = current.parent
-    path.reverse()
-    return path
+from pyroboplan.planning.utils import retrace_path
 
 
 def dfs(graph, start_node, goal_node):
@@ -49,7 +40,7 @@ def dfs(graph, start_node, goal_node):
     while stack:
         current = stack.pop()
         if current == goal_node:
-            return reconstruct_path(current)
+            return retrace_path(current)
 
         if current not in visited:
             visited.add(current)
@@ -113,7 +104,7 @@ def astar(graph, start_node, goal_node, heuristic):
 
         # Then we're done
         if current == goal_node:
-            return reconstruct_path(goal_node)
+            return retrace_path(goal_node)
 
         for neighbor in current.neighbors:
             # If we haven't visited then the assumed cost is infinity
