@@ -4,6 +4,7 @@ import numpy as np
 
 from heapq import heappop, heappush
 
+from pyroboplan.core.utils import configuration_distance
 from pyroboplan.planning.utils import retrace_path
 
 
@@ -56,7 +57,12 @@ def dfs(graph, start_node, goal_node):
     return None
 
 
-def astar(graph, start_node, goal_node, heuristic):
+def astar(
+    graph,
+    start_node,
+    goal_node,
+    heuristic=lambda n1, n2: configuration_distance(n1.q, n2.q),
+):
     """
     Finds the shortest path between the start_pose and goal_pose using the A* algorithm.
 
@@ -73,7 +79,7 @@ def astar(graph, start_node, goal_node, heuristic):
     heuristic : function(`pyroboplan.planning.graph.Node`, `pyroboplan.planning.graph.Node`)
         Heuristic function for estimating the distance between two nodes. For A* this will be
         used to compute the configuration space distance between a visited node (arg1) and the
-        goal node (arg2).
+        goal node (arg2). Defaults to :func:`pyroboplan.core.utils.configuration_distance`.
 
     Returns
     -------

@@ -1,4 +1,3 @@
-from pyroboplan.core.utils import configuration_distance
 from pyroboplan.planning.graph import Node, Graph
 from pyroboplan.planning.graph_search import astar, dfs
 
@@ -51,13 +50,12 @@ def test_dfs():
 
 
 def test_astar():
-    heuristic = lambda n1, n2: configuration_distance(n1.q, n2.q)
     g = construct_square_graph(5)
 
     start_pose = Node([1, 1])
     goal_pose = Node([5, 5])
 
-    path = astar(g, start_pose, goal_pose, heuristic)
+    path = astar(g, start_pose, goal_pose)
 
     assert path is not None
     assert path[0] == start_pose
