@@ -1,3 +1,5 @@
+""" Implementations of graph search algorithms for planning applications. """
+
 import numpy as np
 
 from heapq import heappop, heappush
@@ -16,7 +18,7 @@ def reconstruct_path(goal):
 
 def dfs(graph, start_node, goal_node):
     """
-    Find a path between the start_pose and goal_pose using a depth first search.
+    Find a path between the `start_pose` and `goal_pose` using a depth first search (DFS).
 
     Both the start and goal poses must be present in the Graph.
 
@@ -37,8 +39,6 @@ def dfs(graph, start_node, goal_node):
     # Ensure the requested configurations are present
     start_node = graph.get_node(start_node.q)
     goal_node = graph.get_node(goal_node.q)
-    if not start_node or not goal_node:
-        raise ValueError("Nodes must be present in graph to execute pathfinding.")
 
     # Mark the start node as the beginning
     stack = [start_node]
@@ -60,6 +60,8 @@ def dfs(graph, start_node, goal_node):
                     neighbor.cost = current.cost + current.neighbors[neighbor]
                     stack.append(neighbor)
 
+    # If we reach this point, then we have visited all nodes that are reachable from the start
+    # node without finding a path, so no path exists.
     return None
 
 
@@ -78,7 +80,9 @@ def astar(graph, start_node, goal_node, heuristic):
     goal_pose : `pyroboplan.planning.graph.Node`
         The goal robot configuration.
     heuristic : function(`pyroboplan.planning.graph.Node`, `pyroboplan.planning.graph.Node`)
-        Heuristic function for estimating the distance between nodes and the goal pose.
+        Heuristic function for estimating the distance between two nodes. For A* this will be
+        used to compute the configuration space distance between a visited node (arg1) and the
+        goal node (arg2).
 
     Returns
     -------
@@ -88,8 +92,6 @@ def astar(graph, start_node, goal_node, heuristic):
     # Ensure the requested configurations are present
     start_node = graph.get_node(start_node.q)
     goal_node = graph.get_node(goal_node.q)
-    if not start_node or not goal_node:
-        raise ValueError("Nodes must be present in graph to execute pathfinding.")
 
     # Store nodes as a tuple with cost as the first element, heapq will automatically
     # sort based on the first element. We use a counter as the second element to avoid
@@ -131,4 +133,6 @@ def astar(graph, start_node, goal_node, heuristic):
                     open_set_nodes.add(neighbor)
                     heappush(open_set, (f_score, counter, neighbor))
 
+    # If we reach this point, then we have visited all nodes that are reachable from the start
+    # node without finding a path, so no path exists.
     return None
