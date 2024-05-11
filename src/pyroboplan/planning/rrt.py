@@ -13,7 +13,7 @@ from ..core.utils import (
 from ..visualization.meshcat_utils import visualize_frames, visualize_path
 
 from .graph import Node, Graph
-from .utils import discretize_joint_space_path
+from .utils import discretize_joint_space_path, retrace_path
 
 
 class RRTPlannerOptions:
@@ -274,27 +274,16 @@ class RRTPlanner:
             list[array-like]
                 A list of robot configurations describing the path waypoints in order.
         """
-        path = []
-        cur_node = start_tree_final_node
-        path_extracted = False
-        while not path_extracted:
-            if cur_node is None:
-                path_extracted = True
-            else:
-                path.append(cur_node.q)
-                cur_node = cur_node.parent
-        path.reverse()
+        path = retrace_path(start_tree_final_node)
 
-        cur_node = goal_tree_final_node
-        path_extracted = False
-        while not path_extracted:
-            if cur_node is None:
-                path_extracted = True
-            else:
-                path.append(cur_node.q)
-                cur_node = cur_node.parent
+        # If using a goal tree, then the final node should be at index 0, so we must reverse.
+        if goal_tree_final_node:
+            goal_tree_path = retrace_path(goal_tree_final_node)
+            goal_tree_path.reverse()
+            path += goal_tree_path
 
-        return path
+        # Convert to robot configuration states
+        return [n.q for n in path]
 
     def add_node_to_tree(self, tree, q_new, parent_node):
         """

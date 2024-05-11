@@ -25,6 +25,14 @@ pyroboplan.planning.graph module
    :undoc-members:
    :show-inheritance:
 
+pyroboplan.planning.graph\_search module
+----------------------------------------
+
+.. automodule:: pyroboplan.planning.graph_search
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 pyroboplan.planning.rrt module
 ------------------------------
 

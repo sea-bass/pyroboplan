@@ -1,5 +1,7 @@
 import numpy as np
+import os
 import pytest
+import tempfile
 
 from pyroboplan.planning.graph import Node, Edge, Graph
 
@@ -34,6 +36,14 @@ def test_create_edge():
     assert edge.cost == 0.0
 
 
+def test_node_equalities():
+    nodeA = Node([1.0, 1.0], 1.0)
+    nodeB = Node([1.0, 1.0], 1.0)
+    nodeC = Node([2.0, 2.0], 2.0)
+    assert nodeA == nodeB
+    assert nodeA != nodeC
+
+
 def test_create_edge_nondefault_args():
     nodeA = Node([1.0, 2.0, 3.0])
     nodeB = Node([4.0, 5.0, 6.0])
@@ -55,6 +65,10 @@ def test_add_nodes():
     nodeB = Node([4.0, 5.0, 6.0])
     graph = Graph()
 
+    # Asking for a non-existent node will throw an exception
+    with pytest.raises(ValueError):
+        graph.get_node(nodeA)
+
     graph.add_node(nodeA)
     assert len(graph.nodes) == 1
 
@@ -62,7 +76,8 @@ def test_add_nodes():
     assert len(graph.nodes) == 2
 
     # Adding the same node again does not count as a repeat since the underlying storage is a set.
-    graph.add_node(nodeA)
+    nodeA_dup = Node([1.0, 2.0, 3.0])
+    graph.add_node(nodeA_dup)
     assert len(graph.nodes) == 2
 
     assert len(graph.edges) == 0
@@ -102,6 +117,8 @@ def test_remove_edges():
     # Remove a valid edge.
     assert graph.remove_edge(edgeAB)
     assert len(graph.edges) == 0
+    assert nodeB not in nodeA.neighbors
+    assert nodeA not in nodeB.neighbors
 
     # Remove an edge that was already removed.
     assert not graph.remove_edge(edgeAB)
@@ -124,3 +141,41 @@ def test_get_nearest_node_empty_graph():
     graph = Graph()
     nearest_node = graph.get_nearest_node([1.0, 2.0, 3.0])
     assert nearest_node is None
+
+
+def test_str_and_parse():
+    nodeA = Node([1.0, 2.0, 3.0], cost=1.0)
+    nodeB = Node([4.0, 5.0, 6.0], cost=1.0)
+    edgeAB = Edge(nodeA, nodeB)
+
+    sA = str(nodeA)
+    sB = str(nodeB)
+    eAB = str(edgeAB)
+
+    assert sA != sB
+    assert nodeA == Node.parse(sA)
+    assert nodeA != Node.parse(sB)
+
+    chk_edge = Edge.parse(eAB)
+    assert nodeA == chk_edge.nodeA
+    assert nodeB == chk_edge.nodeB
+
+
+def test_save_and_load():
+    nodeA = Node([1.0, 1.0], cost=1.0)
+    nodeB = Node([1.0, 2.0], cost=1.0)
+    g = Graph()
+    g.add_node(nodeA)
+    g.add_node(nodeB)
+    g.add_edge(nodeA, nodeB)
+
+    # Construct simple graph and save to tempfile.
+    f = os.path.join(tempfile.mkdtemp(), "graph")
+    g.save_to_file(f)
+
+    # Assert that we get the same graph back.
+    g_check = Graph.load_from_file(f)
+    assert len(g_check.nodes) == 2
+    assert len(g_check.edges) == 1
+    assert nodeA in g_check.nodes
+    assert nodeB in g_check.nodes
