@@ -1,0 +1,50 @@
+<!-- Simple 2-DOF robot arm for education and testing -->
+<robot name="two_dof_robot">
+
+    <link name="base"/>
+
+    <link name="upperarm">
+        <visual>
+            <geometry>
+                <box size="1.0 0.1 0.1"/>
+            </geometry>
+            <origin rpy="0 0 0" xyz="0.5 0 0"/>
+            <material name="red">
+                <color rgba="1.0 0 0 1.0"/>
+            </material>
+        </visual>
+    </link>
+    <joint name="joint1" type="revolute">
+        <axis rpy="0 0 0" xyz="0 0 1"/>
+        <parent link="base"/>
+        <child link="upperarm"/>
+        <limit lower="-3.14" upper="3.14" velocity="3.14" effort="1000" />
+    </joint>
+
+    <link name="forearm">
+        <visual>
+            <geometry>
+                <box size="1.0 0.1 0.1"/>
+            </geometry>
+            <origin rpy="0 0 0" xyz="0.5 0 0"/>
+            <material name="blue">
+                <color rgba="0 0 1.0 1.0"/>
+            </material>
+        </visual>
+    </link>
+    <joint name="joint2" type="revolute">
+        <axis rpy="0 0 0" xyz="0 0 1"/>
+        <parent link="upperarm"/>
+        <child link="forearm"/>
+        <origin rpy="0 0 0" xyz="1 0 0"/>
+        <limit lower="-3.14" upper="3.14" velocity="3.14" effort="1000" />
+    </joint>
+
+    <link name="ee" />
+    <joint name="ee_joint" type="fixed">
+        <parent link="forearm"/>
+        <child link="ee"/>
+        <origin rpy="0 0 0" xyz="1 0 0"/>
+    </joint>
+
+</robot>

@@ -91,7 +91,7 @@ This is probably the most common task that comes up when we describe motion plan
 There are several techniques for path planning, which can roughly be broken down into:
 
 * **Graph Search**: Discretize the environment and perform exhaustive search to achieve a goal. Common examples include breadth-/depth-first search, Dijkstra's algorithm, and A* and all its variants.
-* **Sampling-Based Planning**: Similar to graph search, except the graph is built up by randomly sampling the environment to manage computational complexity. Common examples include Probabilistic Roadmaps (PRM) and Rapidly-expanding Random Trees (RRT), with all their variants.
+* **Sampling-Based Planning**: Similar to graph search, except the graph is built up by randomly sampling the environment to manage computational complexity. Common examples include Probabilistic Roadmaps (PRM) and Rapidly-exploring Random Trees (RRT), with all their variants.
 * **Optimization-Based Planning**: Uses optimization techniques to produce a solution, which can be represented as a list of states to pass through at a specified time step (known as *direct transcription*) or the parameters of a mathematical model that describe the motion (known as *direct collocation*).
 
 One thing to note is that these planning approaches can actually produce a **path** (basically, only the waypoints) or a **trajectory** (waypoints along with their timing).
