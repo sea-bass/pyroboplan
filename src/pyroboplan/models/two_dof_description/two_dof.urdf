@@ -1,4 +1,4 @@
-<!-- Simple 2-DOF robot arm for educational purposes -->
+<!-- Simple 2-DOF robot arm for education and testing -->
 <robot name="two_dof_robot">
 
     <link name="base"/>
@@ -9,6 +9,9 @@
                 <box size="1.0 0.1 0.1"/>
             </geometry>
             <origin rpy="0 0 0" xyz="0.5 0 0"/>
+            <material name="red">
+                <color rgba="1.0 0 0 1.0"/>
+            </material>
         </visual>
     </link>
     <joint name="joint1" type="revolute">
@@ -24,6 +27,9 @@
                 <box size="1.0 0.1 0.1"/>
             </geometry>
             <origin rpy="0 0 0" xyz="0.5 0 0"/>
+            <material name="blue">
+                <color rgba="0 0 1.0 1.0"/>
+            </material>
         </visual>
     </link>
     <joint name="joint2" type="revolute">
