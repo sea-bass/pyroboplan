@@ -65,6 +65,10 @@ def test_add_nodes():
     nodeB = Node([4.0, 5.0, 6.0])
     graph = Graph()
 
+    # Asking for a non-existent node will throw an exception
+    with pytest.raises(ValueError):
+        graph.get_node(nodeA)
+
     graph.add_node(nodeA)
     assert len(graph.nodes) == 1
 
@@ -72,7 +76,8 @@ def test_add_nodes():
     assert len(graph.nodes) == 2
 
     # Adding the same node again does not count as a repeat since the underlying storage is a set.
-    graph.add_node(nodeA)
+    nodeA_dup = Node([1.0, 2.0, 3.0])
+    graph.add_node(nodeA_dup)
     assert len(graph.nodes) == 2
 
     assert len(graph.edges) == 0

@@ -1,3 +1,5 @@
+""" Generic graph class for use in robot motion planning algorithms. """
+
 import numpy as np
 import ast
 import re
@@ -33,7 +35,7 @@ class Node:
         return hash(self.q.tobytes())
 
     def __eq__(self, other):
-        """A node is equal to another node iff their joint configurations are equal."""
+        """A node is equal to another node if and only if their joint configurations are equal."""
         return np.array_equal(self.q, other.q)
 
     def __str__(self):
@@ -116,12 +118,24 @@ class Graph:
     def get_node(self, q):
         """
         Returns the node corresponding to the provided robot configuration, or None if not present.
+
+        Raises a `ValueError` if the specified configuration is not in the Graph.
+
+        Parameters
+        ----------
+            q : array-like
+                The robot configuration for the desired node.
+
+        Returns
+        -------
+            `pyroboplan.planning.graph.Node`
+                The node with the specified robot configuration.
         """
         node = Node(q)
-        if node in self.nodes:
-            return self.nodes[node]
-        else:
-            return None
+        if node not in self.nodes:
+            raise ValueError("Specified robot configuration not found in Graph.")
+
+        return self.nodes[node]
 
     def add_edge(self, nodeA, nodeB):
         """
@@ -204,6 +218,11 @@ class Graph:
         Write the graph to file.
 
         Only node and edge data is persisted. Neighbors can be rederived, but all parent information is lost.
+
+        Parameters
+        ----------
+            filename : str
+                The full filepath in which to save the Graph.
         """
         with open(filename, "w") as file:
             file.writelines([str(node) + "\n" for node in self.nodes])
@@ -211,7 +230,19 @@ class Graph:
 
     @classmethod
     def load_from_file(cls, filename):
-        """Loads a graph from a file."""
+        """
+        Loads a graph from a file.
+
+        Parameters
+        ----------
+            filename : str
+                The full filepath from which to read a Graph.
+
+        Returns
+        -------
+            `pyroboplan.planning.graph.Graph`
+                The reconstructed Graph from file.
+        """
         g = cls()
         with open(filename, "r") as file:
             for line in file:
