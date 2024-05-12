@@ -77,9 +77,6 @@ viz.display(q_start)
 visualize_frames(viz, "cartesian_plan", tforms_to_show, line_length=0.05, line_width=1)
 time.sleep(1.0)
 
-print(f'q_vec.shape: {q_vec.shape}')
-
-
 plt.ion()
 plt.figure()
 plt.title("Joint Position Trajectories")
