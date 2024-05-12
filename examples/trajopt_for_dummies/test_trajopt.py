@@ -21,6 +21,8 @@ max_vel = 1.0
 min_vel = -1.0
 max_accel = 1.5
 min_accel = -1.5
+min_jerk = -1.25
+max_jerk = 1.25
 
 # Collocation point constraints
 for k in range(N - 1):
@@ -33,7 +35,7 @@ for k in range(N - 1):
 
     # Sample and evaluate the trajectory to constrain
     for step in np.linspace(0, 1, 11):
-        # Velocity
+        # Velocity limits
         prog.AddConstraint(
             x_d[k]
             + (-3.0 * x_d[k] + 4.0 * xc_d[k] - x_d[k + 1]) * (step * h[k]) / h[k]
@@ -52,7 +54,7 @@ for k in range(N - 1):
             / h[k] ** 2
             >= min_vel
         )
-        # Acceleration
+        # Acceleration limits
         prog.AddConstraint(
             (-3.0 * x_d[k] + 4.0 * xc_d[k] - x_d[k + 1]) / h[k]
             + 4.0 * (x_d[k] - 2.0 * xc_d[k] + x_d[k + 1]) * (step * h[k]) / h[k] ** 2
@@ -63,6 +65,30 @@ for k in range(N - 1):
             + 4.0 * (x_d[k] - 2.0 * xc_d[k] + x_d[k + 1]) * (step * h[k]) / h[k] ** 2
             >= min_accel
         )
+        # Jerk limits
+        prog.AddConstraint(
+            8.0 * (x_d[k] - 2.0 * xc_d[k] + x_d[k + 1]) / h[k] ** 2 <= max_jerk
+        )
+        prog.AddConstraint(
+            8.0 * (x_d[k] - 2.0 * xc_d[k] + x_d[k + 1]) / h[k] ** 2 >= min_jerk
+        )
+
+
+# Acceleration and jerk continuity between segments.
+for k in range(N - 2):
+    prog.AddConstraint(
+        (-3.0 * x_d[k] + 4.0 * xc_d[k] - x_d[k + 1]) / h[k]
+        + 4.0 * (x_d[k] - 2.0 * xc_d[k] + x_d[k + 1]) * (1.0 * h[k]) / h[k] ** 2
+        == (-3.0 * x_d[k + 1] + 4.0 * xc_d[k + 1] - x_d[k + 2]) / h[k + 1]
+        + 4.0
+        * (x_d[k + 1] - 2.0 * xc_d[k + 1] + x_d[k + 2])
+        * (0.0 * h[k + 1])
+        / h[k + 1] ** 2
+    )
+    prog.AddConstraint(
+        8.0 * (x_d[k] - 2.0 * xc_d[k] + x_d[k + 1]) / h[k] ** 2
+        == 8.0 * (x_d[k + 1] - 2.0 * xc_d[k + 1] + x_d[k + 2]) / h[k] ** 2
+    )
 
 # Max value constraints
 prog.AddBoundingBoxConstraint(min_vel, max_vel, x_d)
@@ -102,6 +128,7 @@ if t_vec[-1] != t_final:
 x_vec = np.zeros_like(t_vec)
 x_d_vec = np.zeros_like(t_vec)
 x_dd_vec = np.zeros_like(t_vec)
+x_ddd_vec = np.zeros_like(t_vec)
 idx = 0
 segment_idx = 0
 while idx < len(x_vec):
@@ -158,6 +185,15 @@ while idx < len(x_vec):
             - 2.0 * xc_d_opt[segment_idx]
             + x_d_opt[segment_idx + 1]
         ) * tau / h_cur**2
+        x_ddd_vec[idx] = (
+            8.0
+            * (
+                x_d_opt[segment_idx]
+                - 2.0 * xc_d_opt[segment_idx]
+                + x_d_opt[segment_idx + 1]
+            )
+            / h_cur**2
+        )
         idx += 1
     else:
         segment_idx += 1
@@ -169,9 +205,10 @@ plt.figure()
 plt.plot(t_vec, x_vec, "k-")
 plt.plot(t_vec, x_d_vec, "r-")
 plt.plot(t_vec, x_dd_vec, "b-")
+plt.plot(t_vec, x_ddd_vec, "g-")
 plt.plot(t_waypt, x_opt, "ko")
 plt.plot(t_coll, xc_opt, "ko")
 plt.plot(t_waypt, x_d_opt, "ro")
 plt.plot(t_coll, xc_d_opt, "ro")
-plt.legend(["Position", "Velocity", "Acceleration"])
+plt.legend(["Position", "Velocity", "Acceleration", "Jerk"])
 plt.show()
