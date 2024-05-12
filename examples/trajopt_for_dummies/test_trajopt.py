@@ -74,7 +74,7 @@ for k in range(N - 1):
         )
 
 
-# Acceleration and jerk continuity between segments.
+# Acceleration continuity between segments.
 for k in range(N - 2):
     prog.AddConstraint(
         (-3.0 * x_d[k] + 4.0 * xc_d[k] - x_d[k + 1]) / h[k]
@@ -84,10 +84,6 @@ for k in range(N - 2):
         * (x_d[k + 1] - 2.0 * xc_d[k + 1] + x_d[k + 2])
         * (0.0 * h[k + 1])
         / h[k + 1] ** 2
-    )
-    prog.AddConstraint(
-        8.0 * (x_d[k] - 2.0 * xc_d[k] + x_d[k + 1]) / h[k] ** 2
-        == 8.0 * (x_d[k + 1] - 2.0 * xc_d[k + 1] + x_d[k + 2]) / h[k] ** 2
     )
 
 # Max value constraints
