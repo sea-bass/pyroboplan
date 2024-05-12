@@ -76,19 +76,32 @@ viz.display(q_start)
 visualize_frames(viz, "cartesian_plan", tforms_to_show, line_length=0.05, line_width=1)
 time.sleep(1.0)
 
+print(f'q_vec.shape: {q_vec.shape}')
+
+
 plt.ion()
 plt.figure()
 plt.title("Joint Position Trajectories")
 for idx in range(q_vec.shape[0]):
     plt.plot(t_vec, q_vec[idx, :])
+
+line = plt.axvline(x=0, color='b', label='axvline - full height')
 plt.legend(model.names[1:])
 plt.show()
+
+curr_time = 0
 
 if success:
     print("Cartesian planning successful!")
     input("Press 'Enter' to animate the path.")
+
+
     for idx in range(q_vec.shape[1]):
         viz.display(q_vec[:, idx])
-        time.sleep(dt)
+        # time.sleep(dt)
+        plt.pause(dt)
+        curr_time = curr_time + dt
+        line.remove()
+        line = plt.axvline(x=curr_time, color='b', label='axvline - full height')
 else:
     print("Cartesian planning failed.")
