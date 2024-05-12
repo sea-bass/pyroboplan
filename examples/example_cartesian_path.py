@@ -81,6 +81,10 @@ plt.figure()
 plt.title("Joint Position Trajectories")
 for idx in range(q_vec.shape[0]):
     plt.plot(t_vec, q_vec[idx, :])
+
+curr_time = 0
+time_line = plt.axvline(x=curr_time, color="b")
+
 plt.legend(model.names[1:])
 plt.show()
 
@@ -89,6 +93,8 @@ if success:
     input("Press 'Enter' to animate the path.")
     for idx in range(q_vec.shape[1]):
         viz.display(q_vec[:, idx])
-        time.sleep(dt)
+        plt.pause(dt)
+        curr_time += dt
+        time_line.set_xdata([curr_time, curr_time])
 else:
     print("Cartesian planning failed.")
