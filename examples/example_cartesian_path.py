@@ -4,6 +4,7 @@ task-space, or operational space, motions with straight-line interpolation.
 """
 
 import matplotlib.pyplot as plt
+import matplotlib.animation as animation
 import numpy as np
 import pinocchio
 from pinocchio.visualize import MeshcatVisualizer
@@ -85,7 +86,7 @@ plt.title("Joint Position Trajectories")
 for idx in range(q_vec.shape[0]):
     plt.plot(t_vec, q_vec[idx, :])
 
-line = plt.axvline(x=0, color='b', label='axvline - full height')
+line = plt.axvline(x=0, color='b')
 plt.legend(model.names[1:])
 plt.show()
 
@@ -95,13 +96,11 @@ if success:
     print("Cartesian planning successful!")
     input("Press 'Enter' to animate the path.")
 
-
     for idx in range(q_vec.shape[1]):
         viz.display(q_vec[:, idx])
-        # time.sleep(dt)
         plt.pause(dt)
-        curr_time = curr_time + dt
+        curr_time += dt
         line.remove()
-        line = plt.axvline(x=curr_time, color='b', label='axvline - full height')
+        line = plt.axvline(x=curr_time, color='b')
 else:
     print("Cartesian planning failed.")
