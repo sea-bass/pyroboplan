@@ -17,6 +17,14 @@ pyroboplan.models.panda module
    :undoc-members:
    :show-inheritance:
 
+pyroboplan.models.two\_dof module
+---------------------------------
+
+.. automodule:: pyroboplan.models.two_dof
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 pyroboplan.models.utils module
 ------------------------------
 
