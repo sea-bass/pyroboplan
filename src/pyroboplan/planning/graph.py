@@ -74,6 +74,14 @@ class Edge:
         self.nodeB = nodeB
         self.cost = cost
 
+    def __hash__(self):
+        """Computes the has of this edge using its nodes hashes."""
+        return hash((self.nodeA, self.nodeB))
+
+    def __eq__(self, other):
+        """A node is equal to another node if and only if their joint configurations are equal."""
+        return self.nodeA == other.nodeA and self.nodeB == other.nodeB
+
     def __str__(self):
         """Return a string representation of the edge."""
         return f"Edge(nodeA=({self.nodeA}), nodeB=({self.nodeB}), cost={self.cost})"

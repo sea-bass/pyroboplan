@@ -98,6 +98,10 @@ def test_add_edges():
     assert nodeA in nodeB.neighbors
     assert edgeAB.cost == pytest.approx(np.linalg.norm([3.0, 3.0, 3.0]))
 
+    # Adding the same edge should not modify the graph.
+    edgeAB = graph.add_edge(nodeA, nodeB)
+    assert len(graph.edges) == 1
+
     edgeAC = graph.add_edge(nodeA, nodeC)
     assert len(graph.edges) == 2
     assert nodeC in nodeA.neighbors
