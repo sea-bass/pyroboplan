@@ -155,9 +155,8 @@ class PRMPlanner:
 
     def reset(self):
         """
-        Resets the PRM's transient data between parents.
+        Resets the PRM's transient data between queries.
         """
-        # Clear any previous data
         self.latest_path = None
         for node in self.graph.nodes:
             node.parent = None
@@ -189,7 +188,7 @@ class PRMPlanner:
         goal_node = Node(q_goal)
         self.graph.add_node(goal_node)
 
-        # If we cannot connect the start and goal nodes then there is no recourse
+        # If we cannot connect the start and goal nodes then there is no recourse.
         if not self.add_and_connect_node(start_node):
             print("Failed to connect the start configuration to the PRM.")
             return None
