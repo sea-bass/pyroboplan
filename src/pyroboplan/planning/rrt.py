@@ -13,7 +13,7 @@ from ..core.utils import (
 from ..visualization.meshcat_utils import visualize_frames, visualize_path
 
 from .graph import Node, Graph
-from .utils import discretize_joint_space_path, retrace_path
+from .utils import discretize_joint_space_path, extend_robot_state, retrace_path
 
 
 class RRTPlannerOptions:
@@ -218,42 +218,30 @@ class RRTPlanner:
             q_sample : array-like
                 The robot configuration sample to extend or connect towards.
         """
-        q_diff = q_sample - parent_node.q
-        q_increment = self.options.max_connection_dist * q_diff / np.linalg.norm(q_diff)
-
-        terminated = False
         q_out = None
         q_cur = parent_node.q
-        while not terminated:
-            # Clip the distance between nearest and sampled nodes to max connection distance.
-            # If we have reached the sampled node, this is the final iteration.
-            if (
-                configuration_distance(q_cur, q_sample)
-                > self.options.max_connection_dist
-            ):
-                q_extend = q_cur + q_increment
-            else:
-                q_extend = q_sample
-                terminated |= True
+        while True:
+            # Compute the next incremental robot configuration, if it exists.
+            q_extend = extend_robot_state(
+                q_cur,
+                q_sample,
+                self.options.max_angle_step,
+                self.options.max_connection_dist,
+                self.model,
+                self.collision_model,
+            )
 
-            # Extension is successful only if the path is collision free.
-            q_extend_in_collision = check_collisions_at_state(
-                self.model, self.collision_model, q_extend
-            )
-            path_to_q_extend = discretize_joint_space_path(
-                q_cur, q_extend, self.options.max_angle_step
-            )
-            path_to_q_extend_in_collision = check_collisions_along_path(
-                self.model, self.collision_model, path_to_q_extend
-            )
-            if not q_extend_in_collision and not path_to_q_extend_in_collision:
-                q_cur = q_out = q_extend
+            if q_extend is None:
+                break
             else:
-                terminated |= True
+                q_out = q_cur = q_extend
+                # If we have reached the sampled state then we are done.
+                if np.array_equal(q_cur, q_sample):
+                    break
 
             # If RRTConnect is disabled, only one iteration is needed.
             if not self.options.rrt_connect:
-                terminated |= True
+                break
 
         return q_out
 

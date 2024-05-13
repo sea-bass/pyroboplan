@@ -2,6 +2,62 @@
 
 import numpy as np
 
+from ..core.utils import (
+    check_collisions_at_state,
+    check_collisions_along_path,
+    configuration_distance,
+)
+
+
+def extend_robot_state(
+    q_parent, q_sample, max_angle_step, max_connection_distance, model, collision_model
+):
+    """
+    Determines an incremental robot configuration between the parent and sample states, if one exists.
+
+    Parameters
+    ----------
+        q_parent : array-like
+            The starting robot configuration.
+        q_sample : array-like
+            The candidate sample configuration to extend towards.
+        max_angle_step : float
+            Maximum angle step, in radians, for collision checking along path segments.
+        max_connection_distance : float
+            Maximum angular distance, in radians, for connecting nodes.
+        model : `pinocchio.Model`
+            The model for the robot configuration.
+        collision_model : `pinocchio.Model`
+            The model to use for collision checking.
+
+    Returns
+    -------
+        array-like
+            The resulting robot configuration, or None if it is not feasible.
+    """
+    q_diff = q_sample - q_parent
+    q_increment = max_connection_distance * q_diff / np.linalg.norm(q_diff)
+
+    q_cur = q_parent
+    # Clip the distance between nearest and sampled nodes to max connection distance.
+    # If we have reached the sampled node, then we just check that.
+    if configuration_distance(q_cur, q_sample) > max_connection_distance:
+        q_extend = q_cur + q_increment
+    else:
+        q_extend = q_sample
+
+    # Ensure the extended configuration is collision free.
+    if check_collisions_at_state(model, collision_model, q_extend):
+        return None
+
+    # Ensure the discretized path is collision free.
+    path_to_q_extend = discretize_joint_space_path(q_cur, q_extend, max_angle_step)
+    if check_collisions_along_path(model, collision_model, path_to_q_extend):
+        return None
+
+    # Then there are no collisions so the extension is valid
+    return q_extend
+
 
 def discretize_joint_space_path(q_start, q_end, max_angle_distance):
     """
