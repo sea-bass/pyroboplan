@@ -213,6 +213,35 @@ class Graph:
 
         return nearest_node
 
+    def get_nearest_neighbors(self, q, radius):
+        """
+        Gets a list of the nearest neighbors to the specified robot configuration.
+
+        Neighboring nodes will be returned as a sorted list of tuples of nodes along with the distance
+        to the specified configuration.
+
+        Parameters
+        ----------
+            q : array-like
+                The robot configuration to use in this query.
+            radius: float
+                The maximum radius in which to consider neighbors
+
+        Returns
+        -------
+            List of (`float`, `pyroboplan.planning.graph.Node`)
+                The set of all n
+        """
+        neighbors = []
+        chk_node = Node(q)
+        for node in self.nodes:
+            if node == chk_node:
+                continue
+            d = configuration_distance(node.q, chk_node.q)
+            if d <= radius:
+                neighbors.append((node, d))
+        return sorted(neighbors, key=lambda n: n[1])
+
     def save_to_file(self, filename):
         """
         Write the graph to file.

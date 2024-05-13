@@ -143,6 +143,28 @@ def test_get_nearest_node_empty_graph():
     assert nearest_node is None
 
 
+def test_get_nearest_neighbors():
+    graph = Graph()
+    neighbors = graph.get_nearest_neighbors([1.0], radius=1.0)
+
+    assert len(neighbors) == 0
+
+    nodeA = Node([0.0])
+    nodeB = Node([1.0])
+    nodeC = Node([3.0])
+    nodeD = Node([4.0])
+
+    graph.add_node(nodeA)
+    graph.add_node(nodeB)
+    graph.add_node(nodeC)
+    graph.add_node(nodeD)
+
+    neighbors = graph.get_nearest_neighbors([1.0], radius=2.0)
+    assert len(neighbors) == 2
+    assert neighbors[0] == (nodeA, 1.0)
+    assert neighbors[1] == (nodeC, 2.0)
+
+
 def test_str_and_parse():
     nodeA = Node([1.0, 2.0, 3.0], cost=1.0)
     nodeB = Node([4.0, 5.0, 6.0], cost=1.0)
