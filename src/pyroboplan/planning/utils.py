@@ -8,6 +8,8 @@ from ..core.utils import (
     configuration_distance,
 )
 
+from itertools import product
+
 
 def extend_robot_state(q_parent, q_sample, max_connection_distance):
     """
@@ -127,3 +129,33 @@ def retrace_path(goal_node):
         current = current.parent
     path.reverse()
     return path
+
+
+def discretize_joint_space(model, step_size):
+    """
+    Discretizes the entire joint space of the model at step_size increments.
+
+    This is an extraordinarily expensive operation for high DOF manipulators
+    and small step sizes!
+
+    Parameters
+    ----------
+        model : `pinocchio.Model`
+            The robot model containing lower and upper position limits.
+        step_size : float
+            The step size for sampling.
+
+    Yields
+    ------
+        np.ndarray
+            The next point in the configuration space.
+    """
+    lower = model.lowerPositionLimit
+    upper = model.upperPositionLimit
+
+    # Create ranges for each joint
+    ranges = [np.arange(l, u, step_size) for l, u in zip(lower, upper)]
+
+    # Generate the Cartesian product of all ranges using itertools.product
+    for point in product(*ranges):
+        yield np.array(point)
