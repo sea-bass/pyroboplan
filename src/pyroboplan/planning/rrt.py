@@ -33,6 +33,7 @@ class RRTPlannerOptions:
         rrt_star=False,
         max_rewire_dist=np.inf,
         max_planning_time=10.0,
+        fast_return=True,
         goal_biasing_probability=0.0,
     ):
         """
@@ -58,6 +59,9 @@ class RRTPlannerOptions:
                 If set to `np.inf`, all nodes in the trees will be considered for rewiring.
             max_planning_time : float
                 Maximum planning time, in seconds.
+            fast_return : bool
+                If True, return as soon as a solution is found. Otherwise continuing building the tree
+                until max_planning_time is reached.
             goal_biasing_probability : float
                 Probability of sampling the goal configuration itself, which can help planning converge.
         """
@@ -68,6 +72,7 @@ class RRTPlannerOptions:
         self.rrt_star = rrt_star
         self.max_rewire_dist = max_rewire_dist
         self.max_planning_time = max_planning_time
+        self.fast_return = fast_return
         self.goal_biasing_probability = goal_biasing_probability
 
 
@@ -148,11 +153,16 @@ class RRTPlanner:
             goal_found = True
 
         start_tree_phase = True
-        while not goal_found:
+        while True:
+            # Only return on success if specified in the options.
+            if goal_found and self.options.fast_return:
+                break
+
             # Check for timeouts.
             if time.time() - t_start > self.options.max_planning_time:
+                message = "succeeded" if goal_found else "timed out"
                 print(
-                    f"Planning timed out after {self.options.max_planning_time} seconds."
+                    f"Planning {message} after {self.options.max_planning_time} seconds."
                 )
                 break
 
@@ -223,6 +233,10 @@ class RRTPlanner:
             q_sample : array-like
                 The robot configuration sample to extend or connect towards.
         """
+        # If they are the same node there's nothing to do.
+        if np.array_equal(parent_node.q, q_sample):
+            return None
+
         q_out = None
         q_cur = parent_node.q
         while True:

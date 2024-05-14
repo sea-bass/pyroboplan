@@ -199,6 +199,8 @@ class Graph:
     def get_nearest_node(self, q):
         """
         Gets the nearest node to a specified robot configuration.
+        If the configuration is in the graph the corresponding node will be returned. Namely,
+        the node with distance 0.
 
         Parameters
         ----------
@@ -212,6 +214,9 @@ class Graph:
         """
         nearest_node = None
         min_dist = np.inf
+        chk_node = Node(q)
+        if chk_node in self.nodes:
+            return self.nodes[chk_node]
 
         for node in self.nodes:
             dist = configuration_distance(q, node.q)
