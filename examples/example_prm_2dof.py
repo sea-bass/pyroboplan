@@ -22,6 +22,7 @@ def run_prm_search(q_start, q_end, planner, options):
         print(f"Searching for path attempt: {i+1}...")
         path = planner.plan(q_start, q_end)
         if path:
+            print("Found path!")
             break
         else:
             print("Failed to find a path, growing the PRM...")
@@ -70,8 +71,9 @@ if __name__ == "__main__":
         prm_file=None,
     )
     planner = PRMPlanner(model, collision_model, options=options)
-    print(f"Initializing the roadmap...")
+    print("Initializing the roadmap...")
     planner.construct_roadmap()
+    print("Plotting the roadmap...")
     planner.visualize(viz, "ee", show_path=False, show_graph=True)
 
     # We can save the graph to file for use in future PRMs.

@@ -79,7 +79,7 @@ class Edge:
         return hash((self.nodeA, self.nodeB))
 
     def __eq__(self, other):
-        """A node is equal to another node if and only if their joint configurations are equal."""
+        """An edge is equal to another edge if and only if they start and end at the same nodes."""
         return self.nodeA == other.nodeA and self.nodeB == other.nodeB
 
     def __str__(self):
@@ -226,7 +226,8 @@ class Graph:
         Gets a list of the nearest neighbors to the specified robot configuration.
 
         Neighboring nodes will be returned as a sorted list of tuples of nodes along with the distance
-        to the specified configuration.
+        to the specified configuration. If the provided configuration is in the graph, it will not
+        be returned (no distance 0 node will be returned).
 
         Parameters
         ----------
@@ -237,8 +238,9 @@ class Graph:
 
         Returns
         -------
-            List of (`float`, `pyroboplan.planning.graph.Node`)
-                The set of all n
+            List of (`pyroboplan.planning.graph.Node`, `float`)
+                A list of tuples of all the nodes within the specified radius of the provided robot configuration,
+                along with their corresponding distances.
         """
         neighbors = []
         chk_node = Node(q)
@@ -248,6 +250,7 @@ class Graph:
             d = configuration_distance(node.q, chk_node.q)
             if d <= radius:
                 neighbors.append((node, d))
+        # Sort based on the second entry in the tuples, namely the distance from q.
         return sorted(neighbors, key=lambda n: n[1])
 
     def save_to_file(self, filename):

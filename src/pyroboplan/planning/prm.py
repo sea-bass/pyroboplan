@@ -35,8 +35,6 @@ class PRMPlannerOptions:
         ----------
             max_angle_step : float
                 Maximum angle step, in radians, for collision checking along path segments.
-            max_connection_dist : float
-                Maximum angular distance, in radians, for connecting nodes.
             max_neighbor_radius : float
                 The maximum allowable connectable distance between nodes.
             max_neighbor_connections : float
@@ -117,8 +115,6 @@ class PRMPlanner:
         ----------
             parent_node : `pyroboplan.planning.graph.Node`
                 The node to add.
-            force : bool
-                If true, add the node to the Graph regardless of options.
 
         Returns
         -------
@@ -239,7 +235,7 @@ class PRMPlanner:
                 path_tforms = extract_cartesian_poses(self.model, frame_name, q_path)
                 visualize_path(
                     visualizer,
-                    f"{graph_name}_start/edge{idx}",
+                    f"{graph_name}/edge{idx}",
                     path_tforms,
                     line_width=0.5,
                     line_color=[0.9, 0.0, 0.9],
