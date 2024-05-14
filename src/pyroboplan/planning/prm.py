@@ -45,9 +45,9 @@ class PRMPlannerOptions:
                 The maximum number of samples to generate in the configuration space when growing the graph.
             construction_timeout : float
                 Maximum time allotted to sample the configuration space per call.
-            prm_file : str
+            prm_file : str, optional
                 Full file path of a persisted PRM graph to use in the planner.
-                If this is not specified the PRM will be constructed from scratch.
+                If this is not specified, the PRM will be constructed from scratch.
         """
         self.max_angle_step = max_angle_step
         self.max_neighbor_radius = max_neighbor_radius
@@ -214,7 +214,7 @@ class PRMPlanner:
         show_graph=False,
     ):
         """
-        Visualizes the PRM path.
+        Visualizes the PRM and the latest path found within it.
 
         Parameters
         ----------
