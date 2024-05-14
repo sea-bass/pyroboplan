@@ -9,9 +9,7 @@ from ..core.utils import (
 )
 
 
-def extend_robot_state(
-    q_parent, q_sample, max_angle_step, max_connection_distance, model, collision_model
-):
+def extend_robot_state(q_parent, q_sample, max_connection_distance):
     """
     Determines an incremental robot configuration between the parent and sample states, if one exists.
 
@@ -21,14 +19,8 @@ def extend_robot_state(
             The starting robot configuration.
         q_sample : array-like
             The candidate sample configuration to extend towards.
-        max_angle_step : float
-            Maximum angle step, in radians, for collision checking along path segments.
         max_connection_distance : float
             Maximum angular distance, in radians, for connecting nodes.
-        model : `pinocchio.Model`
-            The model for the robot configuration.
-        collision_model : `pinocchio.Model`
-            The model to use for collision checking.
 
     Returns
     -------
@@ -46,17 +38,42 @@ def extend_robot_state(
     else:
         q_extend = q_sample
 
-    # Ensure the extended configuration is collision free.
-    if check_collisions_at_state(model, collision_model, q_extend):
-        return None
-
-    # Ensure the discretized path is collision free.
-    path_to_q_extend = discretize_joint_space_path(q_cur, q_extend, max_angle_step)
-    if check_collisions_along_path(model, collision_model, path_to_q_extend):
-        return None
-
     # Then there are no collisions so the extension is valid
     return q_extend
+
+
+def has_collision_free_path(q1, q2, max_angle_step, model, collision_model):
+    """
+    Determines an incremental robot configuration between the parent and sample states, if one exists.
+
+    Parameters
+    ----------
+        q1 : array-like
+            The starting robot configuration.
+        q2 : array-like
+            The destination robot configuration.
+        max_angle_step : float
+            Maximum angle step, in radians, for collision checking along path segments.
+        model : `pinocchio.Model`
+            The model for the robot configuration.
+        collision_model : `pinocchio.Model`
+            The model to use for collision checking.
+
+    Returns
+    -------
+        bool
+            True if the configurations can be connected, False otherwise.
+    """
+    # Ensure the destination is collision free.
+    if check_collisions_at_state(model, collision_model, q2):
+        return False
+
+    # Ensure the discretized path is collision free.
+    path_to_q_extend = discretize_joint_space_path(q1, q2, max_angle_step)
+    if check_collisions_along_path(model, collision_model, path_to_q_extend):
+        return False
+
+    return True
 
 
 def discretize_joint_space_path(q_start, q_end, max_angle_distance):

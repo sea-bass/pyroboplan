@@ -13,7 +13,12 @@ from ..core.utils import (
 from ..visualization.meshcat_utils import visualize_frames, visualize_path
 
 from .graph import Node, Graph
-from .utils import discretize_joint_space_path, extend_robot_state, retrace_path
+from .utils import (
+    discretize_joint_space_path,
+    extend_robot_state,
+    has_collision_free_path,
+    retrace_path,
+)
 
 
 class RRTPlannerOptions:
@@ -221,23 +226,27 @@ class RRTPlanner:
         q_out = None
         q_cur = parent_node.q
         while True:
-            # Compute the next incremental robot configuration, if it exists.
+            # Compute the next incremental robot configuration.
             q_extend = extend_robot_state(
                 q_cur,
                 q_sample,
-                self.options.max_angle_step,
                 self.options.max_connection_dist,
-                self.model,
-                self.collision_model,
             )
 
-            if q_extend is None:
-                break
-            else:
+            # If we can connect then it is a valid state
+            if has_collision_free_path(
+                q_cur,
+                q_extend,
+                self.options.max_angle_step,
+                self.model,
+                self.collision_model,
+            ):
                 q_out = q_cur = q_extend
                 # If we have reached the sampled state then we are done.
                 if np.array_equal(q_cur, q_sample):
                     break
+            else:
+                break
 
             # If RRTConnect is disabled, only one iteration is needed.
             if not self.options.rrt_connect:
