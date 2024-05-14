@@ -75,7 +75,7 @@ class Edge:
         self.cost = cost
 
     def __hash__(self):
-        """Computes the has of this edge using its nodes hashes."""
+        """Computes the hash of this edge using its nodes' hashes."""
         return hash((self.nodeA, self.nodeB))
 
     def __eq__(self, other):
