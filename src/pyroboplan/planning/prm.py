@@ -1,6 +1,5 @@
 """ Utilities for manipulation-specific Probabilistic Roadmaps (PRMs). """
 
-import numpy as np
 import time
 
 from pyroboplan.planning.graph_search import astar
@@ -14,6 +13,11 @@ from ..visualization.meshcat_utils import visualize_frames, visualize_path
 
 from .graph import Node, Graph
 from .utils import discretize_joint_space_path, has_collision_free_path
+
+
+def random_model_state_generator(model):
+    while True:
+        yield get_random_state(model)
 
 
 class PRMPlannerOptions:
@@ -90,27 +94,43 @@ class PRMPlanner:
         else:
             self.graph = Graph.load_from_file(self.options.prm_file)
 
-    def construct_roadmap(self, sample_function=get_random_state):
+    def construct_roadmap(self):
         """
         Grows the graph by randomly sampling nodes and connecting them if feasible.
 
+        Construction is done using default parameters set in the planning options.
+        """
+        generator = random_model_state_generator(self.model)
+        self.construct_roadmap_parameterized(
+            generator,
+            self.options.max_construction_nodes,
+            self.options.construction_timeout,
+        )
+
+    def construct_roadmap_parameterized(self, sample_generator, max_samples, timeout):
+        """
+        Grows the graph by randomly sampling nodes using the provided generator, then connecting
+        them to the Graph. Offers more customization than the default.
+
         Parameters
         ----------
-            sample_function : function(`pinocchio.Model`), optional
+            sample_generator : sample_generator
                 The sample function to use in construction of the roadmap.
                 Defaults to randomly sampling the robot's configuration space.
+            max_samples : int
+                The maximum amount of samples to add to the graph.
+            timeout : float
+                The maximum amount of time to grow the graph.
         """
         t_start = time.time()
         added_nodes = 0
-        while added_nodes < self.options.max_construction_nodes:
-            if time.time() - t_start > self.options.construction_timeout:
-                print(
-                    f"Roadmap construction timed out after {self.options.construction_timeout} seconds."
-                )
+        while added_nodes < max_samples:
+            if time.time() - t_start > timeout:
+                print(f"Roadmap construction timed out after {timeout} seconds.")
                 break
 
             # At each iteration we naively sample a valid random state and attempt to connect it to the roadmap.
-            q_sample = sample_function(self.model)
+            q_sample = next(sample_generator)
             if check_collisions_at_state(self.model, self.collision_model, q_sample):
                 continue
 
