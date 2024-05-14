@@ -49,9 +49,9 @@ def run_prm_search(q_start, q_end, planner, options):
             planner.visualize(viz, "ee", show_path=False, show_graph=True)
 
     # Animate the path
-    planner.visualize(viz, "ee", show_path=True, show_graph=True)
     if path:
         input("Press 'Enter' to animate the path.")
+        planner.visualize(viz, "ee", show_path=True, show_graph=False)
         for idx in range(1, len(path)):
             segment_start = path[idx - 1]
             segment_end = path[idx]
@@ -95,7 +95,7 @@ if __name__ == "__main__":
     # from the discretized joint state to start. This is not as effective for
     # high dof manipulators, and primarily serves and an example for
     # parameterizing the sampling strategy when constructing PRMs.
-    print("Initializing the roadmap, this will take a few seconds...")
+    print("Initializing the PRM, this will take a few seconds...")
     generator = discretized_sample_generator(model, step_size=0.2)
     planner.construct_roadmap_parameterized(
         generator,
@@ -104,7 +104,7 @@ if __name__ == "__main__":
     )
 
     # Visualize the resulting PRM
-    print("Plotting the roadmap...")
+    print("Visualizing the PRM...")
     planner.visualize(viz, "ee", show_path=False, show_graph=True)
 
     # We can save the graph to file for use in future PRMs.
