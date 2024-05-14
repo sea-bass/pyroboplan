@@ -40,12 +40,13 @@ if __name__ == "__main__":
     options = RRTPlannerOptions(
         max_angle_step=0.05,
         max_connection_dist=0.25,
-        goal_biasing_probability=0.15,
-        max_planning_time=10.0,
         rrt_connect=False,
         bidirectional_rrt=False,
         rrt_star=False,
         max_rewire_dist=3.0,
+        max_planning_time=10.0,
+        fast_return=True,
+        goal_biasing_probability=0.15,
     )
 
     planner = RRTPlanner(model, collision_model, options=options)
