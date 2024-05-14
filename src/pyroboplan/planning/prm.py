@@ -13,7 +13,7 @@ from ..core.utils import (
 from ..visualization.meshcat_utils import visualize_frames, visualize_path
 
 from .graph import Node, Graph
-from .utils import discretize_joint_space_path, extend_robot_state
+from .utils import discretize_joint_space_path, has_collision_free_path
 
 
 class PRMPlannerOptions:
@@ -90,26 +90,39 @@ class PRMPlanner:
         else:
             self.graph = Graph.load_from_file(self.options.prm_file)
 
-    def construct_roadmap(self):
+    def construct_roadmap(self, sample_function=get_random_state):
         """
         Grows the graph by randomly sampling nodes and connecting them if feasible.
+
+        Parameters
+        ----------
+            sample_function : function(`pinocchio.Model`), optional
+                The sample function to use in construction of the roadmap.
+                Defaults to randomly sampling the robot's configuration space.
         """
         t_start = time.time()
-        while len(self.graph.nodes) < self.options.max_construction_nodes:
+        added_nodes = 0
+        while added_nodes < self.options.max_construction_nodes:
             if time.time() - t_start > self.options.construction_timeout:
                 print(
                     f"Roadmap construction timed out after {self.options.construction_timeout} seconds."
                 )
                 break
 
-            # At each iteration we naively sample a random state and attempt to connect it to the roadmap.
-            q_sample = get_random_state(self.model)
-            new_node = Node(q_sample)
-            self.add_and_connect_node(new_node)
+            # At each iteration we naively sample a valid random state and attempt to connect it to the roadmap.
+            q_sample = sample_function(self.model)
+            if check_collisions_at_state(self.model, self.collision_model, q_sample):
+                continue
 
-    def add_and_connect_node(self, new_node):
+            # It's a valid configuration so add it to the roadmap
+            new_node = Node(q_sample)
+            self.graph.add_node(new_node)
+            self.connect_node(new_node, self.options.max_neighbor_radius)
+            added_nodes += 1
+
+    def connect_node(self, new_node, radius):
         """
-        Adds the node to the graph and makes connections, if possible.
+        Identifies all neighbors and makes connections to the added node.
 
         Parameters
         ----------
@@ -119,31 +132,22 @@ class PRMPlanner:
         Returns
         -------
             bool :
-                True if the node was added and it was connected. False otherwise.
+                True if the node was connected to the graph. False otherwise.
         """
-        if check_collisions_at_state(self.model, self.collision_model, new_node.q):
-            return False
-
         # Add the node and find all neighbors.
-        self.graph.add_node(new_node)
-        neighbors = self.graph.get_nearest_neighbors(
-            new_node.q, self.options.max_neighbor_radius
-        )
+        neighbors = self.graph.get_nearest_neighbors(new_node.q, radius)
 
         # Attempt to connect at most `max_neighbor_connections` neighbors.
         ret = False
         for node, _ in neighbors[0 : self.options.max_neighbor_connections]:
-            q_extend = extend_robot_state(
+            # If the nodes are connectable then add an edge.
+            if has_collision_free_path(
                 node.q,
                 new_node.q,
                 self.options.max_angle_step,
-                self.options.max_neighbor_radius,
                 self.model,
                 self.collision_model,
-            )
-
-            # If the nodes are connectable then add an edge.
-            if np.array_equal(q_extend, new_node.q):
+            ):
                 self.graph.add_edge(node, new_node)
                 ret |= True
 
@@ -185,10 +189,10 @@ class PRMPlanner:
         self.graph.add_node(goal_node)
 
         # If we cannot connect the start and goal nodes then there is no recourse.
-        if not self.add_and_connect_node(start_node):
+        if not self.connect_node(start_node, self.options.max_neighbor_radius):
             print("Failed to connect the start configuration to the PRM.")
             return None
-        if not self.add_and_connect_node(goal_node):
+        if not self.connect_node(goal_node, self.options.max_neighbor_radius):
             print("Failed to connect the goal configuration to the PRM.")
             return None
 
