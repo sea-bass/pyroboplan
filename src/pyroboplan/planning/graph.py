@@ -38,6 +38,10 @@ class Node:
         """A node is equal to another node if and only if their joint configurations are equal."""
         return np.array_equal(self.q, other.q)
 
+    def __lt__(self, other):
+        """Compare nodes based on their joint configurations."""
+        return tuple(self.q) < tuple(other.q)
+
     def __str__(self):
         """Return a string representation of the node that includes joint configuration and cost."""
         return f"Node(q={self.q.tolist()}, cost={self.cost})"
@@ -164,9 +168,7 @@ class Graph:
 
         neighbors = list(self.nodes[node].neighbors)
         for neighbor in neighbors:
-            # We have to check both
-            self.remove_edge(Edge(node, neighbor))
-            self.remove_edge(Edge(neighbor, node))
+            self.remove_edge(node, neighbor)
 
         del self.nodes[node]
         return True
@@ -174,6 +176,8 @@ class Graph:
     def add_edge(self, nodeA, nodeB):
         """
         Adds an edge to the graph.
+
+        This is an undirected graph, so if A -> B is an edge, so is B -> A.
 
         Parameters
         ----------
@@ -189,6 +193,11 @@ class Graph:
         """
         if nodeA not in self.nodes or nodeB not in self.nodes:
             raise ValueError("Specified nodes are not in Graph, cannot add edge.")
+
+        # Always insert with the "smaller" node as nodeA
+        if nodeA > nodeB:
+            nodeA, nodeB = nodeB, nodeA
+
         nodeA = self.nodes[nodeA]
         nodeB = self.nodes[nodeB]
 
@@ -199,14 +208,16 @@ class Graph:
         nodeB.neighbors[nodeA] = cost
         return edge
 
-    def remove_edge(self, edge):
+    def remove_edge(self, nodeA, nodeB):
         """
         Attempts to remove an edge from a graph, if it exists.
 
         Parameters
         ----------
-            edge : `pyroboplan.planning.graph.Edge`
-                The edge to remove from the graph.
+            nodeA : `pyroboplan.planning.graph.Node`
+                The first node in the edge.
+            nodeB : `pyroboplan.planning.graph.Node`
+                The second node in the edge.
 
         Returns
         -------
@@ -214,6 +225,10 @@ class Graph:
                 True if the edge was successfully removed, else False.
 
         """
+        if nodeA > nodeB:
+            nodeA, nodeB = nodeB, nodeA
+
+        edge = Edge(nodeA, nodeB)
         if edge not in self.edges:
             return False
 

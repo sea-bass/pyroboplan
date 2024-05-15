@@ -342,7 +342,7 @@ class RRTPlanner:
                     ):
                         new_node.parent = other_node
                         new_node.cost = new_cost
-                        tree.remove_edge(edge)
+                        tree.remove_edge(parent_node, new_node)
                         edge = tree.add_edge(other_node, new_node)
                         min_cost = new_cost
 

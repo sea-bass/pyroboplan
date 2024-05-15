@@ -135,17 +135,21 @@ def test_remove_edges():
     graph = Graph()
     graph.add_node(nodeA)
     graph.add_node(nodeB)
-    edgeAB = graph.add_edge(nodeA, nodeB)
+    graph.add_edge(nodeA, nodeB)
+    assert len(graph.edges) == 1
+
+    # Adding the same edge should have no effect.
+    graph.add_edge(nodeB, nodeA)
     assert len(graph.edges) == 1
 
     # Remove a valid edge.
-    assert graph.remove_edge(edgeAB)
+    assert graph.remove_edge(nodeA, nodeB)
     assert len(graph.edges) == 0
     assert nodeB not in nodeA.neighbors
     assert nodeA not in nodeB.neighbors
 
     # Remove an edge that was already removed.
-    assert not graph.remove_edge(edgeAB)
+    assert not graph.remove_edge(nodeA, nodeB)
     assert len(graph.edges) == 0
 
 
