@@ -73,7 +73,8 @@ def run_prm_search(q_start, q_end, planner, options, ee_name, max_retries=5):
 if __name__ == "__main__":
     # Default to the simple 2 DOF example model. If switching to the Panda
     # or another high DOF manipulator, we recommend increasing the max_neighbor_radius
-    # and max_neighbor_connections to accelerate planning.
+    # and max_neighbor_connections to accelerate planning. We also recommend using a different
+    # sample generator to speed up construction of the PRM. Or better yet, save and load it from a file.
     model, collision_model, visual_model, ee_name = load_2dof_model()
     data = model.createData()
     collision_data = collision_model.createData()

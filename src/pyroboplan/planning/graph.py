@@ -39,7 +39,7 @@ class Node:
         return np.array_equal(self.q, other.q)
 
     def __lt__(self, other):
-        """Compare nodes based on their joint configurations."""
+        """Compare nodes based on their lexicographical joint configurations."""
         return tuple(self.q) < tuple(other.q)
 
     def __str__(self):
@@ -151,7 +151,7 @@ class Graph:
 
     def remove_node(self, node):
         """
-        Removes a node from the graph, including all edges.
+        Removes a node from the graph, along with all of its corresponding edges.
 
         Parameters
         ----------
@@ -225,6 +225,7 @@ class Graph:
                 True if the edge was successfully removed, else False.
 
         """
+        # Recall that nodes are always inserted with the "smaller" node as nodeA
         if nodeA > nodeB:
             nodeA, nodeB = nodeB, nodeA
 
