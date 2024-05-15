@@ -196,26 +196,33 @@ class PRMPlanner:
             print("Goal configuration in collision.")
             return None
 
-        # Ensure the start and goal nodes are in the graph.
-        start_node = Node(q_start)
-        self.graph.add_node(start_node)
-        goal_node = Node(q_goal)
-        self.graph.add_node(goal_node)
+        try:
+            # Ensure the start and goal nodes are in the graph.
+            start_node = Node(q_start)
+            self.graph.add_node(start_node)
+            goal_node = Node(q_goal)
+            self.graph.add_node(goal_node)
 
-        # If we cannot connect the start and goal nodes then there is no recourse.
-        if not self.connect_node(start_node, self.options.max_neighbor_radius):
-            print("Failed to connect the start configuration to the PRM.")
-            return None
-        if not self.connect_node(goal_node, self.options.max_neighbor_radius):
-            print("Failed to connect the goal configuration to the PRM.")
-            return None
+            # If we cannot connect the start and goal nodes then there is no recourse.
+            if not self.connect_node(start_node, self.options.max_neighbor_radius):
+                print("Failed to connect the start configuration to the PRM.")
+                return None
+            if not self.connect_node(goal_node, self.options.max_neighbor_radius):
+                print("Failed to connect the goal configuration to the PRM.")
+                return None
 
-        # Use a graph search to determine if there is a path between the start and goal poses.
-        node_path = astar(self.graph, start_node, goal_node)
+            # Use a graph search to determine if there is a path between the start and goal poses.
+            node_path = astar(self.graph, start_node, goal_node)
 
-        # Reconstruct the path if it exists
-        path = [node.q for node in node_path] if node_path else None
-        self.latest_path = path
+            # Reconstruct the path if it exists
+            path = [node.q for node in node_path] if node_path else None
+            self.latest_path = path
+
+        # Always the start and end nodes from the PRM.
+        finally:
+            self.graph.remove_node(start_node)
+            self.graph.remove_node(goal_node)
+
         return path
 
     def visualize(
