@@ -145,6 +145,32 @@ class Graph:
 
         return self.nodes[node]
 
+    def remove_node(self, node):
+        """
+        Removes a node from the graph, including all edges.
+
+        Parameters
+        ----------
+            node : `pyroboplan.planning.graph.Node`
+                The node to remove from the graph.
+
+        Returns
+        -------
+            bool :
+                True if the graph was modified, False otherwise.
+        """
+        if node not in self.nodes:
+            return False
+
+        neighbors = list(self.nodes[node].neighbors)
+        for neighbor in neighbors:
+            # We have to check both
+            self.remove_edge(Edge(node, neighbor))
+            self.remove_edge(Edge(neighbor, node))
+
+        del self.nodes[node]
+        return True
+
     def add_edge(self, nodeA, nodeB):
         """
         Adds an edge to the graph.

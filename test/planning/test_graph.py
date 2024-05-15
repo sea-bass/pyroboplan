@@ -83,6 +83,26 @@ def test_add_nodes():
     assert len(graph.edges) == 0
 
 
+def test_remove_nodes():
+    nodeA = Node([1.0, 2.0, 3.0])
+    nodeB = Node([4.0, 5.0, 6.0])
+    graph = Graph()
+
+    # Removing a node that's not present does nothing.
+    assert not graph.remove_node(nodeA)
+
+    # Add nodes and edges and ensure they're removed
+    graph.add_node(nodeA)
+    graph.add_node(nodeB)
+    graph.add_edge(nodeA, nodeB)
+
+    assert graph.remove_node(nodeA)
+    assert len(graph.nodes) == 1
+    assert len(graph.edges) == 0
+    assert nodeA not in graph.nodes
+    assert nodeB in graph.nodes
+
+
 def test_add_edges():
     nodeA = Node([1.0, 2.0, 3.0])
     nodeB = Node([4.0, 5.0, 6.0])
