@@ -268,6 +268,7 @@ class PRMPlanner:
                 line_color=[0.9, 0.0, 0.9],
             )
 
+        visualizer.viewer[path_name].delete()
         if show_path:
             if not self.latest_path:
                 return

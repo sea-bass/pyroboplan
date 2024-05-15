@@ -50,8 +50,8 @@ def run_prm_search(q_start, q_end, planner, options):
 
     # Animate the path
     if path:
-        input("Press 'Enter' to animate the path.")
         planner.visualize(viz, "ee", show_path=True, show_graph=False)
+        input("Press 'Enter' to animate the path.")
         for idx in range(1, len(path)):
             segment_start = path[idx - 1]
             segment_end = path[idx]

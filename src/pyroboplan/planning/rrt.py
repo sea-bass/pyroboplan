@@ -375,6 +375,7 @@ class RRTPlanner:
             show_tree : bool, optional
                 If true, shows the entire sampled tree.
         """
+        visualizer.viewer[path_name].delete()
         if show_path:
             q_path = []
             for idx in range(1, len(self.latest_path)):
