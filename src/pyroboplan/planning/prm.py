@@ -94,39 +94,28 @@ class PRMPlanner:
         else:
             self.graph = Graph.load_from_file(self.options.prm_file)
 
-    def construct_roadmap(self):
+    def construct_roadmap(self, sample_generator=None):
         """
-        Grows the graph by randomly sampling nodes and connecting them if feasible.
-
-        Construction is done using default parameters set in the planning options.
-        """
-        generator = random_model_state_generator(self.model)
-        self.construct_roadmap_parameterized(
-            generator,
-            self.options.max_construction_nodes,
-            self.options.construction_timeout,
-        )
-
-    def construct_roadmap_parameterized(self, sample_generator, max_samples, timeout):
-        """
-        Grows the graph by randomly sampling nodes using the provided generator, then connecting
-        them to the Graph. Offers more customization than the default.
+        Grows the graph by sampling nodes using the provided generator, then connecting
+        them to the Graph. The caller can optionally override the default generator, if desired.
 
         Parameters
         ----------
             sample_generator : sample_generator
                 The sample function to use in construction of the roadmap.
                 Defaults to randomly sampling the robot's configuration space.
-            max_samples : int
-                The maximum amount of samples to add to the graph.
-            timeout : float
-                The maximum amount of time to grow the graph.
         """
+        # Default to randomly sampling the model if no sample function is provided.
+        if not sample_generator:
+            sample_generator = random_model_state_generator(self.model)
+
         t_start = time.time()
         added_nodes = 0
-        while added_nodes < max_samples:
-            if time.time() - t_start > timeout:
-                print(f"Roadmap construction timed out after {timeout} seconds.")
+        while added_nodes < self.options.max_construction_nodes:
+            if time.time() - t_start > self.options.construction_timeout:
+                print(
+                    f"Roadmap construction timed out after {self.options.construction_timeout} seconds."
+                )
                 break
 
             # At each iteration we naively sample a valid random state and attempt to connect it to the roadmap.
@@ -158,7 +147,7 @@ class PRMPlanner:
         neighbors = self.graph.get_nearest_neighbors(new_node.q, radius)
 
         # Attempt to connect at most `max_neighbor_connections` neighbors.
-        ret = False
+        success = False
         for node, _ in neighbors[0 : self.options.max_neighbor_connections]:
             # If the nodes are connectable then add an edge.
             if has_collision_free_path(
@@ -169,9 +158,9 @@ class PRMPlanner:
                 self.collision_model,
             ):
                 self.graph.add_edge(node, new_node)
-                ret |= True
+                success |= True
 
-        return ret
+        return success
 
     def reset(self):
         """
@@ -192,6 +181,11 @@ class PRMPlanner:
                 The starting robot configuration.
             q_goal : array-like
                 The goal robot configuration.
+
+        Returns
+        -------
+            list[array-like] :
+                A path from the start to the goal state, if one exists. Otherwise None.
         """
 
         # Check start and end pose collisions.
@@ -269,10 +263,7 @@ class PRMPlanner:
             )
 
         visualizer.viewer[path_name].delete()
-        if show_path:
-            if not self.latest_path:
-                return
-
+        if show_path and self.latest_path:
             q_path = []
             for idx in range(1, len(self.latest_path)):
                 q_start = self.latest_path[idx - 1]

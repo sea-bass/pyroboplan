@@ -121,11 +121,7 @@ if __name__ == "__main__":
     # parameterizing the sampling strategy when constructing PRMs.
     print("Initializing the PRM, this will take a few seconds...")
     generator = discretized_sample_generator(model, step_size=0.2)
-    planner.construct_roadmap_parameterized(
-        generator,
-        options.max_construction_nodes,
-        options.construction_timeout,
-    )
+    planner.construct_roadmap(generator)
 
     # Visualize the resulting PRM
     print("Visualizing the PRM...")
