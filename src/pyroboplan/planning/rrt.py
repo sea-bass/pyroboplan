@@ -10,7 +10,7 @@ from ..core.utils import (
     extract_cartesian_poses,
     get_random_state,
 )
-from ..visualization.meshcat_utils import visualize_frames, visualize_path
+from ..visualization.meshcat_utils import visualize_frames, visualize_paths
 
 from .graph import Node, Graph
 from .utils import (
@@ -390,28 +390,34 @@ class RRTPlanner:
             )
 
         if show_tree:
+            start_path_tforms = []
             for idx, edge in enumerate(self.start_tree.edges):
                 q_path = discretize_joint_space_path(
                     edge.nodeA.q, edge.nodeB.q, self.options.max_angle_step
                 )
-                path_tforms = extract_cartesian_poses(self.model, frame_name, q_path)
-                visualize_path(
-                    visualizer,
-                    f"{tree_name}_start/edge{idx}",
-                    path_tforms,
-                    line_width=0.5,
-                    line_color=[0.9, 0.0, 0.9],
+                start_path_tforms.append(
+                    extract_cartesian_poses(self.model, frame_name, q_path)
                 )
+            visualize_paths(
+                visualizer,
+                f"{tree_name}_start/edges",
+                start_path_tforms,
+                line_width=0.5,
+                line_color=[0.9, 0.0, 0.9],
+            )
 
+            goal_path_tforms = []
             for idx, edge in enumerate(self.goal_tree.edges):
                 q_path = discretize_joint_space_path(
                     edge.nodeA.q, edge.nodeB.q, self.options.max_angle_step
                 )
-                path_tforms = extract_cartesian_poses(self.model, frame_name, q_path)
-                visualize_path(
-                    visualizer,
-                    f"{tree_name}_goal/edge{idx}",
-                    path_tforms,
-                    line_width=0.5,
-                    line_color=[0.0, 0.9, 0.9],
+                goal_path_tforms.append(
+                    extract_cartesian_poses(self.model, frame_name, q_path)
                 )
+            visualize_paths(
+                visualizer,
+                f"{tree_name}_goal/edges",
+                goal_path_tforms,
+                line_width=0.5,
+                line_color=[0.0, 0.9, 0.9],
+            )

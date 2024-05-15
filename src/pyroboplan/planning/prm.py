@@ -9,7 +9,7 @@ from ..core.utils import (
     extract_cartesian_poses,
     get_random_state,
 )
-from ..visualization.meshcat_utils import visualize_frames, visualize_path
+from ..visualization.meshcat_utils import visualize_frames, visualize_paths
 
 from .graph import Node, Graph
 from .utils import discretize_joint_space_path, has_collision_free_path
@@ -252,18 +252,21 @@ class PRMPlanner:
                 If true, shows the entire PRM graph.
         """
         if show_graph:
+            path_tforms = []
             for idx, edge in enumerate(self.graph.edges):
                 q_path = discretize_joint_space_path(
                     edge.nodeA.q, edge.nodeB.q, self.options.max_angle_step
                 )
-                path_tforms = extract_cartesian_poses(self.model, frame_name, q_path)
-                visualize_path(
-                    visualizer,
-                    f"{graph_name}/edge{idx}",
-                    path_tforms,
-                    line_width=0.5,
-                    line_color=[0.9, 0.0, 0.9],
+                path_tforms.append(
+                    extract_cartesian_poses(self.model, frame_name, q_path)
                 )
+            visualize_paths(
+                visualizer,
+                f"{graph_name}/edges",
+                path_tforms,
+                line_width=0.5,
+                line_color=[0.9, 0.0, 0.9],
+            )
 
         if show_path:
             if not self.latest_path:
@@ -279,5 +282,5 @@ class PRMPlanner:
 
             target_tforms = extract_cartesian_poses(self.model, frame_name, q_path)
             visualize_frames(
-                visualizer, path_name, target_tforms, line_length=0.05, line_width=1.5
+                visualizer, path_name, target_tforms, line_length=0.05, line_width=2.0
             )
