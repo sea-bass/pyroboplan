@@ -9,10 +9,10 @@ import time
 
 from pinocchio.visualize import MeshcatVisualizer
 
-from pyroboplan.core.utils import get_random_collision_free_state, get_random_state
+from pyroboplan.core.utils import get_random_collision_free_state
 from pyroboplan.planning.prm import PRMPlanner, PRMPlannerOptions
 from pyroboplan.planning.utils import (
-    discretize_joint_space,
+    discretized_joint_space_generator,
     discretize_joint_space_path,
 )
 
@@ -41,22 +41,6 @@ def load_panda_model():
     add_object_collisions(model, collision_model, visual_model)
 
     return model, collision_model, visual_model, "panda_hand"
-
-
-def discretized_sample_generator(model, step_size):
-    """
-    Robot state configuration sampler that iterates over the discretized joint space
-    before yielding random samples.
-
-    This serves for demonstration purposes only. Joint spaces are huge! But it is
-    common to employ different sampling strategies depending on the robot system and
-    workspace.
-    """
-    for state in discretize_joint_space(model, step_size):
-        yield state
-
-    while True:
-        yield get_random_state(model)
 
 
 def run_prm_search(q_start, q_end, planner, options, ee_name, max_retries=5):
@@ -120,7 +104,9 @@ if __name__ == "__main__":
     # high dof manipulators, and primarily serves and an example for
     # parameterizing the sampling strategy when constructing PRMs.
     print("Initializing the PRM, this will take a few seconds...")
-    generator = discretized_sample_generator(model, step_size=0.2)
+    generator = discretized_joint_space_generator(
+        model, step_size=0.2, generate_random=True
+    )
     planner.construct_roadmap(generator)
 
     # Visualize the resulting PRM

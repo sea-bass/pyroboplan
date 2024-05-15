@@ -6,6 +6,7 @@ from ..core.utils import (
     check_collisions_at_state,
     check_collisions_along_path,
     configuration_distance,
+    get_random_state,
 )
 
 from itertools import product
@@ -131,9 +132,12 @@ def retrace_path(goal_node):
     return path
 
 
-def discretize_joint_space(model, step_size):
+def discretized_joint_space_generator(model, step_size, generate_random=True):
     """
     Discretizes the entire joint space of the model at step_size increments.
+    Once the entire space has been returned, the generator can optionally continue
+    returning random samples from the configuration space - in which case this
+    generator will never terminate.
 
     This is an extraordinarily expensive operation for high DOF manipulators
     and small step sizes!
@@ -144,6 +148,9 @@ def discretize_joint_space(model, step_size):
             The robot model containing lower and upper position limits.
         step_size : float
             The step size for sampling.
+        generate_random : bool
+            If True, continue randomly sampling the configuration space.
+            Otherwise this generator will terminate.
 
     Yields
     ------
@@ -153,9 +160,11 @@ def discretize_joint_space(model, step_size):
     lower = model.lowerPositionLimit
     upper = model.upperPositionLimit
 
-    # Create ranges for each joint
-    ranges = [np.arange(l, u, step_size) for l, u in zip(lower, upper)]
-
-    # Generate the Cartesian product of all ranges using itertools.product
+    # Ensure the range is inclusive of endpoints
+    ranges = [np.arange(l, u + step_size, step_size) for l, u in zip(lower, upper)]
     for point in product(*ranges):
         yield np.array(point)
+
+    # Once we have iterated through all available points we return random samples.
+    while generate_random:
+        yield get_random_state(model)
