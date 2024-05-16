@@ -48,13 +48,14 @@ class CubicTrajectoryOptimization:
         ----------
             q_start : array-like
                 The starting robot configuration.
-            q_start : array-like
+            q_goal : array-like
                 The goal robot configuration.
         """
         # Options TODO elevate
         self.num_waypoints = 3
         self.min_segment_time = 0.01
-        self.max_segment_time = 100.0
+        self.max_segment_time = 1.0
+        self.samples_per_segment = 11
 
         min_vel = -1.0 * np.ones_like(q_start)
         max_vel = 1.0 * np.ones_like(q_start)
@@ -75,12 +76,12 @@ class CubicTrajectoryOptimization:
         h = prog.NewContinuousVariables(self.num_waypoints - 1)
 
         # Initial and final conditions
-        for n in range(self.num_dofs):
-            prog.AddConstraint(x[0, n] == q_start[n])
-            prog.AddConstraint(x[self.num_waypoints - 1, n] == q_goal[n])
-            prog.AddConstraint(x_d[0, n] == 0.0)
-            prog.AddConstraint(x_d[self.num_waypoints - 1, n] == 0.0)
+        prog.AddBoundingBoxConstraint(q_start, q_start, x[0, :])
+        prog.AddBoundingBoxConstraint(q_goal, q_goal, x[self.num_waypoints - 1, :])
+        prog.AddBoundingBoxConstraint(0.0, 0.0, x_d[0, :])
+        prog.AddBoundingBoxConstraint(0.0, 0.0, x_d[self.num_waypoints - 1, :])
 
+        for n in range(self.num_dofs):
             # Collocation point constraints
             for k in range(self.num_waypoints - 1):
                 prog.AddConstraint(
@@ -95,7 +96,35 @@ class CubicTrajectoryOptimization:
                 )
 
             # Sample and evaluate the trajectory to constrain
-            for step in np.linspace(0, 1, 11):
+            # TODO Factor these into reusable functions
+            for step in np.linspace(0.0, 1.0, self.samples_per_segment):
+                # Position limits
+                prog.AddConstraint(
+                    x[k, n]
+                    + x_d[k, n] * h[k]
+                    + 0.5
+                    * (-3.0 * x_d[k, n] + 4.0 * xc_d[k, n] - x_d[k + 1, n])
+                    * (step * h[k]) ** 2
+                    / h[k]
+                    + (2.0 / 3.0)
+                    * (x_d[k, n] - 2.0 * xc_d[k, n] + x_d[k + 1, n])
+                    * (step * h[k]) ** 3
+                    / h[k] ** 2
+                    <= self.model.upperPositionLimit[n]
+                )
+                prog.AddConstraint(
+                    x[k, n]
+                    + x_d[k, n] * h[k]
+                    + 0.5
+                    * (-3.0 * x_d[k, n] + 4.0 * xc_d[k, n] - x_d[k + 1, n])
+                    * (step * h[k]) ** 2
+                    / h[k]
+                    + (2.0 / 3.0)
+                    * (x_d[k, n] - 2.0 * xc_d[k, n] + x_d[k + 1, n])
+                    * (step * h[k]) ** 3
+                    / h[k] ** 2
+                    >= self.model.lowerPositionLimit[n]
+                )
                 # Velocity limits
                 prog.AddConstraint(
                     x_d[k, n]
@@ -162,17 +191,48 @@ class CubicTrajectoryOptimization:
                     / h[k + 1] ** 2
                 )
 
+            # Velocities and positions at waypoints
+            prog.AddBoundingBoxConstraint(
+                self.model.lowerPositionLimit[n],
+                self.model.upperPositionLimit[n],
+                x[:, n],
+            )
+            prog.AddBoundingBoxConstraint(
+                self.model.lowerPositionLimit[n],
+                self.model.upperPositionLimit[n],
+                xc[:, n],
+            )
+            prog.AddBoundingBoxConstraint(min_vel[n], max_vel[n], x_d[:, n])
+            prog.AddBoundingBoxConstraint(min_vel[n], max_vel[n], xc_d[:, n])
+
         # Cost and bounds on trajectory segment times
+        prog.AddBoundingBoxConstraint(self.min_segment_time, self.max_segment_time, h)
         prog.AddQuadraticCost(
             Q=np.eye(self.num_waypoints - 1),
             b=np.zeros(self.num_waypoints - 1),
             c=0.0,
             vars=h,
         )
-        prog.AddBoundingBoxConstraint(self.min_segment_time, self.max_segment_time, h)
+
+        # Set initial condition assuming linear trajectory
+        x_init = []
+        position_breaks = []
+        for k in range(self.num_waypoints):
+            qval = q_start + (q_goal - q_start) * k / (self.num_waypoints + 1)
+            position_breaks.append(qval)  # x
+            x_init.extend(list(qval))
+        for k in range(self.num_waypoints):
+            x_init.extend(list(np.zeros_like(q_start)))  # x_d
+        for k in range(self.num_waypoints - 1):
+            x_init.extend(
+                list(0.5 * (position_breaks[k] + position_breaks[k + 1]))
+            )  # xc
+        for k in range(self.num_waypoints - 1):
+            x_init.extend(list(np.zeros_like(q_start)))  # xc_d
+        x_init.extend(np.ones(self.num_waypoints - 1))  # h
 
         # Solve the program
-        result = Solve(prog)
+        result = Solve(prog, x_init)
         if not result.is_success():
             print("Trajectory optimization failed.")
             return None
@@ -183,6 +243,7 @@ class CubicTrajectoryOptimization:
         x_d_opt = result.GetSolution(x_d)
         xc_opt = result.GetSolution(xc)
         xc_d_opt = result.GetSolution(xc_d)
+        print("solver is: ", result.get_solver_id().name())
 
         print(f"h* = {h_opt}")
         print(f"x* = {x_opt}")
