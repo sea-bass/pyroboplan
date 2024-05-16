@@ -83,7 +83,7 @@ class Edge:
         return hash((self.nodeA, self.nodeB))
 
     def __eq__(self, other):
-        """An edge is equal to another edge if and only if they start and end at the same nodes."""
+        """Two edges are equal if and only if they both start and end at the same nodes."""
         return self.nodeA == other.nodeA and self.nodeB == other.nodeB
 
     def __str__(self):
