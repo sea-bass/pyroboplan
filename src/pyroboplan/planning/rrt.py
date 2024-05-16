@@ -10,15 +10,10 @@ from ..core.utils import (
     extract_cartesian_poses,
     get_random_state,
 )
-from ..visualization.meshcat_utils import visualize_frames, visualize_paths
+from ..visualization.meshcat_utils import visualize_frames, visualize_path
 
 from .graph import Node, Graph
-from .utils import (
-    discretize_joint_space_path,
-    extend_robot_state,
-    has_collision_free_path,
-    retrace_path,
-)
+from .utils import discretize_joint_space_path, retrace_path
 
 
 class RRTPlannerOptions:
@@ -233,37 +228,46 @@ class RRTPlanner:
             q_sample : array-like
                 The robot configuration sample to extend or connect towards.
         """
+        # If they are the same node there's nothing to do.
+        if np.array_equal(parent_node.q, q_sample):
+            return None
+
         q_diff = q_sample - parent_node.q
         q_increment = self.options.max_connection_dist * q_diff / np.linalg.norm(q_diff)
 
+        terminated = False
         q_out = None
         q_cur = parent_node.q
-        while True:
-            # Compute the next incremental robot configuration.
-            q_extend = extend_robot_state(
-                q_cur,
-                q_sample,
-                self.options.max_connection_dist,
-            )
-
-            # If we can connect then it is a valid state
-            if has_collision_free_path(
-                q_cur,
-                q_extend,
-                self.options.max_angle_step,
-                self.model,
-                self.collision_model,
+        while not terminated:
+            # Clip the distance between nearest and sampled nodes to max connection distance.
+            # If we have reached the sampled node, this is the final iteration.
+            if (
+                configuration_distance(q_cur, q_sample)
+                > self.options.max_connection_dist
             ):
-                q_out = q_cur = q_extend
-                # If we have reached the sampled state then we are done.
-                if np.array_equal(q_cur, q_sample):
-                    break
+                q_extend = q_cur + q_increment
             else:
-                break
+                q_extend = q_sample
+                terminated |= True
+
+            # Extension is successful only if the path is collision free.
+            q_extend_in_collision = check_collisions_at_state(
+                self.model, self.collision_model, q_extend
+            )
+            path_to_q_extend = discretize_joint_space_path(
+                q_cur, q_extend, self.options.max_angle_step
+            )
+            path_to_q_extend_in_collision = check_collisions_along_path(
+                self.model, self.collision_model, path_to_q_extend
+            )
+            if not q_extend_in_collision and not path_to_q_extend_in_collision:
+                q_cur = q_out = q_extend
+            else:
+                terminated |= True
 
             # If RRTConnect is disabled, only one iteration is needed.
             if not self.options.rrt_connect:
-                break
+                terminated |= True
 
         return q_out
 
@@ -374,7 +378,6 @@ class RRTPlanner:
             show_tree : bool, optional
                 If true, shows the entire sampled tree.
         """
-        visualizer.viewer[path_name].delete()
         if show_path:
             q_path = []
             for idx in range(1, len(self.latest_path)):
@@ -390,34 +393,28 @@ class RRTPlanner:
             )
 
         if show_tree:
-            start_path_tforms = []
             for idx, edge in enumerate(self.start_tree.edges):
                 q_path = discretize_joint_space_path(
                     edge.nodeA.q, edge.nodeB.q, self.options.max_angle_step
                 )
-                start_path_tforms.append(
-                    extract_cartesian_poses(self.model, frame_name, q_path)
+                path_tforms = extract_cartesian_poses(self.model, frame_name, q_path)
+                visualize_path(
+                    visualizer,
+                    f"{tree_name}_start/edge{idx}",
+                    path_tforms,
+                    line_width=0.5,
+                    line_color=[0.9, 0.0, 0.9],
                 )
-            visualize_paths(
-                visualizer,
-                f"{tree_name}_start/edges",
-                start_path_tforms,
-                line_width=0.5,
-                line_color=[0.9, 0.0, 0.9],
-            )
 
-            goal_path_tforms = []
             for idx, edge in enumerate(self.goal_tree.edges):
                 q_path = discretize_joint_space_path(
                     edge.nodeA.q, edge.nodeB.q, self.options.max_angle_step
                 )
-                goal_path_tforms.append(
-                    extract_cartesian_poses(self.model, frame_name, q_path)
+                path_tforms = extract_cartesian_poses(self.model, frame_name, q_path)
+                visualize_path(
+                    visualizer,
+                    f"{tree_name}_goal/edge{idx}",
+                    path_tforms,
+                    line_width=0.5,
+                    line_color=[0.0, 0.9, 0.9],
                 )
-            visualize_paths(
-                visualizer,
-                f"{tree_name}_goal/edges",
-                goal_path_tforms,
-                line_width=0.5,
-                line_color=[0.0, 0.9, 0.9],
-            )
