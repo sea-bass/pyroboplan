@@ -47,7 +47,7 @@ def extend_robot_state(q_parent, q_sample, max_connection_distance):
 
 def has_collision_free_path(q1, q2, max_angle_step, model, collision_model):
     """
-    Determines an incremental robot configuration between the parent and sample states, if one exists.
+    Determines if there is a collision free path between the provided nodes and models.
 
     Parameters
     ----------
