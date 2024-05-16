@@ -83,6 +83,26 @@ def test_add_nodes():
     assert len(graph.edges) == 0
 
 
+def test_remove_nodes():
+    nodeA = Node([1.0, 2.0, 3.0])
+    nodeB = Node([4.0, 5.0, 6.0])
+    graph = Graph()
+
+    # Removing a node that's not present does nothing.
+    assert not graph.remove_node(nodeA)
+
+    # Add nodes and edges and ensure they're removed
+    graph.add_node(nodeA)
+    graph.add_node(nodeB)
+    graph.add_edge(nodeA, nodeB)
+
+    assert graph.remove_node(nodeA)
+    assert len(graph.nodes) == 1
+    assert len(graph.edges) == 0
+    assert nodeA not in graph.nodes
+    assert nodeB in graph.nodes
+
+
 def test_add_edges():
     nodeA = Node([1.0, 2.0, 3.0])
     nodeB = Node([4.0, 5.0, 6.0])
@@ -98,6 +118,10 @@ def test_add_edges():
     assert nodeA in nodeB.neighbors
     assert edgeAB.cost == pytest.approx(np.linalg.norm([3.0, 3.0, 3.0]))
 
+    # Adding the same edge should not modify the graph.
+    edgeAB = graph.add_edge(nodeA, nodeB)
+    assert len(graph.edges) == 1
+
     edgeAC = graph.add_edge(nodeA, nodeC)
     assert len(graph.edges) == 2
     assert nodeC in nodeA.neighbors
@@ -111,17 +135,21 @@ def test_remove_edges():
     graph = Graph()
     graph.add_node(nodeA)
     graph.add_node(nodeB)
-    edgeAB = graph.add_edge(nodeA, nodeB)
+    graph.add_edge(nodeA, nodeB)
+    assert len(graph.edges) == 1
+
+    # Adding the same edge should have no effect.
+    graph.add_edge(nodeB, nodeA)
     assert len(graph.edges) == 1
 
     # Remove a valid edge.
-    assert graph.remove_edge(edgeAB)
+    assert graph.remove_edge(nodeA, nodeB)
     assert len(graph.edges) == 0
     assert nodeB not in nodeA.neighbors
     assert nodeA not in nodeB.neighbors
 
     # Remove an edge that was already removed.
-    assert not graph.remove_edge(edgeAB)
+    assert not graph.remove_edge(nodeA, nodeB)
     assert len(graph.edges) == 0
 
 
@@ -141,6 +169,28 @@ def test_get_nearest_node_empty_graph():
     graph = Graph()
     nearest_node = graph.get_nearest_node([1.0, 2.0, 3.0])
     assert nearest_node is None
+
+
+def test_get_nearest_neighbors():
+    graph = Graph()
+    neighbors = graph.get_nearest_neighbors([1.0], radius=1.0)
+
+    assert len(neighbors) == 0
+
+    nodeA = Node([0.0])
+    nodeB = Node([1.0])
+    nodeC = Node([3.0])
+    nodeD = Node([4.0])
+
+    graph.add_node(nodeA)
+    graph.add_node(nodeB)
+    graph.add_node(nodeC)
+    graph.add_node(nodeD)
+
+    neighbors = graph.get_nearest_neighbors([1.0], radius=2.0)
+    assert len(neighbors) == 2
+    assert neighbors[0] == (nodeA, 1.0)
+    assert neighbors[1] == (nodeC, 2.0)
 
 
 def test_str_and_parse():

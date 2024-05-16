@@ -106,9 +106,32 @@ def visualize_path(visualizer, name, tforms, line_width=3, line_color=[0.0, 0.0,
         line_color : array-like, optional
             The line color to use.
     """
+    visualize_paths(
+        visualizer, name, [tforms], line_width=line_width, line_color=line_color
+    )
+
+
+def visualize_paths(visualizer, name, paths, line_width=3, line_color=[0.0, 0.0, 0.0]):
+    """
+    Visualizes a list of paths of poses as lines containing only the translation component.
+
+    Parameters
+    ----------
+        visualizer : `pinocchio.visualize.meshcat_visualizer.MeshcatVisualizer`
+            The visualizer instance.
+        name : str
+            The name of the MeshCat component to add.
+        paths : list[list[`pinocchio.SE3`]]
+            A list of paths, each of which is a list of transforms representing the vertices of the path.
+        line_width : float, optional
+            The width of the axes in the triad.
+        line_color : array-like, optional
+            The line color to use.
+    """
     positions = []
-    for idx in range(1, len(tforms)):
-        positions.extend([tforms[idx - 1].translation, tforms[idx].translation])
+    for tforms in paths:
+        for idx in range(1, len(tforms)):
+            positions.extend([tforms[idx - 1].translation, tforms[idx].translation])
 
     visualizer.viewer[name].set_object(
         mg.LineSegments(
