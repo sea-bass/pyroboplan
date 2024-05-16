@@ -123,7 +123,7 @@ Often, a fixed set of kinematic (position/velocity/acceleration/jerk) and dynami
 Sometimes, these limits can also be task-dependent; for example, if manipulating fragile objects or objects that cannot be placed in certain configurations (e.g., moving a glass of water without spilling).
 
 The `pyroboplan.trajectory module <api/pyroboplan.trajectory.html>`_ contains trajectory generation implementations.
-You can also try running the :examples:`trajectory generation example <example_trajectory.py>`.
+You can also try running the :examples:`trajectory generation example <example_trajectory_generation.py>`.
 
 .. image:: _static/images/trajectory_generation.png
     :width: 720

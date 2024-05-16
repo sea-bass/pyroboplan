@@ -112,7 +112,15 @@ class PolynomialTrajectoryBase(ABC):
 
         return t_vec, q, qd, qdd
 
-    def visualize(self, dt=0.01, joint_names=None):
+    def visualize(
+        self,
+        dt=0.01,
+        joint_names=None,
+        show_position=True,
+        show_velocity=True,
+        show_acceleration=True,
+        show_jerk=True,
+    ):
         """
         Visualizes a generated trajectory with one figure window per dimension.
 
@@ -123,6 +131,7 @@ class PolynomialTrajectoryBase(ABC):
             joint_names : list[str], optional
                 The joint names to use for the figure titles.
                 If unset, uses the text "Dimension 1", "Dimension 2", etc.
+            TODO Implement args and jerk extraction
         """
         import matplotlib.pyplot as plt
 
@@ -137,10 +146,21 @@ class PolynomialTrajectoryBase(ABC):
             plt.figure(title)
 
             # Positions, velocities, and accelerations
-            plt.plot(t_vec, q[dim, :])
-            plt.plot(t_vec, qd[dim, :])
-            plt.plot(t_vec, qdd[dim, :])
-            plt.legend(["Position", "Velocity", "Acceleration"])
+            legend = []
+            if show_position:
+                plt.plot(t_vec, q[dim, :])
+                legend.append("Position")
+            if show_velocity:
+                plt.plot(t_vec, qd[dim, :])
+                legend.append("Velocity")
+            if show_acceleration:
+                plt.plot(t_vec, qdd[dim, :])
+                legend.append("Acceleration")
+            if show_jerk:
+                # TODO
+                # legend.append("Jerk")
+                pass
+            plt.legend(legend)
 
             # Times
             min_val = vertical_line_scale_factor * min(
