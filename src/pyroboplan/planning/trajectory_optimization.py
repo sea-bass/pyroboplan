@@ -52,7 +52,7 @@ class CubicTrajectoryOptimization:
                 The goal robot configuration.
         """
         # Options TODO elevate
-        self.num_waypoints = 5
+        self.num_waypoints = 3
         self.min_segment_time = 0.01
         self.max_segment_time = 100.0
         self.samples_per_segment = 11
@@ -73,11 +73,38 @@ class CubicTrajectoryOptimization:
         xc_d = prog.NewContinuousVariables(self.num_waypoints - 1, self.num_dofs)
         h = prog.NewContinuousVariables(self.num_waypoints - 1)
 
-        # # Initial and final conditions
+        # Initial and final conditions
         prog.AddBoundingBoxConstraint(q_start, q_start, x[0, :])
         prog.AddBoundingBoxConstraint(q_goal, q_goal, x[self.num_waypoints - 1, :])
         prog.AddBoundingBoxConstraint(0.0, 0.0, x_d[0, :])
         prog.AddBoundingBoxConstraint(0.0, 0.0, x_d[self.num_waypoints - 1, :])
+
+        data = self.model.createData()
+        collision_data = self.collision_model.createData()
+
+        import pinocchio
+        from pydrake.autodiffutils import AutoDiffXd, ExtractGradient, ExtractValue
+        from pydrake.math import ComputeNumericalGradient
+        
+        def check_collisions_helper(q):
+            distances = []
+            pinocchio.computeDistances(self.model, data, self.collision_model, collision_data, q)
+            for p in range(len(self.collision_model.collisionPairs)):
+                dist_result = collision_data.distanceResults[p]
+                distances.append(dist_result.min_distance)
+            return np.array([min(distances)])
+
+        def check_collisions(q_val):
+            if q_val.dtype != float: 
+                q_val_num = ExtractValue(q_val)
+                min_distance = check_collisions_helper(q_val_num)
+                gradient = ComputeNumericalGradient(check_collisions_helper, q_val_num)
+                return np.array([
+                    AutoDiffXd(
+                        min_distance[0],
+                        gradient[0],
+                    )
+                ])
 
         for n in range(self.num_dofs):
             # Collocation point constraints
@@ -122,6 +149,7 @@ class CubicTrajectoryOptimization:
                         / h[k] ** 2
                         >= self.model.lowerPositionLimit[n]
                     )
+
                     # Velocity limits
                     prog.AddConstraint(
                         x_d[k, n]
@@ -201,6 +229,9 @@ class CubicTrajectoryOptimization:
             )
             prog.AddBoundingBoxConstraint(min_vel[n], max_vel[n], x_d[:, n])
             prog.AddBoundingBoxConstraint(min_vel[n], max_vel[n], xc_d[:, n])
+
+        for k in range(self.num_waypoints):
+            prog.AddConstraint(check_collisions, [0.001], [np.inf], x[k, :])
 
         # Cost and bounds on trajectory segment times
         prog.AddBoundingBoxConstraint(self.min_segment_time, self.max_segment_time, h)
