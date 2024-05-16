@@ -52,9 +52,9 @@ class CubicTrajectoryOptimization:
                 The goal robot configuration.
         """
         # Options TODO elevate
-        self.num_waypoints = 3
+        self.num_waypoints = 5
         self.min_segment_time = 0.01
-        self.max_segment_time = 1.0
+        self.max_segment_time = 100.0
         self.samples_per_segment = 11
 
         min_vel = -1.0 * np.ones_like(q_start)
@@ -66,16 +66,14 @@ class CubicTrajectoryOptimization:
 
         # Initialize the basic program and its variables
         self.num_dofs = len(q_start)
-
         prog = MathematicalProgram()
-
         x = prog.NewContinuousVariables(self.num_waypoints, self.num_dofs)
         x_d = prog.NewContinuousVariables(self.num_waypoints, self.num_dofs)
         xc = prog.NewContinuousVariables(self.num_waypoints - 1, self.num_dofs)
         xc_d = prog.NewContinuousVariables(self.num_waypoints - 1, self.num_dofs)
         h = prog.NewContinuousVariables(self.num_waypoints - 1)
 
-        # Initial and final conditions
+        # # Initial and final conditions
         prog.AddBoundingBoxConstraint(q_start, q_start, x[0, :])
         prog.AddBoundingBoxConstraint(q_goal, q_goal, x[self.num_waypoints - 1, :])
         prog.AddBoundingBoxConstraint(0.0, 0.0, x_d[0, :])
@@ -95,85 +93,84 @@ class CubicTrajectoryOptimization:
                     - 0.25 * (x_d[k, n] + x_d[k + 1, n])
                 )
 
-            # Sample and evaluate the trajectory to constrain
-            # TODO Factor these into reusable functions
-            for step in np.linspace(0.0, 1.0, self.samples_per_segment):
-                # Position limits
-                prog.AddConstraint(
-                    x[k, n]
-                    + x_d[k, n] * h[k]
-                    + 0.5
-                    * (-3.0 * x_d[k, n] + 4.0 * xc_d[k, n] - x_d[k + 1, n])
-                    * (step * h[k]) ** 2
-                    / h[k]
-                    + (2.0 / 3.0)
-                    * (x_d[k, n] - 2.0 * xc_d[k, n] + x_d[k + 1, n])
-                    * (step * h[k]) ** 3
-                    / h[k] ** 2
-                    <= self.model.upperPositionLimit[n]
-                )
-                prog.AddConstraint(
-                    x[k, n]
-                    + x_d[k, n] * h[k]
-                    + 0.5
-                    * (-3.0 * x_d[k, n] + 4.0 * xc_d[k, n] - x_d[k + 1, n])
-                    * (step * h[k]) ** 2
-                    / h[k]
-                    + (2.0 / 3.0)
-                    * (x_d[k, n] - 2.0 * xc_d[k, n] + x_d[k + 1, n])
-                    * (step * h[k]) ** 3
-                    / h[k] ** 2
-                    >= self.model.lowerPositionLimit[n]
-                )
-                # Velocity limits
-                prog.AddConstraint(
-                    x_d[k, n]
-                    + (-3.0 * x_d[k, n] + 4.0 * xc_d[k, n] - x_d[k + 1, n])
-                    * (step * h[k])
-                    / h[k]
-                    + 2.0
-                    * (x_d[k, n] - 2.0 * xc_d[k, n] + x_d[k + 1, n])
-                    * (step * h[k]) ** 2
-                    / h[k] ** 2
-                    <= max_vel[n]
-                )
-                prog.AddConstraint(
-                    x_d[k, n]
-                    + (-3.0 * x_d[k, n] + 4.0 * xc_d[k, n] - x_d[k + 1, n])
-                    * (step * h[k])
-                    / h[k]
-                    + 2.0
-                    * (x_d[k, n] - 2.0 * xc_d[k, n] + x_d[k + 1, n])
-                    * (step * h[k]) ** 2
-                    / h[k] ** 2
-                    >= min_vel[n]
-                )
-                # Acceleration limits
-                prog.AddConstraint(
-                    (-3.0 * x_d[k, n] + 4.0 * xc_d[k, n] - x_d[k + 1, n]) / h[k]
-                    + 4.0
-                    * (x_d[k, n] - 2.0 * xc_d[k, n] + x_d[k + 1, n])
-                    * (step * h[k])
-                    / h[k] ** 2
-                    <= max_accel[n]
-                )
-                prog.AddConstraint(
-                    (-3.0 * x_d[k, n] + 4.0 * xc_d[k, n] - x_d[k + 1, n]) / h[k]
-                    + 4.0
-                    * (x_d[k, n] - 2.0 * xc_d[k, n] + x_d[k + 1, n])
-                    * (step * h[k])
-                    / h[k] ** 2
-                    >= min_accel[n]
-                )
-                # Jerk limits
-                prog.AddConstraint(
-                    8.0 * (x_d[k, n] - 2.0 * xc_d[k, n] + x_d[k + 1, n]) / h[k] ** 2
-                    <= max_jerk[n]
-                )
-                prog.AddConstraint(
-                    8.0 * (x_d[k, n] - 2.0 * xc_d[k, n] + x_d[k + 1, n]) / h[k] ** 2
-                    >= min_jerk[n]
-                )
+                # Sample and evaluate the trajectory to constrain
+                for step in np.linspace(0, 1, self.samples_per_segment):
+                    # Position limits
+                    prog.AddConstraint(
+                        x[k, n]
+                        + x_d[k, n] * h[k]
+                        + 0.5
+                        * (-3.0 * x_d[k, n] + 4.0 * xc_d[k, n] - x_d[k + 1, n])
+                        * (step * h[k]) ** 2
+                        / h[k]
+                        + (2.0 / 3.0)
+                        * (x_d[k, n] - 2.0 * xc_d[k, n] + x_d[k + 1, n])
+                        * (step * h[k]) ** 3
+                        / h[k] ** 2
+                        <= self.model.upperPositionLimit[n]
+                    )
+                    prog.AddConstraint(
+                        x[k, n]
+                        + x_d[k, n] * h[k]
+                        + 0.5
+                        * (-3.0 * x_d[k, n] + 4.0 * xc_d[k, n] - x_d[k + 1, n])
+                        * (step * h[k]) ** 2
+                        / h[k]
+                        + (2.0 / 3.0)
+                        * (x_d[k, n] - 2.0 * xc_d[k, n] + x_d[k + 1, n])
+                        * (step * h[k]) ** 3
+                        / h[k] ** 2
+                        >= self.model.lowerPositionLimit[n]
+                    )
+                    # Velocity limits
+                    prog.AddConstraint(
+                        x_d[k, n]
+                        + (-3.0 * x_d[k, n] + 4.0 * xc_d[k, n] - x_d[k + 1, n])
+                        * (step * h[k])
+                        / h[k]
+                        + 2.0
+                        * (x_d[k, n] - 2.0 * xc_d[k, n] + x_d[k + 1, n])
+                        * (step * h[k]) ** 2
+                        / h[k] ** 2
+                        <= max_vel[n]
+                    )
+                    prog.AddConstraint(
+                        x_d[k, n]
+                        + (-3.0 * x_d[k, n] + 4.0 * xc_d[k, n] - x_d[k + 1, n])
+                        * (step * h[k])
+                        / h[k]
+                        + 2.0
+                        * (x_d[k, n] - 2.0 * xc_d[k, n] + x_d[k + 1, n])
+                        * (step * h[k]) ** 2
+                        / h[k] ** 2
+                        >= min_vel[n]
+                    )
+                    # Acceleration limits
+                    prog.AddConstraint(
+                        (-3.0 * x_d[k, n] + 4.0 * xc_d[k, n] - x_d[k + 1, n]) / h[k]
+                        + 4.0
+                        * (x_d[k, n] - 2.0 * xc_d[k, n] + x_d[k + 1, n])
+                        * (step * h[k])
+                        / h[k] ** 2
+                        <= max_accel[n]
+                    )
+                    prog.AddConstraint(
+                        (-3.0 * x_d[k, n] + 4.0 * xc_d[k, n] - x_d[k + 1, n]) / h[k]
+                        + 4.0
+                        * (x_d[k, n] - 2.0 * xc_d[k, n] + x_d[k + 1, n])
+                        * (step * h[k])
+                        / h[k] ** 2
+                        >= min_accel[n]
+                    )
+                    # Jerk limits
+                    prog.AddConstraint(
+                        8.0 * (x_d[k, n] - 2.0 * xc_d[k, n] + x_d[k + 1, n]) / h[k] ** 2
+                        <= max_jerk[n]
+                    )
+                    prog.AddConstraint(
+                        8.0 * (x_d[k, n] - 2.0 * xc_d[k, n] + x_d[k + 1, n]) / h[k] ** 2
+                        >= min_jerk[n]
+                    )
 
             # Acceleration continuity between segments.
             for k in range(self.num_waypoints - 2):
@@ -243,8 +240,6 @@ class CubicTrajectoryOptimization:
         x_d_opt = result.GetSolution(x_d)
         xc_opt = result.GetSolution(xc)
         xc_d_opt = result.GetSolution(xc_d)
-        print("solver is: ", result.get_solver_id().name())
-
         print(f"h* = {h_opt}")
         print(f"x* = {x_opt}")
         print(f"xc* = {xc_opt}")
