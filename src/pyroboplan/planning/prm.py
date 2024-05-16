@@ -101,7 +101,7 @@ class PRMPlanner:
 
         Parameters
         ----------
-            sample_generator : sample_generator
+            sample_generator : Generator[array-like, None, None]
                 The sample function to use in construction of the roadmap.
                 Defaults to randomly sampling the robot's configuration space.
         """
