@@ -171,6 +171,34 @@ class PRMPlanner:
             node.parent = None
             node.cost = None
 
+    def connect_planning_nodes(self, start_node, goal_node):
+        """
+        Ensures the start and goal configurations can be connected to the PRM.
+
+        Parameters
+        ----------
+            start_node : `pyroboplan.planning.graph.Node`
+                The start node to connect.
+            goal_node : `pyroboplan.planning.graph.Node`
+                The goal node to connect.
+
+        Returns
+        -------
+            bool :
+                True if the nodes were able to be connected, False otherwise.
+        """
+        success = True
+
+        # If we cannot connect the start and goal nodes then there is no recourse.
+        if not self.connect_node(start_node, self.options.max_neighbor_radius):
+            print("Failed to connect the start configuration to the PRM.")
+            success = False
+        if not self.connect_node(goal_node, self.options.max_neighbor_radius):
+            print("Failed to connect the goal configuration to the PRM.")
+            success = False
+
+        return success
+
     def plan(self, q_start, q_goal):
         """
         Plans a path from a start to a goal configuration using the constructed graph.
@@ -196,20 +224,14 @@ class PRMPlanner:
             print("Goal configuration in collision.")
             return None
 
-        try:
-            # Ensure the start and goal nodes are in the graph.
-            start_node = Node(q_start)
-            self.graph.add_node(start_node)
-            goal_node = Node(q_goal)
-            self.graph.add_node(goal_node)
+        # Ensure the start and goal nodes are in the graph.
+        start_node = Node(q_start)
+        self.graph.add_node(start_node)
+        goal_node = Node(q_goal)
+        self.graph.add_node(goal_node)
 
-            # If we cannot connect the start and goal nodes then there is no recourse.
-            if not self.connect_node(start_node, self.options.max_neighbor_radius):
-                print("Failed to connect the start configuration to the PRM.")
-                return None
-            if not self.connect_node(goal_node, self.options.max_neighbor_radius):
-                print("Failed to connect the goal configuration to the PRM.")
-                return None
+        # Ensure the start and goal nodes are connected before attempting to plan
+        if self.connect_planning_nodes(start_node, goal_node):
 
             # Use a graph search to determine if there is a path between the start and goal poses.
             node_path = astar(self.graph, start_node, goal_node)
@@ -218,10 +240,9 @@ class PRMPlanner:
             path = [node.q for node in node_path] if node_path else None
             self.latest_path = path
 
-        # Always the start and end nodes from the PRM.
-        finally:
-            self.graph.remove_node(start_node)
-            self.graph.remove_node(goal_node)
+        # Always remove the start and end nodes from the PRM.
+        self.graph.remove_node(start_node)
+        self.graph.remove_node(goal_node)
 
         return path
 
