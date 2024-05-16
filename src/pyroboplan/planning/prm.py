@@ -1,5 +1,6 @@
 """ Utilities for manipulation-specific Probabilistic Roadmaps (PRMs). """
 
+import numpy as np
 import time
 
 from pyroboplan.planning.graph_search import astar
@@ -30,6 +31,7 @@ class PRMPlannerOptions:
         max_neighbor_connections=15,
         max_construction_nodes=5000,
         construction_timeout=10.0,
+        prm_star=False,
         prm_file=None,
     ):
         """
@@ -47,6 +49,9 @@ class PRMPlannerOptions:
                 The maximum number of samples to generate in the configuration space when growing the graph.
             construction_timeout : float
                 Maximum time allotted to sample the configuration space per call.
+            prm_star : str
+                If True, use the PRM* approach to dynamically select the radius and max number of neighbors
+                during construction of the roadmap.
             prm_file : str, optional
                 Full file path of a persisted PRM graph to use in the planner.
                 If this is not specified, the PRM will be constructed from scratch.
@@ -56,6 +61,7 @@ class PRMPlannerOptions:
         self.max_neighbor_connections = max_neighbor_connections
         self.construction_timeout = construction_timeout
         self.max_construction_nodes = max_construction_nodes
+        self.prm_star = prm_star
         self.prm_file = prm_file
 
 
@@ -67,8 +73,12 @@ class PRMPlanner:
 
     Graphs can be persisted to disk for use in future applications.
 
-    Link to the original publication:
-        https://www.kavrakilab.org/publications/kavraki-svestka1996probabilistic-roadmaps-for.pdf
+    Some helpful resources:
+        * The original publication:
+          https://www.kavrakilab.org/publications/kavraki-svestka1996probabilistic-roadmaps-for.pdf
+        * A nice guide to higher dimensional motion planning:
+          https://motion.cs.illinois.edu/RoboticSystems/MotionPlanningHigherDimensions.html
+
     """
 
     def __init__(self, model, collision_model, options=PRMPlannerOptions()):
@@ -123,13 +133,24 @@ class PRMPlanner:
             if check_collisions_at_state(self.model, self.collision_model, q_sample):
                 continue
 
+            radius = self.options.max_neighbor_radius
+            k = self.options.max_neighbor_connections
+
+            # If using PRM* dynamically compute the radius and k for this addition
+            if self.options.prm_star:
+                n = len(self.graph.nodes)
+                d = len(q_sample)
+                if n > 0:
+                    radius = radius * (np.log(n) / n) ** (1 / d)
+                    k = int(k * np.log(n))
+
             # It's a valid configuration so add it to the roadmap
             new_node = Node(q_sample)
             self.graph.add_node(new_node)
-            self.connect_node(new_node, self.options.max_neighbor_radius)
+            self.connect_node(new_node, radius, k)
             added_nodes += 1
 
-    def connect_node(self, new_node, radius):
+    def connect_node(self, new_node, radius, k):
         """
         Identifies all neighbors and makes connections to the added node.
 
@@ -137,6 +158,10 @@ class PRMPlanner:
         ----------
             parent_node : `pyroboplan.planning.graph.Node`
                 The node to add.
+            radius : float
+                Only consider connections within the provided radius.
+            k : int
+                Only consider up to a maximum of k neighbors to make connections.
 
         Returns
         -------
@@ -148,7 +173,7 @@ class PRMPlanner:
 
         # Attempt to connect at most `max_neighbor_connections` neighbors.
         success = False
-        for node, _ in neighbors[0 : self.options.max_neighbor_connections]:
+        for node, _ in neighbors[0:k]:
             # If the nodes are connectable then add an edge.
             if has_collision_free_path(
                 node.q,
@@ -190,10 +215,18 @@ class PRMPlanner:
         success = True
 
         # If we cannot connect the start and goal nodes then there is no recourse.
-        if not self.connect_node(start_node, self.options.max_neighbor_radius):
+        if not self.connect_node(
+            start_node,
+            self.options.max_neighbor_radius,
+            self.options.max_neighbor_connections,
+        ):
             print("Failed to connect the start configuration to the PRM.")
             success = False
-        if not self.connect_node(goal_node, self.options.max_neighbor_radius):
+        if not self.connect_node(
+            goal_node,
+            self.options.max_neighbor_radius,
+            self.options.max_neighbor_connections,
+        ):
             print("Failed to connect the goal configuration to the PRM.")
             success = False
 
