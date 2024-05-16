@@ -76,6 +76,8 @@ class PRMPlanner:
     Some helpful resources:
         * The original publication:
           https://www.kavrakilab.org/publications/kavraki-svestka1996probabilistic-roadmaps-for.pdf
+        * Modifications of PRM including PRM*:
+          https://people.eecs.berkeley.edu/~pabbeel/cs287-fa19/optreadings/rrtstar.pdf
         * A nice guide to higher dimensional motion planning:
           https://motion.cs.illinois.edu/RoboticSystems/MotionPlanningHigherDimensions.html
 
@@ -134,20 +136,22 @@ class PRMPlanner:
                 continue
 
             radius = self.options.max_neighbor_radius
-            k = self.options.max_neighbor_connections
+            max_neighbors = self.options.max_neighbor_connections
 
-            # If using PRM* dynamically compute the radius and k for this addition
+            # If using PRM* we dynamically scale the radius and max number of connections
+            # each iteration. The scaling is a function of log(num_nodes). For more info refer to section
+            # 3.3 of https://people.eecs.berkeley.edu/~pabbeel/cs287-fa19/optreadings/rrtstar.pdf.
             if self.options.prm_star:
-                n = len(self.graph.nodes)
-                d = len(q_sample)
-                if n > 0:
-                    radius = radius * (np.log(n) / n) ** (1 / d)
-                    k = int(k * np.log(n))
+                num_nodes = len(self.graph.nodes)
+                dimension = len(q_sample)
+                if num_nodes > 0:
+                    radius = radius * (np.log(num_nodes) / num_nodes) ** (1 / dimension)
+                    max_neighbors = int(max_neighbors * np.log(num_nodes))
 
             # It's a valid configuration so add it to the roadmap
             new_node = Node(q_sample)
             self.graph.add_node(new_node)
-            self.connect_node(new_node, radius, k)
+            self.connect_node(new_node, radius, max_neighbors)
             added_nodes += 1
 
     def connect_node(self, new_node, radius, k):
