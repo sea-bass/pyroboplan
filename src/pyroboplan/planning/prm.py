@@ -231,6 +231,7 @@ class PRMPlanner:
         self.graph.add_node(goal_node)
 
         # Ensure the start and goal nodes are connected before attempting to plan
+        path = None
         if self.connect_planning_nodes(start_node, goal_node):
 
             # Use a graph search to determine if there is a path between the start and goal poses.
