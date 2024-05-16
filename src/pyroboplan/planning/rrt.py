@@ -233,9 +233,8 @@ class RRTPlanner:
             q_sample : array-like
                 The robot configuration sample to extend or connect towards.
         """
-        # If they are the same node there's nothing to do.
-        if np.array_equal(parent_node.q, q_sample):
-            return None
+        q_diff = q_sample - parent_node.q
+        q_increment = self.options.max_connection_dist * q_diff / np.linalg.norm(q_diff)
 
         q_out = None
         q_cur = parent_node.q
