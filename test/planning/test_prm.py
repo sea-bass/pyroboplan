@@ -10,17 +10,29 @@ from pyroboplan.planning.prm import PRMPlanner, PRMPlannerOptions
 np.random.seed(1234)
 
 
-def test_construct_roadmap():
+def construct_roadmap_test(options):
+    # Initialize models, and construct and return a planner with the provided options
     model, collision_model, _ = load_models()
-    options = PRMPlannerOptions(max_construction_nodes=100)
-
-    # Initial the planner and do the sampling
     planner = PRMPlanner(model, collision_model, options=options)
     planner.construct_roadmap()
 
-    # Planning should succeed and should have the correct start and end poses
+    # Nodes and edges means construction was all peachy.
     assert len(planner.graph.nodes) > 0
     assert len(planner.graph.edges) > 0
+
+    return planner
+
+
+def test_construct_roadmap():
+    # Initialize the roadmap with a small number of nodes
+    options = PRMPlannerOptions(max_construction_nodes=100)
+    construct_roadmap_test(options)
+
+
+def test_construct_roadmap_prm_star():
+    # Initialize the roadmap using PRM*
+    options = PRMPlannerOptions(prm_star=True, max_construction_nodes=100)
+    planner = construct_roadmap_test(options)
 
 
 def test_plan_trivial_prm():
