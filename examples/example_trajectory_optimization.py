@@ -29,15 +29,12 @@ if __name__ == "__main__":
     viz = MeshcatVisualizer(model, collision_model, visual_model, data=data)
     viz.initViewer(open=True)
     viz.loadViewerModel()
-
-    # Define the start and end configurations
     q_start = get_random_collision_free_state(model, collision_model)
-    q_end = get_random_collision_free_state(model, collision_model)
     viz.display(q_start)
     time.sleep(1.0)
 
-    # Search for a trajectory
-    dt = 0.05
+    # Configure trajectory optimization
+    dt = 0.025
     options = CubicTrajectoryOptimizationOptions(
         num_waypoints=5,
         samples_per_segment=11,
@@ -48,8 +45,22 @@ if __name__ == "__main__":
         min_accel=-0.75,
         max_accel=0.75,
     )
+
+    # Perform trajectory optimization
+    multi_point = True
+    if multi_point:
+        # Multi point means we set all the waypoints and optimize how to move between them.
+        q_path = [q_start] + [
+            get_random_collision_free_state(model, collision_model)
+            for _ in range(options.num_waypoints - 1)
+        ]
+    else:
+        # Single point means we set just the start and goal.
+        # All other intermediate waypoints are optimized automatically.
+        q_path = [q_start, get_random_collision_free_state(model, collision_model)]
+
     planner = CubicTrajectoryOptimization(model, options)
-    traj = planner.plan(q_start, q_end)
+    traj = planner.plan(q_path)
 
     if traj is not None:
         print("Trajectory optimization successful")

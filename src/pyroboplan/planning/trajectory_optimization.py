@@ -154,7 +154,7 @@ class CubicTrajectoryOptimization:
         """
         return (
             x[k, n]
-            + x_d[k, n] * h[k]
+            + x_d[k, n] * (step * h[k])
             + 0.5
             * (-3.0 * x_d[k, n] + 4.0 * xc_d[k, n] - x_d[k + 1, n])
             * (step * h[k]) ** 2
@@ -254,24 +254,37 @@ class CubicTrajectoryOptimization:
         """
         return 8.0 * (x_d[k, n] - 2.0 * xc_d[k, n] + x_d[k + 1, n]) / h[k] ** 2
 
-    def plan(self, q_start, q_goal):
+    def plan(self, q_path):
         """
-        Plans a path from a start to a goal configuration.
+        Plans a trajectory from a start to a goal configuration, or along an entire trajectory.
+
+        If the input list has 2 elements, then this is assumed to be the start and goal configurations.
+        The intermediate waypoints will be determined automatically.
+
+        If the input list has more than 2 elements, then these are the actual waypoints that must be achieved.
 
         Parameters
         ----------
-            q_start : array-like
-                The starting robot configuration.
-            q_goal : array-like
-                The goal robot configuration.
+            q_path : list[array-like]
+                A list of joint configurations describing the desired motion.
 
         Return
         ------
             Optional[pyroboplan.trajectory.polynomial.CubicPolynomialTrajectory]
                 The resulting trajectory, or None if optimization failed
         """
+        if len(q_path) == 0:
+            print("Cannot optimize over an empty path.")
+            return None
         num_waypoints = self.options.num_waypoints
-        num_dofs = len(q_start)
+        num_dofs = len(q_path[0])
+
+        if len(q_path) == num_waypoints:
+            fully_specified_path = True
+        elif len(q_path) == 2:
+            fully_specified_path = False
+        else:
+            raise ValueError("Path must either be length 2 or equal to num_waypoints.")
 
         # Preprocess the kinematic limits
         min_vel = self._process_limits(self.options.min_vel, num_dofs, "min_vel")
@@ -290,8 +303,13 @@ class CubicTrajectoryOptimization:
         h = prog.NewContinuousVariables(num_waypoints - 1)
 
         # Initial and final conditions
-        prog.AddBoundingBoxConstraint(q_start, q_start, x[0, :])
-        prog.AddBoundingBoxConstraint(q_goal, q_goal, x[num_waypoints - 1, :])
+        if fully_specified_path:
+            for idx in range(num_waypoints):
+                prog.AddBoundingBoxConstraint(q_path[idx], q_path[idx], x[idx, :])
+        else:
+            prog.AddBoundingBoxConstraint(q_path[0], q_path[0], x[0, :])
+            prog.AddBoundingBoxConstraint(q_path[-1], q_path[-1], x[-1, :])
+        # Initial and final velocities should always be zero.
         prog.AddBoundingBoxConstraint(0.0, 0.0, x_d[0, :])
         prog.AddBoundingBoxConstraint(0.0, 0.0, x_d[num_waypoints - 1, :])
 
@@ -363,13 +381,24 @@ class CubicTrajectoryOptimization:
             vars=h,
         )
 
-        # Set initial condition assuming linear trajectory.
-        # TODO: Allow different initialization.
-        init_points = np.linspace(q_start, q_goal, 2 * num_waypoints - 1)
-        # prog.SetInitialGuess(h, np.ones(num_waypoints - 1))
-        # prog.SetInitialGuess(x_d, np.zeros((num_waypoints, num_dofs)))
-        # prog.SetInitialGuess(xc, init_points[1::2])
-        # prog.SetInitialGuess(xc_d, np.zeros((num_waypoints - 1, num_dofs)))
+        # Set initial conditions to help search
+        if fully_specified_path:
+            # Set initial guess assuming collocation points are exactly between the waypoints.
+            prog.SetInitialGuess(x, np.array(q_path))
+            init_collocation_points = []
+            for k in range(num_waypoints - 1):
+                init_collocation_points.append(0.5 * (q_path[k] + q_path[k + 1]))
+            prog.SetInitialGuess(xc, np.array(init_collocation_points))
+        else:
+            # Set initial guess assuming linear trajectory from start to end.
+            init_points = np.linspace(q_path[0], q_path[-1], 2 * num_waypoints - 1)
+            prog.SetInitialGuess(x, init_points[::2])
+            prog.SetInitialGuess(xc, init_points[1::2])
+
+        h_init = 0.5 * (self.options.max_segment_time - self.options.min_segment_time)
+        prog.SetInitialGuess(h, h_init * np.ones(num_waypoints - 1))
+        prog.SetInitialGuess(x_d, np.zeros((num_waypoints, num_dofs)))
+        prog.SetInitialGuess(xc_d, np.zeros((num_waypoints - 1, num_dofs)))
 
         # Solve the program
         result = Solve(prog)
