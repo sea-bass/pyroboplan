@@ -100,6 +100,8 @@ def test_plan_rrt_star():
     path_original = planner.plan(q_start, q_goal)
 
     # Then, plan with RRT* enabled (use maximum rewire distance for effect).
+    # Note we need to reset the seed so the nominal plans are equivalent.
+    np.random.seed(1234)
     options.rrt_star = True
     options.max_rewire_dist = np.inf
     planner = RRTPlanner(model, collision_model, options=options)
