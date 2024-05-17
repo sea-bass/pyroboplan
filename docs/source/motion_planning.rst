@@ -90,9 +90,20 @@ This is probably the most common task that comes up when we describe motion plan
 
 There are several techniques for path planning, which can roughly be broken down into:
 
-* **Graph Search**: Discretize the environment and perform exhaustive search to achieve a goal. Common examples include breadth-/depth-first search, Dijkstra's algorithm, and A* and all its variants.
-* **Sampling-Based Planning**: Similar to graph search, except the graph is built up by randomly sampling the environment to manage computational complexity. Common examples include Probabilistic Roadmaps (PRM) and Rapidly-exploring Random Trees (RRT), with all their variants.
-* **Optimization-Based Planning**: Uses optimization techniques to produce a solution, which can be represented as a list of states to pass through at a specified time step (known as *direct transcription*) or the parameters of a mathematical model that describe the motion (known as *direct collocation*).
+* **Graph Search**: Discretize the environment and perform exhaustive search to achieve a goal.
+  Common examples include breadth-/depth-first search, Dijkstra's algorithm, and A* and all its variants.
+* **Sampling-Based Planning**: Similar to graph search, except the graph is built up by randomly sampling the environment to manage computational complexity.
+  Common examples include Probabilistic Roadmaps (PRM) and Rapidly-exploring Random Trees (RRT), with all their variants.
+* **Optimization-Based Planning**: Uses optimization techniques to produce a solution,
+  which can be represented as a list of states to pass through at a specified time step (known as *direct transcription*) or the parameters of a mathematical model that describe the motion (known as *direct collocation*).
+
+When the configuration space is low dimensional (e.g., 2 degrees of freedom for mobile planar robots), simple approaches such as graph search or basic sampling-based planners can be very effective.
+These planners can efficiently explore the space and find feasible paths without requiring significant computational resources.
+
+However, as the dimensionality of the configuration space increases (e.g., multi-joint robots or robots with complex constraints), the complexity of the planning problem grows exponentially.
+In higher-dimensional spaces, planners need to manage a vast number of potential configurations, making it impractical to perform exhaustive search or naive sampling.
+Many approaches have been developed to optimize, tune, or otherwise modify basic planning implementations to account for these larger configuration spaces.
+`Motion Planning in Higher Dimensions <https://motion.cs.illinois.edu/RoboticSystems/MotionPlanningHigherDimensions.html>`_ offers a nice, more comprehensive introduction to the topic.
 
 One thing to note is that these planning approaches can actually produce a **path** (basically, only the waypoints) or a **trajectory** (waypoints along with their timing).
 
@@ -103,12 +114,16 @@ Another distinction is that planners can be **offline** (a full plan is generate
 Currently, all the planners in ``pyroboplan`` (such as RRT and Cartesian interpolation) are offline planners.
 Online planning and control is often done through optimization techniques like Model Predictive Control (MPC).
 
-The `pyroboplan.planning module <api/pyroboplan.planning.html>`_ contains implementations for motion planners.
-You can also try running the :examples:`RRT example <example_rrt.py>` and :examples:`Cartesian planning example <example_cartesian_path.py>`.
+The `pyroboplan.planning module <api/pyroboplan.planning.html>`_ contains implementations for a number of motion planners.
+You can also try running the :examples:`RRT example <example_rrt.py>`, :examples:`PRM example <example_prm.py>`, or the :examples:`Cartesian planning example <example_cartesian_path.py>`.
 
 .. image:: _static/images/bidirectional_rrt_star.png
     :width: 600
     :alt: Bidirectional RRT* finding a successful collision-free path.
+
+.. image:: _static/images/prm_graph.png
+    :width: 600
+    :alt: Identifying a collision-free path using A* on a pre-constructed PRM.
 
 .. image:: _static/images/cartesian_planning.png
     :width: 600

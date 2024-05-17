@@ -38,6 +38,10 @@ class Node:
         """A node is equal to another node if and only if their joint configurations are equal."""
         return np.array_equal(self.q, other.q)
 
+    def __lt__(self, other):
+        """Compare nodes based on their lexicographical joint configurations."""
+        return tuple(self.q) < tuple(other.q)
+
     def __str__(self):
         """Return a string representation of the node that includes joint configuration and cost."""
         return f"Node(q={self.q.tolist()}, cost={self.cost})"
@@ -73,6 +77,14 @@ class Edge:
         self.nodeA = nodeA
         self.nodeB = nodeB
         self.cost = cost
+
+    def __hash__(self):
+        """Computes the hash of this edge using its nodes' hashes."""
+        return hash((self.nodeA, self.nodeB))
+
+    def __eq__(self, other):
+        """Two edges are equal if and only if they both start and end at the same nodes."""
+        return self.nodeA == other.nodeA and self.nodeB == other.nodeB
 
     def __str__(self):
         """Return a string representation of the edge."""
@@ -137,9 +149,35 @@ class Graph:
 
         return self.nodes[node]
 
+    def remove_node(self, node):
+        """
+        Removes a node from the graph, along with all of its corresponding edges.
+
+        Parameters
+        ----------
+            node : `pyroboplan.planning.graph.Node`
+                The node to remove from the graph.
+
+        Returns
+        -------
+            bool :
+                True if the graph was modified, False otherwise.
+        """
+        if node not in self.nodes:
+            return False
+
+        neighbors = list(self.nodes[node].neighbors)
+        for neighbor in neighbors:
+            self.remove_edge(node, neighbor)
+
+        del self.nodes[node]
+        return True
+
     def add_edge(self, nodeA, nodeB):
         """
         Adds an edge to the graph.
+
+        This is an undirected graph, so if A -> B is an edge, so is B -> A.
 
         Parameters
         ----------
@@ -155,6 +193,11 @@ class Graph:
         """
         if nodeA not in self.nodes or nodeB not in self.nodes:
             raise ValueError("Specified nodes are not in Graph, cannot add edge.")
+
+        # Always insert with the "smaller" node as nodeA
+        if nodeA > nodeB:
+            nodeA, nodeB = nodeB, nodeA
+
         nodeA = self.nodes[nodeA]
         nodeB = self.nodes[nodeB]
 
@@ -165,14 +208,16 @@ class Graph:
         nodeB.neighbors[nodeA] = cost
         return edge
 
-    def remove_edge(self, edge):
+    def remove_edge(self, nodeA, nodeB):
         """
         Attempts to remove an edge from a graph, if it exists.
 
         Parameters
         ----------
-            edge : `pyroboplan.planning.graph.Edge`
-                The edge to remove from the graph.
+            nodeA : `pyroboplan.planning.graph.Node`
+                The first node in the edge.
+            nodeB : `pyroboplan.planning.graph.Node`
+                The second node in the edge.
 
         Returns
         -------
@@ -180,6 +225,11 @@ class Graph:
                 True if the edge was successfully removed, else False.
 
         """
+        # Recall that nodes are always inserted with the "smaller" node as nodeA
+        if nodeA > nodeB:
+            nodeA, nodeB = nodeB, nodeA
+
+        edge = Edge(nodeA, nodeB)
         if edge not in self.edges:
             return False
 
@@ -217,6 +267,38 @@ class Graph:
                 nearest_node = node
 
         return nearest_node
+
+    def get_nearest_neighbors(self, q, radius):
+        """
+        Gets a list of the nearest neighbors to the specified robot configuration.
+
+        Neighboring nodes will be returned as a sorted list of tuples of nodes along with the distance
+        to the specified configuration. If the provided configuration is in the graph, it will not
+        be returned (no distance 0 node will be returned).
+
+        Parameters
+        ----------
+            q : array-like
+                The robot configuration to use in this query.
+            radius: float
+                The maximum radius in which to consider neighbors
+
+        Returns
+        -------
+            List of (`pyroboplan.planning.graph.Node`, `float`)
+                A list of tuples of all the nodes within the specified radius of the provided robot configuration,
+                along with their corresponding distances.
+        """
+        neighbors = []
+        chk_node = Node(q)
+        for node in self.nodes:
+            if node == chk_node:
+                continue
+            d = configuration_distance(node.q, chk_node.q)
+            if d <= radius:
+                neighbors.append((node, d))
+        # Sort based on the second entry in the tuples, namely the distance from q.
+        return sorted(neighbors, key=lambda n: n[1])
 
     def save_to_file(self, filename):
         """
