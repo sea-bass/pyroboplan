@@ -37,7 +37,7 @@ if __name__ == "__main__":
     time.sleep(1.0)
 
     # Search for a trajectory
-    dt = 0.025
+    dt = 0.05
     options = CubicTrajectoryOptimizationOptions(
         num_waypoints=5,
         samples_per_segment=11,
@@ -47,8 +47,6 @@ if __name__ == "__main__":
         max_vel=1.5,
         min_accel=-0.75,
         max_accel=0.75,
-        min_jerk=-1.0,
-        max_jerk=1.0,
     )
     planner = CubicTrajectoryOptimization(model, options)
     traj = planner.plan(q_start, q_end)

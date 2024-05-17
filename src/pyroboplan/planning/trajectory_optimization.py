@@ -14,12 +14,12 @@ class CubicTrajectoryOptimizationOptions:
         samples_per_segment=11,
         min_segment_time=0.01,
         max_segment_time=100.0,
-        min_vel=None,
-        max_vel=None,
-        min_accel=None,
-        max_accel=None,
-        min_jerk=None,
-        max_jerk=None,
+        min_vel=-np.inf,
+        max_vel=np.inf,
+        min_accel=-np.inf,
+        max_accel=np.inf,
+        min_jerk=-np.inf,
+        max_jerk=np.inf,
     ):
         """
         Initializes a set of options for cubic polynomial trajectory optimization.
@@ -34,29 +34,23 @@ class CubicTrajectoryOptimizationOptions:
                 The minimum duration of a trajectory segment, in seconds.
             max_segment_time : float
                 The maximum duration of a trajectory segment, in seconds.
-            min_vel : None, float, or array-like
+            min_vel : float, or array-like
                 The minimum velocity along the trajectory.
-                If None, does not enforce velocity limits.
                 If scalar, applies to all degrees of freedom; otherwise allows for different limits per degree of freedom.
-            max_vel : None, float or array-like
+            max_vel : float or array-like
                 The maximum velocity along the trajectory.
-                If None, does not enforce velocity limits.
                 If scalar, applies to all degrees of freedom; otherwise allows for different limits per degree of freedom.
-            min_accel : None, float, or array-like
+            min_accel : float, or array-like
                 The minimum acceleration along the trajectory.
-                If None, does not enforce acceleration limits.
                 If scalar, applies to all degrees of freedom; otherwise allows for different limits per degree of freedom.
-            max_accel : None, float or array-like
+            max_accel : float or array-like
                 The maximum acceleration along the trajectory.
-                If None, does not enforce acceleration limits.
                 If scalar, applies to all degrees of freedom; otherwise allows for different limits per degree of freedom.
-            min_jerk : None, float, or array-like
+            min_jerk : float, or array-like
                 The minimum jerk along the trajectory.
-                If None, does not enforce jerk limits.
                 If scalar, applies to all degrees of freedom; otherwise allows for different limits per degree of freedom.
-            max_jerk : None, float or array-like
+            max_jerk : float or array-like
                 The maximum jerk along the trajectory.
-                If None, does not enforce jerk limits.
                 If scalar, applies to all degrees of freedom; otherwise allows for different limits per degree of freedom.
         """
         if num_waypoints < 2:
@@ -107,11 +101,9 @@ class CubicTrajectoryOptimization:
         """
         Helper function to process kinematics limits options.
 
-          * If the input limits are None, return None.
           * If the input limits are scalar, reshape them to the number of degrees of freedom.
           * Whether the input limits are scalar, a list, or a numpy array, always return a numpy array.
-
-        If the input limits are not scalar, but the wrong size, this will raise an Exception.
+          * If the input limits are not scalar, but the wrong size, this will raise an Exception.
 
         Parameters
         ----------
@@ -127,9 +119,6 @@ class CubicTrajectoryOptimization:
             numpy.ndarray
                 The processed limits, for compatibility with trajectory optimization.
         """
-        if limits is None:
-            return None
-
         limits = np.array(limits)
         if len(limits.shape) == 0 or limits.shape[0] == 1:
             limits = limits * np.ones(num_dofs)
@@ -329,18 +318,18 @@ class CubicTrajectoryOptimization:
 
                     # Velocity limits
                     vel = self._eval_velocity(x_d, xc_d, h, k, n, step)
-                    prog.AddConstraint(vel <= max_vel[n])
                     prog.AddConstraint(vel >= min_vel[n])
+                    prog.AddConstraint(vel <= max_vel[n])
 
                     # Acceleration limits
                     accel = self._eval_acceleration(x_d, xc_d, h, k, n, step)
-                    prog.AddConstraint(accel <= max_accel[n])
                     prog.AddConstraint(accel >= min_accel[n])
+                    prog.AddConstraint(accel <= max_accel[n])
 
                     # Jerk limits
                     jerk = self._eval_jerk(x_d, xc_d, h, k, n, step)
-                    prog.AddConstraint(jerk <= max_jerk[n])
                     prog.AddConstraint(jerk >= min_jerk[n])
+                    prog.AddConstraint(jerk <= max_jerk[n])
 
             # Acceleration continuity between segments.
             for k in range(num_waypoints - 2):
@@ -377,10 +366,10 @@ class CubicTrajectoryOptimization:
         # Set initial condition assuming linear trajectory.
         # TODO: Allow different initialization.
         init_points = np.linspace(q_start, q_goal, 2 * num_waypoints - 1)
-        prog.SetInitialGuess(h, np.ones(num_waypoints - 1))
-        prog.SetInitialGuess(x_d, np.zeros((num_waypoints, num_dofs)))
-        prog.SetInitialGuess(xc, init_points[1::2])
-        prog.SetInitialGuess(xc_d, np.zeros((num_waypoints - 1, num_dofs)))
+        # prog.SetInitialGuess(h, np.ones(num_waypoints - 1))
+        # prog.SetInitialGuess(x_d, np.zeros((num_waypoints, num_dofs)))
+        # prog.SetInitialGuess(xc, init_points[1::2])
+        # prog.SetInitialGuess(xc_d, np.zeros((num_waypoints - 1, num_dofs)))
 
         # Solve the program
         result = Solve(prog)
