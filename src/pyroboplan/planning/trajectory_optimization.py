@@ -10,10 +10,10 @@ class CubicTrajectoryOptimizationOptions:
 
     def __init__(
         self,
-        num_waypoints=6,
+        num_waypoints=3,
         samples_per_segment=11,
         min_segment_time=0.01,
-        max_segment_time=100.0,
+        max_segment_time=10.0,
         min_vel=-np.inf,
         max_vel=np.inf,
         min_accel=-np.inf,
