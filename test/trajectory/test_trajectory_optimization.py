@@ -124,3 +124,73 @@ def test_full_path_traj_opt():
         assert np.all(qdd <= options.max_accel)
         assert np.all(qddd >= options.min_jerk)
         assert np.all(qddd <= options.max_jerk)
+
+
+def test_traj_opt_unreachable_goal():
+    model, _, _ = load_models()
+
+    # Define the start and goal configurations
+    q_start = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+    q_goal = np.pi * np.ones_like(q_start)  # Unreachable configuration
+
+    # Perform trajectory optimization
+    options = CubicTrajectoryOptimizationOptions(num_waypoints=3)
+    planner = CubicTrajectoryOptimization(model, options)
+    with pytest.warns(RuntimeWarning):  # There are some invalid multiply values
+        assert planner.plan([q_start, q_goal]) is None
+
+
+def test_traj_opt_bad_limits():
+    model, _, _ = load_models()
+
+    # Define a multi-configuration path
+    q_path = [
+        np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
+        np.array([0.00, 1.57, 0.0, 0.0, 1.57, 1.57, 0.0, 0.0, 0.0]),
+        np.array([0.785, 1.57, 0.0, 0.0, 1.57, 1.57, 0.0, 0.0, 0.0]),
+        np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
+    ]
+
+    # Perform trajectory optimization
+    options = CubicTrajectoryOptimizationOptions(
+        num_waypoints=len(q_path),
+        max_vel=np.ones(6),  # Offending limits
+    )
+    planner = CubicTrajectoryOptimization(model, options)
+    with pytest.raises(ValueError):
+        planner.plan(q_path)
+
+
+def test_traj_opt_empty_path():
+    model, _, _ = load_models()
+
+    # Define an empty path
+    q_path = []
+
+    # Perform trajectory optimization
+    options = CubicTrajectoryOptimizationOptions(
+        num_waypoints=3,
+    )
+    planner = CubicTrajectoryOptimization(model, options)
+    with pytest.warns(UserWarning):
+        assert planner.plan(q_path) is None
+
+
+def test_traj_opt_bad_num_waypoints():
+    model, _, _ = load_models()
+
+    # Define a multi-configuration path
+    q_path = [
+        np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
+        np.array([0.00, 1.57, 0.0, 0.0, 1.57, 1.57, 0.0, 0.0, 0.0]),
+        np.array([0.785, 1.57, 0.0, 0.0, 1.57, 1.57, 0.0, 0.0, 0.0]),
+        np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
+    ]
+
+    # Perform trajectory optimization
+    options = CubicTrajectoryOptimizationOptions(
+        num_waypoints=3,  # This should be the same number of waypoints as the path
+    )
+    planner = CubicTrajectoryOptimization(model, options)
+    with pytest.raises(ValueError):
+        planner.plan(q_path)

@@ -1,6 +1,8 @@
 """ Utilities for trajectory optimization based planning. """
 
 import numpy as np
+import warnings
+
 from pydrake.solvers import MathematicalProgram, Solve
 from pyroboplan.trajectory.polynomial import CubicPolynomialTrajectory
 
@@ -274,7 +276,7 @@ class CubicTrajectoryOptimization:
                 The resulting trajectory, or None if optimization failed
         """
         if len(q_path) == 0:
-            print("Cannot optimize over an empty path.")
+            warnings.warn("Cannot optimize over an empty path.")
             return None
         num_waypoints = self.options.num_waypoints
         num_dofs = len(q_path[0])
