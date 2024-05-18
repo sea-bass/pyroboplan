@@ -12,7 +12,7 @@ from pyroboplan.core.utils import (
     extract_cartesian_poses,
 )
 from pyroboplan.models.panda import load_models, add_self_collisions
-from pyroboplan.planning.trajectory_optimization import (
+from pyroboplan.trajectory.trajectory_optimization import (
     CubicTrajectoryOptimization,
     CubicTrajectoryOptimizationOptions,
 )

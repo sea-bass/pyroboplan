@@ -115,7 +115,7 @@ Currently, all the planners in ``pyroboplan`` (such as RRT and Cartesian interpo
 Online planning and control is often done through optimization techniques like Model Predictive Control (MPC).
 
 The `pyroboplan.planning module <api/pyroboplan.planning.html>`_ contains implementations for a number of motion planners.
-You can also try running the :examples:`RRT example <example_rrt.py>`, :examples:`PRM example <example_prm.py>`, :examples:`Cartesian planning example <example_cartesian_path.py>`, or :examples:`trajectory optimization example <example_trajectory_optimization.py>`.
+You can also try running the :examples:`RRT example <example_rrt.py>`, :examples:`PRM example <example_prm.py>`, or :examples:`Cartesian planning example <example_cartesian_path.py>`.
 
 .. image:: _static/images/bidirectional_rrt_star.png
     :width: 600
@@ -137,9 +137,7 @@ As mentioned in the previous section, if you are using a planner that simply out
 Often, a fixed set of kinematic (position/velocity/acceleration/jerk) and dynamic (force/torque) limits of the robot are taken into account.
 Sometimes, these limits can also be task-dependent; for example, if manipulating fragile objects or objects that cannot be placed in certain configurations (e.g., moving a glass of water without spilling).
 
-The `pyroboplan.trajectory module <api/pyroboplan.trajectory.html>`_ contains trajectory generation implementations.
-Additionally, the trajectory optimization capabilities in the `pyroboplan.planning module <api/pyroboplan.planning.html>`_ can be used to optimize a trajectory for an existing path from an upstream planner.
-
+The `pyroboplan.trajectory module <api/pyroboplan.trajectory.html>`_ contains trajectory generation and optimization implementations.
 You can try running the corresponding :examples:`trajectory generation <example_trajectory_generation.py>` and :examples:`trajectory optimization <example_trajectory_optimization.py>` examples.
 
 .. image:: _static/images/trajectory_generation.png
