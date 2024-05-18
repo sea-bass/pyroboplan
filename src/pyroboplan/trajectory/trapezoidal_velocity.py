@@ -344,23 +344,23 @@ class TrapezoidalVelocityTrajectory:
             if show_position:
                 plt.plot(t_vec, q[dim, :])
                 min_pos = np.min(traj.positions)
-                max_pos = np.min(traj.positions)
+                max_pos = np.max(traj.positions)
                 legend.append("Position")
             if show_velocity:
                 plt.plot(traj.times, traj.velocities)
                 min_vel = np.min(traj.velocities)
-                max_vel = np.min(traj.velocities)
+                max_vel = np.max(traj.velocities)
                 legend.append("Velocity")
             if show_acceleration:
                 plt.stairs(traj.accelerations, edges=traj.times)
                 min_accel = np.min(traj.accelerations)
-                max_accel = np.min(traj.accelerations)
+                max_accel = np.max(traj.accelerations)
                 legend.append("Acceleration")
             plt.legend(legend)
 
             # Times
             min_val = vertical_line_scale_factor * min([min_pos, min_vel, min_accel])
-            max_val = vertical_line_scale_factor * max([min_pos, min_vel, min_accel])
+            max_val = vertical_line_scale_factor * max([max_pos, max_vel, max_accel])
             plt.vlines(
                 self.segment_times,
                 min_val,

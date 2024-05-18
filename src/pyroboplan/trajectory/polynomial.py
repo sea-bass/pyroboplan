@@ -164,22 +164,22 @@ class PolynomialTrajectoryBase(ABC):
             if show_position:
                 plt.plot(t_vec, q[dim, :])
                 min_pos = np.min(q[dim, :])
-                max_pos = np.min(q[dim, :])
+                max_pos = np.max(q[dim, :])
                 legend.append("Position")
             if show_velocity:
                 plt.plot(t_vec, qd[dim, :])
                 min_vel = np.min(qd[dim, :])
-                max_vel = np.min(qd[dim, :])
+                max_vel = np.max(qd[dim, :])
                 legend.append("Velocity")
             if show_acceleration:
                 plt.plot(t_vec, qdd[dim, :])
                 min_accel = np.min(qdd[dim, :])
-                max_accel = np.min(qdd[dim, :])
+                max_accel = np.max(qdd[dim, :])
                 legend.append("Acceleration")
             if show_jerk:
                 plt.plot(t_vec, qddd[dim, :])
                 min_jerk = np.min(qddd[dim, :])
-                max_jerk = np.min(qddd[dim, :])
+                max_jerk = np.max(qddd[dim, :])
                 legend.append("Jerk")
             plt.legend(legend)
 
