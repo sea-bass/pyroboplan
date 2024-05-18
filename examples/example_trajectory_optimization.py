@@ -64,7 +64,8 @@ if __name__ == "__main__":
 
     if traj is not None:
         print("Trajectory optimization successful")
-        t_vec, q_vec, qd_vec, qdd_vec = traj.generate(dt)
+        traj_gen = traj.generate(dt)
+        q_vec = traj_gen[1]
 
         # Display the trajectory and points along the path.
         plt.ion()

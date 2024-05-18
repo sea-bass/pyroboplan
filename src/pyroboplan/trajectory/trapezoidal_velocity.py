@@ -300,7 +300,14 @@ class TrapezoidalVelocityTrajectory:
 
         return t_vec, q, qd, qdd
 
-    def visualize(self, dt=0.01, joint_names=None):
+    def visualize(
+        self,
+        dt=0.01,
+        joint_names=None,
+        show_position=True,
+        show_velocity=False,
+        show_acceleration=False,
+    ):
         """
         Visualizes a generated trajectory with one figure window per dimension.
 
@@ -312,6 +319,12 @@ class TrapezoidalVelocityTrajectory:
             joint_names : list[str], optional
                 The joint names to use for the figure titles.
                 If unset, uses the text "Dimension 1", "Dimension 2", etc.
+            show_position : bool, optional
+                If true, shows the trajectory position values.
+            show_velocity : bool, optional
+                If true, shows the trajectory velocity values.
+            show_acceleration : bool, optional
+                If true, shows the trajectory acceleration values.
         """
         import matplotlib.pyplot as plt
 
@@ -325,22 +338,29 @@ class TrapezoidalVelocityTrajectory:
             plt.figure(title)
 
             # Positions, velocities, and accelerations
-            plt.plot(t_vec, q[dim, :])
-            plt.plot(traj.times, traj.velocities)
-            plt.stairs(traj.accelerations, edges=traj.times)
-            plt.legend(["Position", "Velocity", "Acceleration"])
+            legend = []
+            min_pos = min_vel = min_accel = np.inf
+            max_pos = max_vel = max_accel = -np.inf
+            if show_position:
+                plt.plot(t_vec, q[dim, :])
+                min_pos = np.min(traj.positions)
+                max_pos = np.min(traj.positions)
+                legend.append("Position")
+            if show_velocity:
+                plt.plot(traj.times, traj.velocities)
+                min_vel = np.min(traj.velocities)
+                max_vel = np.min(traj.velocities)
+                legend.append("Velocity")
+            if show_acceleration:
+                plt.stairs(traj.accelerations, edges=traj.times)
+                min_accel = np.min(traj.accelerations)
+                max_accel = np.min(traj.accelerations)
+                legend.append("Acceleration")
+            plt.legend(legend)
 
             # Times
-            min_val = vertical_line_scale_factor * min(
-                np.min(traj.positions),
-                np.min(traj.velocities),
-                np.min(traj.accelerations),
-            )
-            max_val = vertical_line_scale_factor * max(
-                np.max(traj.positions),
-                np.max(traj.velocities),
-                np.max(traj.accelerations),
-            )
+            min_val = vertical_line_scale_factor * min([min_pos, min_vel, min_accel])
+            max_val = vertical_line_scale_factor * max([min_pos, min_vel, min_accel])
             plt.vlines(
                 self.segment_times,
                 min_val,
