@@ -53,6 +53,28 @@ if __name__ == "__main__":
     path = planner.plan(q_start, q_end)
     planner.visualize(viz, "panda_hand", show_tree=True)
 
+    do_shortcutting = True
+    if do_shortcutting:
+        from pyroboplan.core.utils import extract_cartesian_poses
+        from pyroboplan.planning.path_shortcutting import shortcut_path
+        from pyroboplan.visualization.meshcat_utils import visualize_frames
+
+        path = shortcut_path(model, collision_model, path)
+
+        # TODO: Factor to reusable function
+        q_path = []
+        for idx in range(1, len(path)):
+            q_start = path[idx - 1]
+            q_goal = path[idx]
+            q_path = q_path + discretize_joint_space_path(
+                q_start, q_goal, options.max_angle_step
+            )
+
+        target_tforms = extract_cartesian_poses(model, "panda_hand", q_path)
+        visualize_frames(
+            viz, "shortened_path", target_tforms, line_length=0.05, line_width=1.5
+        )
+
     # Animate the path
     if path:
         input("Press 'Enter' to animate the path.")
