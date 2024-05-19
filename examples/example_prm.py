@@ -10,7 +10,10 @@ import time
 
 from pinocchio.visualize import MeshcatVisualizer
 
-from pyroboplan.core.utils import extract_cartesian_poses, get_random_collision_free_state
+from pyroboplan.core.utils import (
+    extract_cartesian_poses,
+    get_random_collision_free_state,
+)
 from pyroboplan.planning.path_shortcutting import shortcut_path
 from pyroboplan.planning.prm import PRMPlanner, PRMPlannerOptions
 from pyroboplan.planning.utils import (
@@ -60,20 +63,22 @@ def run_prm_search(q_start, q_end, planner, options, ee_name, max_retries=5):
     # Animate the path
     if path:
         planner.visualize(viz, ee_name, show_path=True, show_graph=True)
-        
+
         # Optionally shortcut the path
         do_shortcutting = True
         if do_shortcutting:
             path = shortcut_path(model, collision_model, path)
-    
-        discretized_path =  discretize_joint_space_path(path, options.max_angle_step)
+
+        discretized_path = discretize_joint_space_path(path, options.max_angle_step)
 
         if do_shortcutting:
-            target_tforms = extract_cartesian_poses(model, "panda_hand", discretized_path)
+            target_tforms = extract_cartesian_poses(
+                model, "panda_hand", discretized_path
+            )
             visualize_frames(
                 viz, "shortened_path", target_tforms, line_length=0.05, line_width=1.5
             )
-    
+
         input("Press 'Enter' to animate the path.")
         q_path = discretize_joint_space_path(path, options.max_angle_step)
         for q in q_path:

@@ -6,7 +6,10 @@ Rapidly-Exploring Random Tree (RRT) algorithm.
 from pinocchio.visualize import MeshcatVisualizer
 import time
 
-from pyroboplan.core.utils import extract_cartesian_poses, get_random_collision_free_state
+from pyroboplan.core.utils import (
+    extract_cartesian_poses,
+    get_random_collision_free_state,
+)
 from pyroboplan.models.panda import (
     load_models,
     add_self_collisions,
@@ -61,11 +64,13 @@ if __name__ == "__main__":
         do_shortcutting = True
         if do_shortcutting:
             path = shortcut_path(model, collision_model, path)
-    
-        discretized_path =  discretize_joint_space_path(path, options.max_angle_step)
+
+        discretized_path = discretize_joint_space_path(path, options.max_angle_step)
 
         if do_shortcutting:
-            target_tforms = extract_cartesian_poses(model, "panda_hand", discretized_path)
+            target_tforms = extract_cartesian_poses(
+                model, "panda_hand", discretized_path
+            )
             visualize_frames(
                 viz, "shortened_path", target_tforms, line_length=0.05, line_width=1.5
             )
