@@ -65,7 +65,7 @@ def shortcut_path(
                     break
 
             # Check if the points are collision free. If they are, shortcut the path.
-            path_to_goal = discretize_joint_space_path(q_low, q_high, max_angle_step)
+            path_to_goal = discretize_joint_space_path([q_low, q_high], max_angle_step)
             if not check_collisions_along_path(model, collision_model, path_to_goal):
                 q_shortened = (
                     q_shortened[:idx_low] + [q_low, q_high] + q_shortened[idx_high:]

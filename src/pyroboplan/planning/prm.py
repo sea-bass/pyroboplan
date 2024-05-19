@@ -313,9 +313,9 @@ class PRMPlanner:
         """
         if show_graph:
             path_tforms = []
-            for idx, edge in enumerate(self.graph.edges):
+            for edge in self.graph.edges:
                 q_path = discretize_joint_space_path(
-                    edge.nodeA.q, edge.nodeB.q, self.options.max_angle_step
+                    [edge.nodeA.q, edge.nodeB.q], self.options.max_angle_step
                 )
                 path_tforms.append(
                     extract_cartesian_poses(self.model, frame_name, q_path)
@@ -330,13 +330,9 @@ class PRMPlanner:
 
         visualizer.viewer[path_name].delete()
         if show_path and self.latest_path:
-            q_path = []
-            for idx in range(1, len(self.latest_path)):
-                q_start = self.latest_path[idx - 1]
-                q_goal = self.latest_path[idx]
-                q_path = q_path + discretize_joint_space_path(
-                    q_start, q_goal, self.options.max_angle_step
-                )
+            q_path = discretize_joint_space_path(
+                self.latest_path, self.options.max_angle_step
+            )
 
             target_tforms = extract_cartesian_poses(self.model, frame_name, q_path)
             visualize_frames(

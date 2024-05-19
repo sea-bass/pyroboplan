@@ -29,12 +29,12 @@ def test_discretize_joint_space_path():
     max_angle_distance = 1.0
 
     # Starting from the same point should just return the point.
-    path = discretize_joint_space_path(q_start, q_start, max_angle_distance)
+    path = discretize_joint_space_path([q_start, q_start], max_angle_distance)
     assert len(path) == 1
     assert np.array_equal(path, [q_start])
 
     # Discretize at 0.5 radians and verify the expected result.
-    path = discretize_joint_space_path(q_start, q_end, max_angle_distance)
+    path = discretize_joint_space_path([q_start, q_end], max_angle_distance)
     expected_path = [
         np.array([0.0, 0.0]),
         np.array([1.0, 0.0]),
