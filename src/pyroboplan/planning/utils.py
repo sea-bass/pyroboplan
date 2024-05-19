@@ -31,7 +31,10 @@ def extend_robot_state(q_parent, q_sample, max_connection_distance):
             The resulting robot configuration, or None if it is not feasible.
     """
     q_diff = q_sample - q_parent
-    q_increment = max_connection_distance * q_diff / np.linalg.norm(q_diff)
+    distance = np.linalg.norm(q_diff)
+    if distance == 0.0:
+        return q_sample
+    q_increment = max_connection_distance * q_diff / distance
 
     q_cur = q_parent
     # Clip the distance between nearest and sampled nodes to max connection distance.
