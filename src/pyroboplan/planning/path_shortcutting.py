@@ -1,3 +1,5 @@
+""" Capabilities to shorten paths produced by motion planners. """
+
 import copy
 import numpy as np
 
@@ -104,19 +106,24 @@ def shortcut_path(
         list[array-like]
             The shortest length path over all the shortcutting attempts.
     """
+    # If the original path has 2 points or less, this is already a shortest path.
+    if len(q_path) < 3:
+        return q_path
+
     best_path = q_path
     best_path_length = get_path_length(best_path)
 
     for _ in range(num_restarts + 1):
         q_shortened = copy.deepcopy(q_path)
         for _ in range(max_iters):
+            # If the path has been shortened to 2 points or less, this is already a shortest path.
+            if len(q_shortened) < 3:
+                break
+
             # Sample two points along the path length
             path_scalings = get_normalized_path_scaling(q_shortened)
             while True:
-                low_point = np.random.random()
-                high_point = np.random.random()
-                if low_point > high_point:
-                    low_point, high_point = high_point, low_point
+                low_point, high_point = sorted(np.random.random(2))
                 q_low, idx_low = get_configuration_from_normalized_path_scaling(
                     q_shortened, path_scalings, low_point
                 )
@@ -134,8 +141,9 @@ def shortcut_path(
                 )
 
         # Check if this is the best path so far
-        if get_path_length(q_shortened) < best_path_length:
+        shortened_path_length = get_path_length(q_shortened)
+        if shortened_path_length < best_path_length:
             best_path = copy.deepcopy(q_shortened)
-            best_path_length = get_path_length(q_shortened)
+            best_path_length = shortened_path_length
 
     return best_path

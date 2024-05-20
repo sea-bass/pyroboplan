@@ -61,7 +61,7 @@ if __name__ == "__main__":
     # Animate the path
     if path:
         # Optionally shortcut the path
-        do_shortcutting = True
+        do_shortcutting = False
         if do_shortcutting:
             path = shortcut_path(model, collision_model, path)
 

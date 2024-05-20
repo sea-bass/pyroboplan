@@ -62,6 +62,21 @@ def test_get_configuration_from_normalized_path_scaling():
     assert idx == 2
 
 
+def test_path_shortcutting_noop():
+    model, collision_model, _ = load_models()
+    add_self_collisions(model, collision_model)
+
+    # Define a multi-configuration path
+    q_path = [
+        np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
+        np.array([0.785, 1.57, 0.0, 0.0, 1.57, 1.57, 0.0, 0.0, -0.785]),
+    ]
+
+    # Check that the shortened path is the same as the original path.
+    q_shortened = shortcut_path(model, collision_model, q_path)
+    assert q_shortened == q_path
+
+
 def test_path_shortcutting():
     model, collision_model, _ = load_models()
     add_self_collisions(model, collision_model)

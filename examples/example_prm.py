@@ -65,7 +65,7 @@ def run_prm_search(q_start, q_end, planner, options, ee_name, max_retries=5):
         planner.visualize(viz, ee_name, show_path=True, show_graph=True)
 
         # Optionally shortcut the path
-        do_shortcutting = True
+        do_shortcutting = False
         if do_shortcutting:
             path = shortcut_path(model, collision_model, path)
 
