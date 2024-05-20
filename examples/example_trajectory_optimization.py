@@ -20,12 +20,12 @@ from pyroboplan.visualization.meshcat_utils import visualize_frames
 
 
 if __name__ == "__main__":
-    # Create models and data
+    # Create models and data.
     model, collision_model, visual_model = load_models()
     add_self_collisions(model, collision_model)
     data = model.createData()
 
-    # Initialize visualizer
+    # Initialize visualizer.
     viz = MeshcatVisualizer(model, collision_model, visual_model, data=data)
     viz.initViewer(open=True)
     viz.loadViewerModel()
@@ -33,7 +33,7 @@ if __name__ == "__main__":
     viz.display(q_start)
     time.sleep(1.0)
 
-    # Configure trajectory optimization
+    # Configure trajectory optimization.
     dt = 0.025
     options = CubicTrajectoryOptimizationOptions(
         num_waypoints=5,
@@ -46,7 +46,7 @@ if __name__ == "__main__":
         max_accel=0.75,
     )
 
-    # Perform trajectory optimization
+    # Perform trajectory optimization.
     multi_point = True
     if multi_point:
         # Multi point means we set all the waypoints and optimize how to move between them.
@@ -84,7 +84,7 @@ if __name__ == "__main__":
         visualize_frames(viz, "waypoints", tforms, line_length=0.075, line_width=2)
         time.sleep(1.0)
 
-        # Animate the generated trajectory
+        # Animate the generated trajectory.
         input("Press 'Enter' to animate the path.")
         for idx in range(q_vec.shape[1]):
             viz.display(q_vec[:, idx])

@@ -87,7 +87,7 @@ class CubicTrajectoryOptimization:
 
     def __init__(self, model, options=CubicTrajectoryOptimizationOptions()):
         """
-        Creates an instance of an RRT planner.
+        Creates an instance of a cubic trajectory optimization planner.
 
         Parameters
         ----------
@@ -132,6 +132,8 @@ class CubicTrajectoryOptimization:
         """
         Helper function to symbolically evaluate a trajectory position.
 
+        This directly relates to equation 4.13 in https://epubs.siam.org/doi/10.1137/16M1062569.
+
         Parameters
         ----------
             x : pydrake.autodiffutils.AutoDiffXd
@@ -171,6 +173,8 @@ class CubicTrajectoryOptimization:
         """
         Helper function to symbolically evaluate a trajectory velocity.
 
+        This is the first derivative of equation 4.13 in https://epubs.siam.org/doi/10.1137/16M1062569.
+
         Parameters
         ----------
             x_d : pydrake.autodiffutils.AutoDiffXd
@@ -206,6 +210,8 @@ class CubicTrajectoryOptimization:
         """
         Helper function to symbolically evaluate a trajectory acceleration.
 
+        This is the second derivative of equation 4.13 in https://epubs.siam.org/doi/10.1137/16M1062569.
+
         Parameters
         ----------
             x_d : pydrake.autodiffutils.AutoDiffXd
@@ -233,6 +239,8 @@ class CubicTrajectoryOptimization:
     def _eval_jerk(self, x_d, xc_d, h, k, n, step):
         """
         Helper function to symbolically evaluate a trajectory jerk.
+
+        This is the third derivative of equation 4.13 in https://epubs.siam.org/doi/10.1137/16M1062569.
 
         Parameters
         ----------
@@ -288,7 +296,7 @@ class CubicTrajectoryOptimization:
         else:
             raise ValueError("Path must either be length 2 or equal to num_waypoints.")
 
-        # Preprocess the kinematic limits
+        # Preprocess the kinematic limits.
         min_vel = self._process_limits(self.options.min_vel, num_dofs, "min_vel")
         max_vel = self._process_limits(self.options.max_vel, num_dofs, "max_vel")
         min_accel = self._process_limits(self.options.min_accel, num_dofs, "min_accel")
@@ -296,7 +304,7 @@ class CubicTrajectoryOptimization:
         min_jerk = self._process_limits(self.options.min_jerk, num_dofs, "min_jerk")
         max_jerk = self._process_limits(self.options.max_jerk, num_dofs, "max_jerk")
 
-        # Initialize the basic program and its variables
+        # Initialize the basic program and its variables.
         prog = MathematicalProgram()
         x = prog.NewContinuousVariables(num_waypoints, num_dofs)
         x_d = prog.NewContinuousVariables(num_waypoints, num_dofs)
@@ -304,7 +312,7 @@ class CubicTrajectoryOptimization:
         xc_d = prog.NewContinuousVariables(num_waypoints - 1, num_dofs)
         h = prog.NewContinuousVariables(num_waypoints - 1)
 
-        # Initial and final conditions
+        # Initial, final, and intermediate waypoint conditions.
         if fully_specified_path:
             for idx in range(num_waypoints):
                 prog.AddBoundingBoxConstraint(q_path[idx], q_path[idx], x[idx, :])
@@ -316,7 +324,11 @@ class CubicTrajectoryOptimization:
         prog.AddBoundingBoxConstraint(0.0, 0.0, x_d[num_waypoints - 1, :])
 
         for n in range(num_dofs):
-            # Collocation point constraints
+            # Collocation point constraints.
+            # Specifically, this constrains the position and velocities of the collocation points to be
+            # expressed in terms of the waypoint positions and velocities, assuming cubic splines.
+            # This is described in the "Direct Collocation" section here:
+            # https://underactuated.mit.edu/trajopt.html
             for k in range(num_waypoints - 1):
                 prog.AddConstraint(
                     xc[k, n]
@@ -329,50 +341,37 @@ class CubicTrajectoryOptimization:
                     - 0.25 * (x_d[k, n] + x_d[k + 1, n])
                 )
 
-                # Sample points along each segment to evaluate the constraints.
+                # Sample points along each segment to evaluate the position and velocity constraints, since
+                # they are cubic and quadratic (respectively) and could overshoot the waypoints and collocation points.
                 for step in np.linspace(0.0, 1.0, self.options.samples_per_segment):
-                    # Position limits
                     pos = self._eval_position(x, x_d, xc_d, h, k, n, step)
                     prog.AddConstraint(pos <= self.model.upperPositionLimit[n])
                     prog.AddConstraint(pos >= self.model.lowerPositionLimit[n])
 
-                    # Velocity limits
                     vel = self._eval_velocity(x_d, xc_d, h, k, n, step)
                     prog.AddConstraint(vel >= min_vel[n])
                     prog.AddConstraint(vel <= max_vel[n])
 
-                    # Acceleration limits
+                # The acceleration and jerk are linear and piecewise constant (respectively),
+                # so these can be constrained simply by checking each endpoint.
+                for step in [0.0, 1.0]:
                     accel = self._eval_acceleration(x_d, xc_d, h, k, n, step)
                     prog.AddConstraint(accel >= min_accel[n])
                     prog.AddConstraint(accel <= max_accel[n])
 
-                    # Jerk limits
                     jerk = self._eval_jerk(x_d, xc_d, h, k, n, step)
                     prog.AddConstraint(jerk >= min_jerk[n])
                     prog.AddConstraint(jerk <= max_jerk[n])
 
-            # Acceleration continuity between segments.
+            # Enforce acceleration continuity between segments.
+            # That is, the final acceleration of the kth waypoint must equal the initial acceleration of the (k+1)th waypoint.
             for k in range(num_waypoints - 2):
                 prog.AddConstraint(
                     self._eval_acceleration(x_d, xc_d, h, k, n, 1.0)
                     == self._eval_acceleration(x_d, xc_d, h, k + 1, n, 0.0)
                 )
 
-            # Velocities and positions at waypoints
-            prog.AddBoundingBoxConstraint(
-                self.model.lowerPositionLimit[n],
-                self.model.upperPositionLimit[n],
-                x[:, n],
-            )
-            prog.AddBoundingBoxConstraint(
-                self.model.lowerPositionLimit[n],
-                self.model.upperPositionLimit[n],
-                xc[:, n],
-            )
-            prog.AddBoundingBoxConstraint(min_vel[n], max_vel[n], x_d[:, n])
-            prog.AddBoundingBoxConstraint(min_vel[n], max_vel[n], xc_d[:, n])
-
-        # Cost and bounds on trajectory segment times
+        # Cost and bounds on trajectory segment times.
         prog.AddBoundingBoxConstraint(
             self.options.min_segment_time, self.options.max_segment_time, h
         )
@@ -383,7 +382,7 @@ class CubicTrajectoryOptimization:
             vars=h,
         )
 
-        # Set initial conditions to help search
+        # Set initial conditions to help search.
         if fully_specified_path:
             # Set initial guess assuming collocation points are exactly between the waypoints.
             prog.SetInitialGuess(x, np.array(q_path))
@@ -402,13 +401,13 @@ class CubicTrajectoryOptimization:
         prog.SetInitialGuess(x_d, np.zeros((num_waypoints, num_dofs)))
         prog.SetInitialGuess(xc_d, np.zeros((num_waypoints - 1, num_dofs)))
 
-        # Solve the program
+        # Solve the program.
         result = Solve(prog)
         if not result.is_success():
             print("Trajectory optimization failed.")
             return None
 
-        # Unpack the values
+        # Unpack the values.
         h_opt = result.GetSolution(h)
         x_opt = result.GetSolution(x)
         x_d_opt = result.GetSolution(x_d)
