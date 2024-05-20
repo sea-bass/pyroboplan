@@ -47,17 +47,24 @@ if __name__ == "__main__":
         qd_max = 0.75
         qdd_max = 0.5
         traj = TrapezoidalVelocityTrajectory(q, qd_max, qdd_max)
+        t_vec, q_vec, qd_vec, qdd_vec = traj.generate(dt)
     elif mode == "quintic":
         t_vec = [0.0, 3.0, 6.0]
         qd = 0.0
         qdd = 0.0
         traj = QuinticPolynomialTrajectory(t_vec, q, qd, qdd)
-
-    t_vec, q_vec, qd_vec, qdd_vec = traj.generate(dt)
+        t_vec, q_vec, qd_vec, qdd_vec, qddd_vec = traj.generate(dt)
 
     # Display the trajectory and points along the path.
+    # If using a polynomial trajectory, you can also add show_jerk=True.
     plt.ion()
-    traj.visualize(dt=dt, joint_names=model.names[1:])
+    traj.visualize(
+        dt=dt,
+        joint_names=model.names[1:],
+        show_position=True,
+        show_velocity=True,
+        show_acceleration=True,
+    )
     time.sleep(0.5)
 
     tforms = extract_cartesian_poses(model, "panda_hand", [q_start, q_mid, q_end])

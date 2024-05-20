@@ -83,7 +83,7 @@ for idx in range(q_vec.shape[0]):
     plt.plot(t_vec, q_vec[idx, :])
 
 curr_time = 0
-time_line = plt.axvline(x=curr_time, color="b")
+time_line = plt.axvline(x=curr_time, color="k", linestyle="--")
 
 plt.legend(model.names[1:])
 plt.show()

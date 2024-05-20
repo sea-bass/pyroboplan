@@ -72,15 +72,17 @@ def test_evaluate_single_dof_cubic_trajectory():
     qd = 0.0
     traj = CubicPolynomialTrajectory(t, q, qd)
 
-    q_eval, qd_eval, qdd_eval = traj.evaluate(3.0)
+    q_eval, qd_eval, qdd_eval, qddd_eval = traj.evaluate(3.0)
     assert q_eval == pytest.approx(1.0)
     assert qd_eval == pytest.approx(0.0)
     assert qdd_eval == pytest.approx(-2.0 / 3.0)
+    assert qddd_eval == pytest.approx(-0.4444444)
 
-    q_eval, qd_eval, qdd_eval = traj.evaluate(4.5)
+    q_eval, qd_eval, qdd_eval, qddd_eval = traj.evaluate(4.5)
     assert q_eval == pytest.approx(-0.1)
     assert qd_eval == pytest.approx(-1.1)
     assert qdd_eval == pytest.approx(0.0)
+    assert qddd_eval == pytest.approx(0.9777777)
 
 
 def test_evaluate_multi_dof_cubic_trajectory():
@@ -99,13 +101,17 @@ def test_evaluate_multi_dof_cubic_trajectory():
     )
     traj = CubicPolynomialTrajectory(t, q, qd)
 
-    q_eval, qd_eval, qdd_eval = traj.evaluate(3.0)
+    q_eval, qd_eval, qdd_eval, qddd_eval = traj.evaluate(3.0)
     assert q_eval == pytest.approx([1.0, -1.0])
     assert qd_eval == pytest.approx([-0.1, 0.0])
+    assert qdd_eval == pytest.approx([-0.8, 2.0 / 3.0])
+    assert qddd_eval == pytest.approx([-0.5111111, 0.4444444])
 
-    q_eval, qd_eval, qdd_eval = traj.evaluate(4.5)
+    q_eval, qd_eval, qdd_eval, qddd_eval = traj.evaluate(4.5)
     assert q_eval == pytest.approx([-0.175, 0.0])
     assert qd_eval == pytest.approx([-1.1, 1.0])
+    assert qdd_eval == pytest.approx([0.066666667, 0.0])
+    assert qddd_eval == pytest.approx([0.97777777, -0.88888888])
 
 
 def test_generate_single_dof_cubic_trajectory():
@@ -114,11 +120,12 @@ def test_generate_single_dof_cubic_trajectory():
     qd = 0.0
     traj = CubicPolynomialTrajectory(t, q, qd)
 
-    t, q, qd, qdd = traj.generate(dt=0.01)
+    t, q, qd, qdd, qddd = traj.generate(dt=0.01)
     num_pts = len(t)
     assert q.shape == (1, num_pts)
     assert qd.shape == (1, num_pts)
     assert qdd.shape == (1, num_pts)
+    assert qddd.shape == (1, num_pts)
 
 
 def test_generate_multi_dof_cubic_trajectory():
@@ -137,11 +144,12 @@ def test_generate_multi_dof_cubic_trajectory():
     )
     traj = CubicPolynomialTrajectory(t, q, qd)
 
-    t, q, qd, qdd = traj.generate(dt=0.01)
+    t, q, qd, qdd, qddd = traj.generate(dt=0.01)
     num_pts = len(t)
     assert q.shape == (2, num_pts)
     assert qd.shape == (2, num_pts)
     assert qdd.shape == (2, num_pts)
+    assert qddd.shape == (2, num_pts)
 
 
 ############################
@@ -213,15 +221,17 @@ def test_evaluate_single_dof_quintic_trajectory():
     qdd = 0.0
     traj = QuinticPolynomialTrajectory(t, q, qd, qdd)
 
-    q_eval, qd_eval, qdd_eval = traj.evaluate(3.0)
+    q_eval, qd_eval, qdd_eval, qddd_eval = traj.evaluate(3.0)
     assert q_eval == pytest.approx(1.0)
     assert qd_eval == pytest.approx(0.0)
     assert qdd_eval == pytest.approx(0.0)
+    assert qddd_eval == pytest.approx(2.22222222)
 
-    q_eval, qd_eval, qdd_eval = traj.evaluate(4.5)
+    q_eval, qd_eval, qdd_eval, qddd_eval = traj.evaluate(4.5)
     assert q_eval == pytest.approx(-0.1)
     assert qd_eval == pytest.approx(-1.375)
     assert qdd_eval == pytest.approx(0.0)
+    assert qddd_eval == pytest.approx(2.444444444)
 
 
 def test_evaluate_multi_dof_quintic_trajectory():
@@ -246,15 +256,17 @@ def test_evaluate_multi_dof_quintic_trajectory():
     )
     traj = QuinticPolynomialTrajectory(t, q, qd, qdd)
 
-    q_eval, qd_eval, qdd_eval = traj.evaluate(3.0)
+    q_eval, qd_eval, qdd_eval, qddd_eval = traj.evaluate(3.0)
     assert q_eval == pytest.approx([1.0, -1.0])
     assert qd_eval == pytest.approx([-0.1, 0.0])
     assert qdd_eval == pytest.approx([0.0, 0.25])
+    assert qddd_eval == pytest.approx([2.62222222, -1.47222222])
 
-    q_eval, qd_eval, qdd_eval = traj.evaluate(4.5)
+    q_eval, qd_eval, qdd_eval, qddd_eval = traj.evaluate(4.5)
     assert q_eval == pytest.approx([-0.19375, 0.0703125])
     assert qd_eval == pytest.approx([-1.375, 1.25])
     assert qdd_eval == pytest.approx([0.1, -0.125])
+    assert qddd_eval == pytest.approx([2.4444444, -2.2222222])
 
 
 def test_generate_single_dof_quintic_trajectory():
@@ -264,11 +276,12 @@ def test_generate_single_dof_quintic_trajectory():
     qdd = 0.0
     traj = QuinticPolynomialTrajectory(t, q, qd, qdd)
 
-    t, q, qd, qdd = traj.generate(dt=0.01)
+    t, q, qd, qdd, qddd = traj.generate(dt=0.01)
     num_pts = len(t)
     assert q.shape == (1, num_pts)
     assert qd.shape == (1, num_pts)
     assert qdd.shape == (1, num_pts)
+    assert qddd.shape == (1, num_pts)
 
 
 def test_generate_multi_dof_quintic_trajectory():
@@ -288,8 +301,9 @@ def test_generate_multi_dof_quintic_trajectory():
     )
     traj = QuinticPolynomialTrajectory(t, q, qd, qdd)
 
-    t, q, qd, qdd = traj.generate(dt=0.01)
+    t, q, qd, qdd, qddd = traj.generate(dt=0.01)
     num_pts = len(t)
     assert q.shape == (1, num_pts)
     assert qd.shape == (1, num_pts)
     assert qdd.shape == (1, num_pts)
+    assert qddd.shape == (1, num_pts)

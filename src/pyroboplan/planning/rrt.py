@@ -119,7 +119,7 @@ class RRTPlanner:
         ----------
             q_start : array-like
                 The starting robot configuration.
-            q_start : array-like
+            q_goal : array-like
                 The goal robot configuration.
         """
         self.reset()
