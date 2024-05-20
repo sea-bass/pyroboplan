@@ -6,14 +6,19 @@ Rapidly-Exploring Random Tree (RRT) algorithm.
 from pinocchio.visualize import MeshcatVisualizer
 import time
 
-from pyroboplan.core.utils import get_random_collision_free_state
+from pyroboplan.core.utils import (
+    extract_cartesian_poses,
+    get_random_collision_free_state,
+)
 from pyroboplan.models.panda import (
     load_models,
     add_self_collisions,
     add_object_collisions,
 )
+from pyroboplan.planning.path_shortcutting import shortcut_path
 from pyroboplan.planning.rrt import RRTPlanner, RRTPlannerOptions
 from pyroboplan.planning.utils import discretize_joint_space_path
+from pyroboplan.visualization.meshcat_utils import visualize_frames
 
 
 if __name__ == "__main__":
@@ -55,13 +60,22 @@ if __name__ == "__main__":
 
     # Animate the path
     if path:
-        input("Press 'Enter' to animate the path.")
-        for idx in range(1, len(path)):
-            segment_start = path[idx - 1]
-            segment_end = path[idx]
-            q_path = discretize_joint_space_path(
-                segment_start, segment_end, options.max_angle_step
+        # Optionally shortcut the path
+        do_shortcutting = False
+        if do_shortcutting:
+            path = shortcut_path(model, collision_model, path)
+
+        discretized_path = discretize_joint_space_path(path, options.max_angle_step)
+
+        if do_shortcutting:
+            target_tforms = extract_cartesian_poses(
+                model, "panda_hand", discretized_path
             )
-            for q in q_path:
-                viz.display(q)
-                time.sleep(0.05)
+            visualize_frames(
+                viz, "shortened_path", target_tforms, line_length=0.05, line_width=1.5
+            )
+
+        input("Press 'Enter' to animate the path.")
+        for q in discretized_path:
+            viz.display(q)
+            time.sleep(0.05)

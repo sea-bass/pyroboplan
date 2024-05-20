@@ -31,7 +31,10 @@ def extend_robot_state(q_parent, q_sample, max_connection_distance):
             The resulting robot configuration, or None if it is not feasible.
     """
     q_diff = q_sample - q_parent
-    q_increment = max_connection_distance * q_diff / np.linalg.norm(q_diff)
+    distance = np.linalg.norm(q_diff)
+    if distance == 0.0:
+        return q_sample
+    q_increment = max_connection_distance * q_diff / distance
 
     q_cur = q_parent
     # Clip the distance between nearest and sampled nodes to max connection distance.
@@ -72,25 +75,23 @@ def has_collision_free_path(q1, q2, max_angle_step, model, collision_model):
         return False
 
     # Ensure the discretized path is collision free.
-    path_to_q_extend = discretize_joint_space_path(q1, q2, max_angle_step)
+    path_to_q_extend = discretize_joint_space_path([q1, q2], max_angle_step)
     if check_collisions_along_path(model, collision_model, path_to_q_extend):
         return False
 
     return True
 
 
-def discretize_joint_space_path(q_start, q_end, max_angle_distance):
+def discretize_joint_space_path(q_path, max_angle_distance):
     """
-    Discretizes a joint space path from `q_start` to `q_end` given a maximum angle distance between samples.
+    Discretizes a joint space path given a maximum angle distance between samples.
 
     This is used primarily for producing paths for collision checking.
 
     Parameters
     ----------
-        q_start : array-like
-            The starting joint configuration.
-        q_end : array-like
-            The final joint configuration.
+        q_path : list[array-like]
+            A list of the joint configurations describing a path.
         max_angle_distance : float
             The maximum angular displacement, in radians, between samples.
 
@@ -99,10 +100,15 @@ def discretize_joint_space_path(q_start, q_end, max_angle_distance):
         list[array-like]
             A list of joint configuration arrays between the start and end points, inclusive.
     """
-    q_diff = q_end - q_start
-    num_steps = int(np.ceil(np.linalg.norm(q_diff) / max_angle_distance)) + 1
-    step_vec = np.linspace(0.0, 1.0, num_steps)
-    return [q_start + step * q_diff for step in step_vec]
+    q_discretized = []
+    for idx in range(1, len(q_path)):
+        q_start = q_path[idx - 1]
+        q_end = q_path[idx]
+        q_diff = q_end - q_start
+        num_steps = int(np.ceil(np.linalg.norm(q_diff) / max_angle_distance)) + 1
+        step_vec = np.linspace(0.0, 1.0, num_steps)
+        q_discretized.extend([q_start + step * q_diff for step in step_vec])
+    return q_discretized
 
 
 def retrace_path(goal_node):
