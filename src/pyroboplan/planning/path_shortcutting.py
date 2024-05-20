@@ -114,7 +114,7 @@ def shortcut_path(
     best_path_length = get_path_length(best_path)
 
     for _ in range(num_restarts + 1):
-        q_shortened = copy.deepcopy(q_path)
+        q_shortened = q_path
         for _ in range(max_iters):
             # If the path has been shortened to 2 points or less, this is already a shortest path.
             if len(q_shortened) < 3:
@@ -143,7 +143,7 @@ def shortcut_path(
         # Check if this is the best path so far
         shortened_path_length = get_path_length(q_shortened)
         if shortened_path_length < best_path_length:
-            best_path = copy.deepcopy(q_shortened)
+            best_path = q_shortened
             best_path_length = shortened_path_length
 
     return best_path
