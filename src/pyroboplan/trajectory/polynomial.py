@@ -25,13 +25,14 @@ class PolynomialTrajectoryBase(ABC):
 
         Returns
         -------
-            tuple(array-like or float, array-like or float, array-like or float)
-                The tuple of (q, qd, qdd) trajectory values at the specified time.
+            tuple(array-like or float, array-like or float, array-like or float, array-like or float)
+                The tuple of (q, qd, qdd, qddd) trajectory values at the specified time.
                 If the trajectory is single-DOF, these will be scalars, otherwise they are arrays.
         """
-        q = np.zeros(self.num_dims)
-        qd = np.zeros(self.num_dims)
-        qdd = np.zeros(self.num_dims)
+        q = np.zeros(self.num_dims)  # Position
+        qd = np.zeros(self.num_dims)  # Velocity
+        qdd = np.zeros(self.num_dims)  # Acceleration
+        qddd = np.zeros(self.num_dims)  # Jerk
 
         # Handle edge cases.
         if t < self.segment_times[0][0]:
@@ -53,6 +54,7 @@ class PolynomialTrajectoryBase(ABC):
                     q[dim] = np.polyval(coeffs, dt)
                     qd[dim] = np.polyval(np.polyder(coeffs, 1), dt)
                     qdd[dim] = np.polyval(np.polyder(coeffs, 2), dt)
+                    qddd[dim] = np.polyval(np.polyder(coeffs, 3), dt)
                 evaluated = True
             else:
                 segment_idx += 1
@@ -62,7 +64,8 @@ class PolynomialTrajectoryBase(ABC):
             q = q[0]
             qd = qd[0]
             qdd = qdd[0]
-        return q, qd, qdd
+            qddd = qddd[0]
+        return q, qd, qdd, qddd
 
     def generate(self, dt):
         """
@@ -75,8 +78,8 @@ class PolynomialTrajectoryBase(ABC):
 
         Returns
         -------
-            tuple(array-like, array-like, array-like, array-like)
-                The tuple of (t, q, qd, qdd) trajectory values generated at the sample time.
+            tuple(array-like, array-like, array-like, array-like, array-like)
+                The tuple of (t, q, qd, qdd, qddd) trajectory values generated at the sample time.
                 The time vector is 1D, and the others are 2D (time and dimension).
         """
 
@@ -88,9 +91,10 @@ class PolynomialTrajectoryBase(ABC):
             t_vec = np.append(t_vec, t_final)
         num_pts = len(t_vec)
 
-        q = np.zeros([self.num_dims, num_pts])
-        qd = np.zeros([self.num_dims, num_pts])
-        qdd = np.zeros([self.num_dims, num_pts])
+        q = np.zeros([self.num_dims, num_pts])  # Position
+        qd = np.zeros([self.num_dims, num_pts])  # Velocity
+        qdd = np.zeros([self.num_dims, num_pts])  # Acceleration
+        qddd = np.zeros([self.num_dims, num_pts])  # Jerk
 
         t_idx = 0
         segment_idx = 0
@@ -106,13 +110,22 @@ class PolynomialTrajectoryBase(ABC):
                     q[dim, t_idx] = np.polyval(coeffs, dt)
                     qd[dim, t_idx] = np.polyval(np.polyder(coeffs, 1), dt)
                     qdd[dim, t_idx] = np.polyval(np.polyder(coeffs, 2), dt)
+                    qddd[dim, t_idx] = np.polyval(np.polyder(coeffs, 3), dt)
                 t_idx += 1
             else:
                 segment_idx += 1
 
-        return t_vec, q, qd, qdd
+        return t_vec, q, qd, qdd, qddd
 
-    def visualize(self, dt=0.01, joint_names=None):
+    def visualize(
+        self,
+        dt=0.01,
+        joint_names=None,
+        show_position=True,
+        show_velocity=False,
+        show_acceleration=False,
+        show_jerk=False,
+    ):
         """
         Visualizes a generated trajectory with one figure window per dimension.
 
@@ -123,10 +136,18 @@ class PolynomialTrajectoryBase(ABC):
             joint_names : list[str], optional
                 The joint names to use for the figure titles.
                 If unset, uses the text "Dimension 1", "Dimension 2", etc.
+            show_position : bool, optional
+                If true, shows the trajectory position values.
+            show_velocity : bool, optional
+                If true, shows the trajectory velocity values.
+            show_acceleration : bool, optional
+                If true, shows the trajectory acceleration values.
+            show_jerk : bool, optional
+                If true, shows the trajectory jerk values.
         """
         import matplotlib.pyplot as plt
 
-        t_vec, q, qd, qdd = self.generate(dt)
+        t_vec, q, qd, qdd, qddd = self.generate(dt)
         vertical_line_scale_factor = 1.2
 
         for dim in range(self.num_dims):
@@ -137,21 +158,37 @@ class PolynomialTrajectoryBase(ABC):
             plt.figure(title)
 
             # Positions, velocities, and accelerations
-            plt.plot(t_vec, q[dim, :])
-            plt.plot(t_vec, qd[dim, :])
-            plt.plot(t_vec, qdd[dim, :])
-            plt.legend(["Position", "Velocity", "Acceleration"])
+            legend = []
+            min_pos = min_vel = min_accel = min_jerk = np.inf
+            max_pos = max_vel = max_accel = max_jerk = -np.inf
+            if show_position:
+                plt.plot(t_vec, q[dim, :])
+                min_pos = np.min(q[dim, :])
+                max_pos = np.max(q[dim, :])
+                legend.append("Position")
+            if show_velocity:
+                plt.plot(t_vec, qd[dim, :])
+                min_vel = np.min(qd[dim, :])
+                max_vel = np.max(qd[dim, :])
+                legend.append("Velocity")
+            if show_acceleration:
+                plt.plot(t_vec, qdd[dim, :])
+                min_accel = np.min(qdd[dim, :])
+                max_accel = np.max(qdd[dim, :])
+                legend.append("Acceleration")
+            if show_jerk:
+                plt.plot(t_vec, qddd[dim, :])
+                min_jerk = np.min(qddd[dim, :])
+                max_jerk = np.max(qddd[dim, :])
+                legend.append("Jerk")
+            plt.legend(legend)
 
             # Times
             min_val = vertical_line_scale_factor * min(
-                np.min(q[dim, :]),
-                np.min(qd[dim, :]),
-                np.min(qdd[dim, :]),
+                [min_pos, min_vel, min_accel, min_jerk]
             )
             max_val = vertical_line_scale_factor * max(
-                np.max(q[dim, :]),
-                np.max(qd[dim, :]),
-                np.max(qdd[dim, :]),
+                [max_pos, max_vel, max_accel, max_jerk]
             )
             plt.vlines(
                 [t[1] for t in self.segment_times],
