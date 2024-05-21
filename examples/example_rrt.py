@@ -43,7 +43,7 @@ if __name__ == "__main__":
 
     # Search for a path
     options = RRTPlannerOptions(
-        max_step=0.05,
+        max_step_size=0.05,
         max_connection_dist=0.25,
         rrt_connect=False,
         bidirectional_rrt=False,
@@ -65,7 +65,7 @@ if __name__ == "__main__":
         if do_shortcutting:
             path = shortcut_path(model, collision_model, path)
 
-        discretized_path = discretize_joint_space_path(path, options.max_step)
+        discretized_path = discretize_joint_space_path(path, options.max_step_size)
 
         if do_shortcutting:
             target_tforms = extract_cartesian_poses(

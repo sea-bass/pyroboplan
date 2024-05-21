@@ -26,7 +26,7 @@ class PRMPlannerOptions:
 
     def __init__(
         self,
-        max_step=0.05,
+        max_step_size=0.05,
         max_neighbor_radius=0.5,
         max_neighbor_connections=15,
         max_construction_nodes=5000,
@@ -39,7 +39,7 @@ class PRMPlannerOptions:
 
         Parameters
         ----------
-            max_step : float
+            max_step_size : float
                 Maximum joint configuration step size for collision checking along path segments.
             max_neighbor_radius : float
                 The maximum allowable connectable distance between nodes.
@@ -56,7 +56,7 @@ class PRMPlannerOptions:
                 Full file path of a persisted PRM graph to use in the planner.
                 If this is not specified, the PRM will be constructed from scratch.
         """
-        self.max_step = max_step
+        self.max_step_size = max_step_size
         self.max_neighbor_radius = max_neighbor_radius
         self.max_neighbor_connections = max_neighbor_connections
         self.construction_timeout = construction_timeout
@@ -182,7 +182,7 @@ class PRMPlanner:
             if has_collision_free_path(
                 node.q,
                 new_node.q,
-                self.options.max_step,
+                self.options.max_step_size,
                 self.model,
                 self.collision_model,
             ):
@@ -315,7 +315,7 @@ class PRMPlanner:
             path_tforms = []
             for edge in self.graph.edges:
                 q_path = discretize_joint_space_path(
-                    [edge.nodeA.q, edge.nodeB.q], self.options.max_step
+                    [edge.nodeA.q, edge.nodeB.q], self.options.max_step_size
                 )
                 path_tforms.append(
                     extract_cartesian_poses(self.model, frame_name, q_path)
@@ -331,7 +331,7 @@ class PRMPlanner:
         visualizer.viewer[path_name].delete()
         if show_path and self.latest_path:
             q_path = discretize_joint_space_path(
-                self.latest_path, self.options.max_step
+                self.latest_path, self.options.max_step_size
             )
 
             target_tforms = extract_cartesian_poses(self.model, frame_name, q_path)
