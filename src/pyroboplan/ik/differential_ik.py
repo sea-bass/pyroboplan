@@ -26,7 +26,7 @@ class DifferentialIkOptions:
         max_rotation_error=1e-3,
         damping=1e-3,
         min_step_size=0.1,
-        max_step_size_size=0.5,
+        max_step_size=0.5,
     ):
         """
         Initializes a set of differential IK options.
@@ -48,7 +48,7 @@ class DifferentialIkOptions:
             min_step_size : float
                 Minimum gradient step, between 0 and 1, based on ratio of current distance to target to initial distance to target.
                 To use a fixed step size, set both minimum and maximum values to be equal.
-            max_step_size_size : float
+            max_step_size : float
                 Maximum gradient step, between 0 and 1, based on ratio of current distance to target to initial distance to target.
                 To use a fixed step size, set both minimum and maximum values to be equal.
         """
@@ -58,7 +58,7 @@ class DifferentialIkOptions:
         self.max_rotation_error = max_rotation_error
         self.damping = damping
         self.min_step_size = min_step_size
-        self.max_step_size_size = max_step_size_size
+        self.max_step_size = max_step_size
 
 
 class DifferentialIk:
@@ -215,7 +215,7 @@ class DifferentialIk:
                     initial_error_norm = error_norm
                 alpha = self.options.min_step_size + (
                     1.0 - error_norm / initial_error_norm
-                ) * (self.options.max_step_size_size - self.options.min_step_size)
+                ) * (self.options.max_step_size - self.options.min_step_size)
 
                 # Gradient descent step
                 if not nullspace_components:
