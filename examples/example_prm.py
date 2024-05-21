@@ -69,7 +69,7 @@ def run_prm_search(q_start, q_end, planner, options, ee_name, max_retries=5):
         if do_shortcutting:
             path = shortcut_path(model, collision_model, path)
 
-        discretized_path = discretize_joint_space_path(path, options.max_angle_step)
+        discretized_path = discretize_joint_space_path(path, options.max_step_size)
 
         if do_shortcutting:
             target_tforms = extract_cartesian_poses(
@@ -80,7 +80,7 @@ def run_prm_search(q_start, q_end, planner, options, ee_name, max_retries=5):
             )
 
         input("Press 'Enter' to animate the path.")
-        q_path = discretize_joint_space_path(path, options.max_angle_step)
+        q_path = discretize_joint_space_path(path, options.max_step_size)
         for q in q_path:
             viz.display(q)
             time.sleep(0.05)
@@ -107,7 +107,7 @@ if __name__ == "__main__":
     # Configure, initialize, and construct a PRM from scratch.
     # If using PRM*, recommend upping the initial connection radius to 2*Pi.
     options = PRMPlannerOptions(
-        max_angle_step=0.05,
+        max_step_size=0.05,
         max_neighbor_radius=3.14,
         max_neighbor_connections=10,
         max_construction_nodes=2500,

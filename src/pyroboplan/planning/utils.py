@@ -48,7 +48,7 @@ def extend_robot_state(q_parent, q_sample, max_connection_distance):
     return q_extend
 
 
-def has_collision_free_path(q1, q2, max_angle_step, model, collision_model):
+def has_collision_free_path(q1, q2, max_step_size, model, collision_model):
     """
     Determines if there is a collision free path between the provided nodes and models.
 
@@ -58,8 +58,8 @@ def has_collision_free_path(q1, q2, max_angle_step, model, collision_model):
             The starting robot configuration.
         q2 : array-like
             The destination robot configuration.
-        max_angle_step : float
-            Maximum angle step, in radians, for collision checking along path segments.
+        max_step_size : float
+            Maximum joint configuration step size for collision checking along path segments.
         model : `pinocchio.Model`
             The model for the robot configuration.
         collision_model : `pinocchio.Model`
@@ -75,7 +75,7 @@ def has_collision_free_path(q1, q2, max_angle_step, model, collision_model):
         return False
 
     # Ensure the discretized path is collision free.
-    path_to_q_extend = discretize_joint_space_path([q1, q2], max_angle_step)
+    path_to_q_extend = discretize_joint_space_path([q1, q2], max_step_size)
     if check_collisions_along_path(model, collision_model, path_to_q_extend):
         return False
 

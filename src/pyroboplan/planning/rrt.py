@@ -26,7 +26,7 @@ class RRTPlannerOptions:
 
     def __init__(
         self,
-        max_angle_step=0.05,
+        max_step_size=0.05,
         max_connection_dist=0.2,
         rrt_connect=False,
         bidirectional_rrt=False,
@@ -41,8 +41,8 @@ class RRTPlannerOptions:
 
         Parameters
         ----------
-            max_angle_step : float
-                Maximum angle step, in radians, for collision checking along path segments.
+            max_step_size : float
+                Maximum joint configuration step size for collision checking along path segments.
             max_connection_dist : float
                 Maximum angular distance, in radians, for connecting nodes.
             rrt_connect : bool
@@ -65,7 +65,7 @@ class RRTPlannerOptions:
             goal_biasing_probability : float
                 Probability of sampling the goal configuration itself, which can help planning converge.
         """
-        self.max_angle_step = max_angle_step
+        self.max_step_size = max_step_size
         self.max_connection_dist = max_connection_dist
         self.rrt_connect = rrt_connect
         self.bidirectional_rrt = bidirectional_rrt
@@ -144,7 +144,7 @@ class RRTPlanner:
 
         # Check direct connection to goal.
         path_to_goal = discretize_joint_space_path(
-            [q_start, q_goal], self.options.max_angle_step
+            [q_start, q_goal], self.options.max_step_size
         )
         if not check_collisions_along_path(
             self.model, self.collision_model, path_to_goal
@@ -193,7 +193,7 @@ class RRTPlanner:
                 nearest_node_in_other_tree = other_tree.get_nearest_node(new_node.q)
                 path_to_other_tree = discretize_joint_space_path(
                     [new_node.q, nearest_node_in_other_tree.q],
-                    self.options.max_angle_step,
+                    self.options.max_step_size,
                 )
                 if not check_collisions_along_path(
                     self.model, self.collision_model, path_to_other_tree
@@ -250,7 +250,7 @@ class RRTPlanner:
             if has_collision_free_path(
                 q_cur,
                 q_extend,
-                self.options.max_angle_step,
+                self.options.max_step_size,
                 self.model,
                 self.collision_model,
             ):
@@ -334,7 +334,7 @@ class RRTPlanner:
                 new_cost = other_node.cost + new_distance
                 if new_cost < min_cost:
                     new_path = discretize_joint_space_path(
-                        [q_new, other_node.q], self.options.max_angle_step
+                        [q_new, other_node.q], self.options.max_step_size
                     )
                     if not check_collisions_along_path(
                         self.model, self.collision_model, new_path
@@ -377,7 +377,7 @@ class RRTPlanner:
         visualizer.viewer[path_name].delete()
         if show_path:
             q_path = discretize_joint_space_path(
-                self.latest_path, self.options.max_angle_step
+                self.latest_path, self.options.max_step_size
             )
 
             target_tforms = extract_cartesian_poses(self.model, frame_name, q_path)
@@ -389,7 +389,7 @@ class RRTPlanner:
             start_path_tforms = []
             for edge in self.start_tree.edges:
                 q_path = discretize_joint_space_path(
-                    [edge.nodeA.q, edge.nodeB.q], self.options.max_angle_step
+                    [edge.nodeA.q, edge.nodeB.q], self.options.max_step_size
                 )
                 start_path_tforms.append(
                     extract_cartesian_poses(self.model, frame_name, q_path)
@@ -405,7 +405,7 @@ class RRTPlanner:
             goal_path_tforms = []
             for edge in self.goal_tree.edges:
                 q_path = discretize_joint_space_path(
-                    [edge.nodeA.q, edge.nodeB.q], self.options.max_angle_step
+                    [edge.nodeA.q, edge.nodeB.q], self.options.max_step_size
                 )
                 goal_path_tforms.append(
                     extract_cartesian_poses(self.model, frame_name, q_path)

@@ -77,7 +77,7 @@ def get_configuration_from_normalized_path_scaling(q_path, path_scalings, value)
 
 
 def shortcut_path(
-    model, collision_model, q_path, max_iters=100, num_restarts=2, max_angle_step=0.05
+    model, collision_model, q_path, max_iters=100, num_restarts=2, max_step_size=0.05
 ):
     """
     Performs path shortcutting by sampling two random points along the path and verifying
@@ -98,8 +98,8 @@ def shortcut_path(
             The maximum iterations for randomly sampling shortcut points.
         num_restarts : int
             The number of restarts to try different random path shortcutting solutions.
-        max_angle_step : float
-            Maximum angle step, in radians, for collision checking along path segments.
+        max_step_size : float
+            Maximum joint configuration step size for collision checking along path segments.
 
     Return
     ------
@@ -134,7 +134,7 @@ def shortcut_path(
                     break
 
             # Check if the points are collision free. If they are, shortcut the path.
-            path_to_goal = discretize_joint_space_path([q_low, q_high], max_angle_step)
+            path_to_goal = discretize_joint_space_path([q_low, q_high], max_step_size)
             if not check_collisions_along_path(model, collision_model, path_to_goal):
                 q_shortened = (
                     q_shortened[:idx_low] + [q_low, q_high] + q_shortened[idx_high:]
