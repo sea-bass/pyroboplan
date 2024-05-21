@@ -46,10 +46,10 @@ class DifferentialIkOptions:
                 Damping value, between 0 and 1, for the Jacobian pseudoinverse.
                 Setting this to a nonzero value is using Levenberg-Marquardt.
             min_step_size : float
-                Minimum gradient step, between 0 and 1, based on ratio of current distance to target to initial distance to target.
+                Minimum gradient step size, between 0 and 1, based on ratio of current distance to target to initial distance to target.
                 To use a fixed step size, set both minimum and maximum values to be equal.
             max_step_size : float
-                Maximum gradient step, between 0 and 1, based on ratio of current distance to target to initial distance to target.
+                Maximum gradient step size, between 0 and 1, based on ratio of current distance to target to initial distance to target.
                 To use a fixed step size, set both minimum and maximum values to be equal.
         """
         self.max_iters = max_iters
