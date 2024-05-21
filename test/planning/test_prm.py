@@ -58,7 +58,7 @@ def test_prm():
 
     # Be very generous with connections.
     options = PRMPlannerOptions(
-        max_angle_step=0.05,
+        max_step=0.05,
         max_neighbor_radius=0.5,
         max_neighbor_connections=5,
         max_construction_nodes=2500,

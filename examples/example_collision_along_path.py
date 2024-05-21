@@ -73,8 +73,8 @@ if __name__ == "__main__":
     # Define a joint space path
     q_start = pinocchio.randomConfiguration(model)
     q_end = pinocchio.randomConfiguration(model)
-    max_angle_step = 0.05
-    q_path = discretize_joint_space_path([q_start, q_end], max_angle_step)
+    max_step = 0.05
+    q_path = discretize_joint_space_path([q_start, q_end], max_step)
 
     # Visualize the path
     target_tforms = extract_cartesian_poses(model, "panda_hand", q_path)
