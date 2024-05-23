@@ -5,7 +5,9 @@ import numpy as np
 import pinocchio
 
 
-def check_collisions_at_state(model, collision_model, q):
+def check_collisions_at_state(
+    model, collision_model, q, data=None, collision_data=None
+):
     """
     Checks whether a specified joint configuration is collision-free.
 
@@ -17,14 +19,20 @@ def check_collisions_at_state(model, collision_model, q):
             The model to use for collision checking.
         q : array-like
             The joint configuration of the model.
+        data : `pinocchio.Data`, optional
+            The model data to use for collision checking. If None, data is created automatically.
+        collision_data : `pinocchio.GeometryData`, optional
+            The collision_model data to use for collision checking. If None, data is created automatically.
 
     Returns
     -------
         bool
             True is there are any collisions, otherwise False.
     """
-    data = model.createData()
-    collision_data = collision_model.createData()
+    if not data:
+        data = model.createData()
+    if not collision_data:
+        collision_data = collision_model.createData()
     stop_at_first_collision = True  # For faster computation
 
     pinocchio.computeCollisions(
@@ -33,7 +41,9 @@ def check_collisions_at_state(model, collision_model, q):
     return np.any([cr.isCollision() for cr in collision_data.collisionResults])
 
 
-def check_collisions_along_path(model, collision_model, q_path):
+def check_collisions_along_path(
+    model, collision_model, q_path, data=None, collision_data=None
+):
     """
     Checks whether a path consisting of multiple joint configurations is collision-free.
 
@@ -45,14 +55,20 @@ def check_collisions_along_path(model, collision_model, q_path):
             The model to use for collision checking.
         q_path : list[array-like]
             A list of joint configurations describing the path.
+        data : `pinocchio.Data`, optional
+            The model data to use for collision checking. If None, data is created automatically.
+        collision_data : `pinocchio.GeometryData`, optional
+            The collision_model data to use for collision checking. If None, data is created automatically.
 
     Returns
     -------
         bool
             True is there are any collisions, otherwise False.
     """
-    data = model.createData()
-    collision_data = collision_model.createData()
+    if not data:
+        data = model.createData()
+    if not collision_data:
+        collision_data = collision_model.createData()
     stop_at_first_collision = True  # For faster computation
 
     for q in q_path:

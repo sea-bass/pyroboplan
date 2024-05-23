@@ -84,6 +84,7 @@ class DifferentialIk:
         model,
         collision_model=None,
         data=None,
+        collision_data=None,
         visualizer=None,
         options=DifferentialIkOptions(),
     ):
@@ -98,6 +99,8 @@ class DifferentialIk:
                 The model to use for collision checking. If None, no collision checking takes place.
             data : `pinocchio.Data`, optional
                 The model data to use for this solver. If None, data is created automatically.
+            collision_data : `pinocchio.GeometryData`, optional
+                The collision_model data to use for this solver. If None, data is created automatically.
             visualizer : `pinocchio.visualize.meshcat_visualizer.MeshcatVisualizer`, optional
                 The visualizer to use for this solver.
             options : `DifferentialIkOptions`, optional
@@ -109,6 +112,9 @@ class DifferentialIk:
         if not data:
             data = model.createData()
         self.data = data
+        if not collision_data:
+            collision_data = collision_model.createData()
+        self.collision_data = collision_data
 
         self.visualizer = visualizer
         self.options = options
@@ -181,11 +187,15 @@ class DifferentialIk:
                     if check_within_limits(self.model, q_cur):
                         if self.collision_model is not None:
                             if check_collisions_at_state(
-                                self.model, self.collision_model, q_cur
+                                self.model,
+                                self.collision_model,
+                                q_cur,
+                                self.data,
+                                self.collision_data,
                             ):
                                 if verbose:
                                     print(
-                                        "Solved and within joint limits, but in collision."
+                                        "Solved within joint limits, but in collision."
                                     )
                             else:
                                 solved = True
@@ -196,7 +206,7 @@ class DifferentialIk:
                         else:
                             solved = True
                             if verbose:
-                                print("Solved and within joint limits!")
+                                print("Solved within joint limits!")
                     else:
                         if verbose:
                             print("Solved, but outside joint limits.")
@@ -225,7 +235,7 @@ class DifferentialIk:
 
                 # Gradient descent step
                 if not nullspace_components:
-                    q_cur += alpha * J.T @ np.linalg.solve(jjt, error)
+                    q_step = alpha * J.T @ np.linalg.solve(jjt, error)
                 else:
                     nullspace_term = sum(
                         [comp(self.model, q_cur) for comp in nullspace_components]
@@ -235,12 +245,11 @@ class DifferentialIk:
                         + nullspace_term
                     )
 
-                    # Zero out the values for the ignored indices before returning.
-                    for idx in self.options.ignore_joint_indices:
-                        q_step[idx] = 0.0
+                # Zero out the values for the ignored indices before returning.
+                for idx in self.options.ignore_joint_indices:
+                    q_step[idx] = 0.0
 
-                    q_cur += q_step
-
+                q_cur += q_step
                 n_iters += 1
 
                 if self.visualizer:

@@ -46,8 +46,8 @@ if __name__ == "__main__":
 
     # Set up the IK solver
     options = DifferentialIkOptions(
-        min_step_size=0.01,
-        max_step_size=0.1,
+        min_step_size=0.1,
+        max_step_size=0.25,
         damping=0.0001,
         ignore_joint_indices=ignore_joint_indices,
     )
@@ -70,7 +70,7 @@ if __name__ == "__main__":
             dist_padding=0.2,
             max_vel=0.5,
         ),
-        lambda model, q: joint_center_nullspace_component(model, q, gain=0.1),
+        lambda model, q: joint_center_nullspace_component(model, q, gain=0.05),
     ]
 
     # Solve IK several times and print the results
