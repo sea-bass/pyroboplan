@@ -112,7 +112,7 @@ class DifferentialIk:
         if not data:
             data = model.createData()
         self.data = data
-        if not collision_data:
+        if not collision_data and self.collision_model is not None:
             collision_data = collision_model.createData()
         self.collision_data = collision_data
 
