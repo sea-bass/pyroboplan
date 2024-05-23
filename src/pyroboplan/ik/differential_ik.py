@@ -27,6 +27,7 @@ class DifferentialIkOptions:
         damping=1e-3,
         min_step_size=0.1,
         max_step_size=0.5,
+        ignore_joint_indices=[],
     ):
         """
         Initializes a set of differential IK options.
@@ -51,6 +52,9 @@ class DifferentialIkOptions:
             max_step_size : float
                 Maximum gradient step size, between 0 and 1, based on ratio of current distance to target to initial distance to target.
                 To use a fixed step size, set both minimum and maximum values to be equal.
+            ignore_joint_indices : list[int], optional
+                A list of joints to ignore changing with this nullspace task component.
+
         """
         self.max_iters = max_iters
         self.max_retries = max_retries
@@ -59,6 +63,7 @@ class DifferentialIkOptions:
         self.damping = damping
         self.min_step_size = min_step_size
         self.max_step_size = max_step_size
+        self.ignore_joint_indices = ignore_joint_indices
 
 
 class DifferentialIk:
@@ -205,6 +210,9 @@ class DifferentialIk:
                     pinocchio.ReferenceFrame.LOCAL,
                 )
 
+                # from pyroboplan.ik.nullspace_components import collision_avoidance_nullspace_component
+                # collision_avoidance_nullspace_component(self.model, self.collision_model, q_cur)
+
                 # Solve for the gradient using damping and nullspace components,
                 # as specified
                 jjt = J.dot(J.T) + self.options.damping**2 * np.eye(6)
@@ -224,10 +232,16 @@ class DifferentialIk:
                     nullspace_term = sum(
                         [comp(self.model, q_cur) for comp in nullspace_components]
                     )
-                    q_cur += alpha * (
+                    q_step = alpha * (
                         J.T @ (np.linalg.solve(jjt, error - J @ (nullspace_term)))
                         + nullspace_term
                     )
+
+                    # Zero out the values for the ignored indices before returning.
+                    for idx in self.options.ignore_joint_indices:
+                        q_step[idx] = 0.0
+
+                    q_cur += q_step
 
                 n_iters += 1
 

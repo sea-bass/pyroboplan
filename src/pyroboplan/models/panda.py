@@ -63,7 +63,7 @@ def add_self_collisions(model, collision_model):
         set_collisions(model, collision_model, pair[0], pair[1], True)
 
 
-def add_object_collisions(model, collision_model, visual_model):
+def add_object_collisions(model, collision_model, visual_model, inflation_radius=0.0):
     """
     Adds link self-collisions to the Panda collision model.
 
@@ -75,13 +75,15 @@ def add_object_collisions(model, collision_model, visual_model):
             The Panda collision geometry model.
         visual_model : `pinocchio.Model`
             The Panda visual geometry model.
+        inflation_radius : float, optional
+            An inflation radius, in meters, around the objects.
     """
     # Add the collision objects
     ground_plane = pinocchio.GeometryObject(
         "ground_plane",
         0,
-        hppfcl.Box(2.0, 2.0, 0.01),
-        pinocchio.SE3(np.eye(3), np.array([0.0, 0.0, -0.006])),
+        hppfcl.Box(2.0, 2.0, 0.1),
+        pinocchio.SE3(np.eye(3), np.array([0.0, 0.0, -0.051])),
     )
     ground_plane.meshColor = np.array([0.5, 0.5, 0.5, 0.5])
     visual_model.addGeometryObject(ground_plane)
@@ -90,7 +92,7 @@ def add_object_collisions(model, collision_model, visual_model):
     obstacle_sphere_1 = pinocchio.GeometryObject(
         "obstacle_sphere_1",
         0,
-        hppfcl.Sphere(0.2),
+        hppfcl.Sphere(0.2 + inflation_radius),
         pinocchio.SE3(np.eye(3), np.array([0.0, 0.1, 1.1])),
     )
     obstacle_sphere_1.meshColor = np.array([0.0, 1.0, 0.0, 0.5])
@@ -100,7 +102,7 @@ def add_object_collisions(model, collision_model, visual_model):
     obstacle_sphere_2 = pinocchio.GeometryObject(
         "obstacle_sphere_2",
         0,
-        hppfcl.Sphere(0.25),
+        hppfcl.Sphere(0.25 + inflation_radius),
         pinocchio.SE3(np.eye(3), np.array([0.5, 0.5, 0.5])),
     )
     obstacle_sphere_2.meshColor = np.array([1.0, 1.0, 0.0, 0.5])
@@ -110,7 +112,11 @@ def add_object_collisions(model, collision_model, visual_model):
     obstacle_box_1 = pinocchio.GeometryObject(
         "obstacle_box_1",
         0,
-        hppfcl.Box(0.25, 0.25, 0.25),
+        hppfcl.Box(
+            0.25 + 2.0 * inflation_radius,
+            0.55 + 2.0 * inflation_radius,
+            0.55 + 2.0 * inflation_radius,
+        ),
         pinocchio.SE3(np.eye(3), np.array([-0.5, 0.5, 0.7])),
     )
     obstacle_box_1.meshColor = np.array([1.0, 0.0, 0.0, 0.5])
@@ -120,7 +126,11 @@ def add_object_collisions(model, collision_model, visual_model):
     obstacle_box_2 = pinocchio.GeometryObject(
         "obstacle_box_2",
         0,
-        hppfcl.Box(0.33, 0.33, 0.33),
+        hppfcl.Box(
+            0.33 + 2.0 * inflation_radius,
+            0.33 + 2.0 * inflation_radius,
+            0.33 + 2.0 * inflation_radius,
+        ),
         pinocchio.SE3(np.eye(3), np.array([-0.5, -0.5, 0.75])),
     )
     obstacle_box_2.meshColor = np.array([0.0, 0.0, 1.0, 0.5])
