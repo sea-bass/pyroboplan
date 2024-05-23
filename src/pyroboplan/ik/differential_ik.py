@@ -253,7 +253,9 @@ class DifferentialIk:
                 break
             else:
                 if self.collision_model is not None:
-                    q_cur = get_random_collision_free_state(self.model, self.collision_model)
+                    q_cur = get_random_collision_free_state(
+                        self.model, self.collision_model
+                    )
                 else:
                     q_cur = get_random_state(self.model)
                 n_tries += 1
