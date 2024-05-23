@@ -99,7 +99,7 @@ def collision_avoidance_nullspace_component(
             The model data to use for collision distance checks.
         collision_model : `pinocchio.GeometryModel`
             The model with which to check collision distances.
-        collision_data : `pinocchio.Data`
+        collision_data : `pinocchio.GeometryData`
             The collision model data to use for collision distance checks.
         q : array-like
             The joint configuration for the model.
@@ -153,10 +153,12 @@ def collision_avoidance_nullspace_component(
                 np.eye(3), dr.getNearestPoint2()
             )
 
+        # Pad the distance vector.
+        if dr.min_distance > 1e-6:
+            distance_vec *= 1.0 - dist_padding / abs(dr.min_distance)
+
         # Now that we have the collision Jacobian, figure out the effective joint velocity to move away from collision.
         Jcoll = t_frame_to_point.toActionMatrix()[:3, :] @ Jframe
-        if dr.min_distance > 1e-6:
-            distance_vec *= 1.0 - dist_padding / dr.min_distance
         delta_q = Jcoll.T @ np.linalg.solve(
             Jcoll.dot(Jcoll.T) + damping**2 * np.eye(3), distance_vec
         )

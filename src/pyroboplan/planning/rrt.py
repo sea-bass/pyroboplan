@@ -102,6 +102,8 @@ class RRTPlanner:
         """
         self.model = model
         self.collision_model = collision_model
+        self.data = self.model.createData()
+        self.collision_data = self.collision_model.createData()
         self.options = options
         self.reset()
 
@@ -135,10 +137,14 @@ class RRTPlanner:
         latest_goal_tree_node = goal_node
 
         # Check start and end pose collisions.
-        if check_collisions_at_state(self.model, self.collision_model, q_start):
+        if check_collisions_at_state(
+            self.model, self.collision_model, q_start, self.data, self.collision_data
+        ):
             print("Start configuration in collision.")
             return None
-        if check_collisions_at_state(self.model, self.collision_model, q_goal):
+        if check_collisions_at_state(
+            self.model, self.collision_model, q_goal, self.data, self.collision_data
+        ):
             print("Goal configuration in collision.")
             return None
 
