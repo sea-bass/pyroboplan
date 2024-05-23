@@ -54,7 +54,6 @@ class DifferentialIkOptions:
                 To use a fixed step size, set both minimum and maximum values to be equal.
             ignore_joint_indices : list[int], optional
                 A list of joints to ignore changing with this nullspace task component.
-
         """
         self.max_iters = max_iters
         self.max_retries = max_retries
@@ -209,9 +208,6 @@ class DifferentialIk:
                     target_frame_id,
                     pinocchio.ReferenceFrame.LOCAL,
                 )
-
-                # from pyroboplan.ik.nullspace_components import collision_avoidance_nullspace_component
-                # collision_avoidance_nullspace_component(self.model, self.collision_model, q_cur)
 
                 # Solve for the gradient using damping and nullspace components,
                 # as specified
