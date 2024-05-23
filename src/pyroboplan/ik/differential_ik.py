@@ -54,7 +54,8 @@ class DifferentialIkOptions:
                 Maximum gradient step size, between 0 and 1, based on ratio of current distance to target to initial distance to target.
                 To use a fixed step size, set both minimum and maximum values to be equal.
             ignore_joint_indices : list[int], optional
-                A list of joints to ignore changing with this nullspace task component.
+                A list of joints to ignore changing when solving IK.
+                TODO: This should eventually be done through a concept of joint groups.
         """
         self.max_iters = max_iters
         self.max_retries = max_retries
