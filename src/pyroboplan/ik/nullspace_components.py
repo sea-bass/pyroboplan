@@ -142,8 +142,7 @@ def collision_avoidance_nullspace_component(
             )
             distance_vec = dr.getNearestPoint2() - dr.getNearestPoint1()
             t_frame_to_point = (
-                collision_model.geometryObjects[cp.first].placement
-                * data.oMf[parent_frame1].inverse()
+                data.oMf[parent_frame1].inverse()
                 * pinocchio.SE3(np.eye(3), dr.getNearestPoint1())
             )
         else:
@@ -152,8 +151,7 @@ def collision_avoidance_nullspace_component(
             )
             distance_vec = dr.getNearestPoint1() - dr.getNearestPoint2()
             t_frame_to_point = (
-                collision_model.geometryObjects[cp.second].placement
-                * data.oMf[parent_frame2].inverse()
+                data.oMf[parent_frame2].inverse()
                 * pinocchio.SE3(np.eye(3), dr.getNearestPoint2())
             )
 
