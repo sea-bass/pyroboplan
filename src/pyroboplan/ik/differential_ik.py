@@ -8,6 +8,7 @@ from ..core.utils import (
     check_collisions_at_state,
     check_within_limits,
     get_random_state,
+    get_random_collision_free_state,
 )
 from ..visualization.meshcat_utils import visualize_frame
 
@@ -251,7 +252,10 @@ class DifferentialIk:
                     print(f"Solved in {n_tries+1} tries.")
                 break
             else:
-                q_cur = get_random_state(self.model)
+                if self.collision_model is not None:
+                    q_cur = get_random_collision_free_state(self.model, self.collision_model)
+                else:
+                    q_cur = get_random_state(self.model)
                 n_tries += 1
                 if verbose:
                     print(f"Retry {n_tries}")
