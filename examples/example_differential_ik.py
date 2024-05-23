@@ -14,6 +14,7 @@ from pyroboplan.core.utils import (
 from pyroboplan.ik.differential_ik import DifferentialIk, DifferentialIkOptions
 from pyroboplan.ik.nullspace_components import (
     joint_center_nullspace_component,
+    joint_limit_nullspace_component,
     collision_avoidance_nullspace_component,
 )
 from pyroboplan.models.panda import (
@@ -46,9 +47,10 @@ if __name__ == "__main__":
 
     # Set up the IK solver
     options = DifferentialIkOptions(
-        min_step_size=0.1,
-        max_step_size=0.25,
         damping=0.0001,
+        min_step_size=0.01,
+        max_step_size=0.1,
+        max_delta_q=0.25,
         ignore_joint_indices=ignore_joint_indices,
     )
     ik = DifferentialIk(
@@ -67,10 +69,12 @@ if __name__ == "__main__":
             q,
             gain=1.0,
             damping=options.damping,
-            dist_padding=0.2,
+            dist_padding=0.1,
             max_vel=0.5,
         ),
-        lambda model, q: joint_center_nullspace_component(model, q, gain=0.05),
+        lambda model, q: joint_limit_nullspace_component(
+            model, q, gain=0.1, padding=0.05
+        ),
     ]
 
     # Solve IK several times and print the results
