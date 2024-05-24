@@ -278,6 +278,9 @@ class CubicTrajectoryOptimization:
         return 8.0 * (x_d[k, n] - 2.0 * xc_d[k, n] + x_d[k + 1, n]) / h[k] ** 2
 
     def _collision_constraint(self, q_val):
+        """
+        Helper function to evaluate collision constraint and its gradients.
+        """
         MAX_DIST = 0.1
         DAMPING = 0.0001
 
@@ -286,7 +289,7 @@ class CubicTrajectoryOptimization:
 
             # Get the minimum distance in the allowable range
             min_distance_idx = -1
-            min_distance = np.inf
+            min_distance = MAX_DIST
             gradient = np.zeros_like(q)
             pinocchio.computeDistances(
                 self.model, self.data, self.collision_model, self.collision_data, q
@@ -331,7 +334,7 @@ class CubicTrajectoryOptimization:
                         self.data,
                         q,
                         parent_frame1,
-                        pinocchio.ReferenceFrame.LOCAL,
+                        pinocchio.ReferenceFrame.LOCAL_WORLD_ALIGNED,
                     )
                     distance_vec = (
                         min_distance_result.getNearestPoint2()
@@ -348,7 +351,7 @@ class CubicTrajectoryOptimization:
                         self.data,
                         q,
                         parent_frame2,
-                        pinocchio.ReferenceFrame.LOCAL,
+                        pinocchio.ReferenceFrame.LOCAL_WORLD_ALIGNED,
                     )
                     distance_vec = (
                         min_distance_result.getNearestPoint1()
@@ -453,7 +456,7 @@ class CubicTrajectoryOptimization:
         prog.AddBoundingBoxConstraint(0.0, 0.0, x_d[num_waypoints - 1, :])
 
         # Collision checking at the waypoints and collocation points.
-        MIN_COLLISION_DIST = 0.01
+        MIN_COLLISION_DIST = 0.02
         if self.options.check_collisions:
             for k in range(1, num_waypoints - 1):
                 prog.AddConstraint(
