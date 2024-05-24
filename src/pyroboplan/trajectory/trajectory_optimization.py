@@ -24,6 +24,7 @@ class CubicTrajectoryOptimizationOptions:
         max_accel=np.inf,
         min_jerk=-np.inf,
         max_jerk=np.inf,
+        check_collisions=False,
     ):
         """
         Initializes a set of options for cubic polynomial trajectory optimization.
@@ -56,6 +57,8 @@ class CubicTrajectoryOptimizationOptions:
             max_jerk : float or array-like
                 The maximum jerk along the trajectory.
                 If scalar, applies to all degrees of freedom; otherwise allows for different limits per degree of freedom.
+            check_collisions: bool
+                If true, adds collision constraints to trajectory optimization.
         """
         if num_waypoints < 2:
             raise ValueError(
@@ -74,6 +77,7 @@ class CubicTrajectoryOptimizationOptions:
         self.max_accel = max_accel
         self.min_jerk = min_jerk
         self.max_jerk = max_jerk
+        self.check_collisions = check_collisions
 
 
 class CubicTrajectoryOptimization:
@@ -275,6 +279,7 @@ class CubicTrajectoryOptimization:
 
     def _collision_constraint(self, q_val):
         MAX_DIST = 0.1
+        DAMPING = 0.0001
 
         if q_val.dtype != float:
             q = ExtractValue(q_val)
@@ -293,6 +298,8 @@ class CubicTrajectoryOptimization:
 
                 # Must remove joint fixed to ground in SRDF
                 if "panda_link0" in name1 or "panda_link0" in name2:
+                    continue
+                if not ("obstacle" in name1 or "obstacle" in name2):
                     continue
 
                 dist_result = self.collision_data.distanceResults[p]
@@ -363,7 +370,7 @@ class CubicTrajectoryOptimization:
                     )
 
                     gradient = -Jcoll.T @ np.linalg.solve(
-                        Jcoll.dot(Jcoll.T) + 0.0001**2 * np.eye(3), dist_vec_norm
+                        Jcoll.dot(Jcoll.T) + DAMPING**2 * np.eye(3), dist_vec_norm
                     )
 
                     name1 = self.collision_model.geometryObjects[cp.first].name
@@ -439,10 +446,16 @@ class CubicTrajectoryOptimization:
         prog.AddBoundingBoxConstraint(0.0, 0.0, x_d[0, :])
         prog.AddBoundingBoxConstraint(0.0, 0.0, x_d[num_waypoints - 1, :])
 
-        for k in range(1, num_waypoints - 1):
-            # Collision checking at the waypoints and collocation points.
-            prog.AddConstraint(self._collision_constraint, [0.01], [np.inf], x[k, :])
-            prog.AddConstraint(self._collision_constraint, [0.01], [np.inf], xc[k, :])
+        # Collision checking at the waypoints and collocation points.
+        MIN_COLLISION_DIST = 0.01
+        if self.options.check_collisions:
+            for k in range(1, num_waypoints - 1):
+                prog.AddConstraint(
+                    self._collision_constraint, [MIN_COLLISION_DIST], [np.inf], x[k, :]
+                )
+                prog.AddConstraint(
+                    self._collision_constraint, [MIN_COLLISION_DIST], [np.inf], xc[k, :]
+                )
 
         for n in range(num_dofs):
             # Collocation point constraints.
