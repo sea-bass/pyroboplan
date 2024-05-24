@@ -121,13 +121,32 @@ def collision_avoidance_nullspace_component(
     coll_component = np.zeros_like(model.lowerPositionLimit)
 
     # Find all the collision distances at the current state.
+    pinocchio.framesForwardKinematics(model, data, q)
+    pinocchio.computeCollisions(
+        model, data, collision_model, collision_data, q, False
+    )
     pinocchio.computeDistances(model, data, collision_model, collision_data, q)
 
     # For each collision pair within a distance threshold, calculate its collision Jacobian
     # and use it to push the corresponding joint values away from collision.
-    for cp, dr in zip(collision_model.collisionPairs, collision_data.distanceResults):
-        if dr.min_distance > dist_padding:
+    for cp, cr, dr in zip(collision_model.collisionPairs, collision_data.collisionResults, collision_data.distanceResults):
+        
+        if cr.isCollision():
+            dist = cr.distance_lower_bound
+        else:
+            dist = dr.min_distance
+        
+        if dist > dist_padding:
             continue
+
+        if cr.isCollision():
+            contact = cr.getContact(0)
+            if np.allclose(contact.pos, dr.getNearestPoint1()):
+                distance_vec = -contact.normal * contact.penetration_depth
+            else:
+                distance_vec = contact.normal * contact.penetration_depth
+        else:
+            distance_vec = dr.getNearestPoint2() - dr.getNearestPoint1()
 
         # Pick as the base the parent frame that is not the universe frame
         # (which you can find if its index is greater than the number of frames, as it overflows).
@@ -140,25 +159,18 @@ def collision_avoidance_nullspace_component(
             Jframe = pinocchio.computeFrameJacobian(
                 model, data, q, parent_frame1, pinocchio.ReferenceFrame.LOCAL
             )
-            distance_vec = dr.getNearestPoint2() - dr.getNearestPoint1()
-            t_frame_to_point = data.oMf[parent_frame1].inverse() * pinocchio.SE3(
-                np.eye(3), dr.getNearestPoint1()
-            )
         else:
             Jframe = pinocchio.computeFrameJacobian(
                 model, data, q, parent_frame2, pinocchio.ReferenceFrame.LOCAL
             )
-            distance_vec = dr.getNearestPoint1() - dr.getNearestPoint2()
-            t_frame_to_point = data.oMf[parent_frame2].inverse() * pinocchio.SE3(
-                np.eye(3), dr.getNearestPoint2()
-            )
+            distance_vec *= -1.0
 
         # Pad the distance vector.
-        if dr.min_distance > 1e-6:
-            distance_vec *= 1.0 - dist_padding / abs(dr.min_distance)
+        if abs(dist) > 1e-6:
+            distance_vec *= 1.0 - dist_padding / abs(dist)
 
         # Now that we have the collision Jacobian, figure out the effective joint velocity to move away from collision.
-        Jcoll = t_frame_to_point.toActionMatrix()[:3, :] @ Jframe
+        Jcoll = Jframe[:3,:]
         delta_q = Jcoll.T @ np.linalg.solve(
             Jcoll.dot(Jcoll.T) + damping**2 * np.eye(3), distance_vec
         )
