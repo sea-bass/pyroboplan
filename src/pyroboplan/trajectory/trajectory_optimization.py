@@ -85,7 +85,9 @@ class CubicTrajectoryOptimization:
         * Russ Tedrake's manipulation course book: https://underactuated.mit.edu/trajopt.html
     """
 
-    def __init__(self, model, options=CubicTrajectoryOptimizationOptions()):
+    def __init__(
+        self, model, collision_model, options=CubicTrajectoryOptimizationOptions()
+    ):
         """
         Creates an instance of a cubic trajectory optimization planner.
 
@@ -97,6 +99,7 @@ class CubicTrajectoryOptimization:
                 The options to use for planning. If not specified, default options are used.
         """
         self.model = model
+        self.collision_model = collision_model
         self.options = options
 
     def _process_limits(self, limits, num_dofs, name):
@@ -322,6 +325,132 @@ class CubicTrajectoryOptimization:
         # Initial and final velocities should always be zero.
         prog.AddBoundingBoxConstraint(0.0, 0.0, x_d[0, :])
         prog.AddBoundingBoxConstraint(0.0, 0.0, x_d[num_waypoints - 1, :])
+
+        data = self.model.createData()
+        collision_data = self.collision_model.createData()
+        from pydrake.autodiffutils import AutoDiffXd, ExtractValue
+        import pinocchio
+        import pdb
+
+        def check_collisions(q_val):
+            MAX_DIST = 0.1
+
+            if q_val.dtype != float:
+                q = ExtractValue(q_val)
+
+                # Get the minimum distance in the allowable range
+                min_distance_idx = -1
+                min_distance = np.inf
+                gradient = np.zeros_like(q)
+                pinocchio.computeDistances(
+                    self.model, data, self.collision_model, collision_data, q
+                )
+                for p in range(len(self.collision_model.collisionPairs)):
+                    cp = self.collision_model.collisionPairs[p]
+                    name1 = self.collision_model.geometryObjects[cp.first].name
+                    name2 = self.collision_model.geometryObjects[cp.second].name
+
+                    # Must remove joint fixed to ground in SRDF
+                    if "panda_link0" in name1 or "panda_link0" in name2:
+                        continue
+
+                    dist_result = collision_data.distanceResults[p]
+                    if (
+                        dist_result.min_distance <= MAX_DIST
+                        and dist_result.min_distance < min_distance
+                    ):
+                        min_distance_idx = p
+                        min_distance = dist_result.min_distance
+
+                # Find the collision Jacobian
+                if min_distance_idx >= 0:
+                    min_distance_result = collision_data.distanceResults[
+                        min_distance_idx
+                    ]
+                    cp = self.collision_model.collisionPairs[min_distance_idx]
+                    parent_frame1 = self.collision_model.geometryObjects[
+                        cp.first
+                    ].parentFrame
+                    parent_frame2 = self.collision_model.geometryObjects[
+                        cp.second
+                    ].parentFrame
+                    flip_order = (parent_frame1 >= self.model.nframes) or (
+                        parent_frame2 > parent_frame1
+                    )
+                    if not flip_order:
+                        Jframe = pinocchio.computeFrameJacobian(
+                            self.model,
+                            data,
+                            q,
+                            parent_frame1,
+                            pinocchio.ReferenceFrame.LOCAL,
+                        )
+                        distance_vec = (
+                            min_distance_result.getNearestPoint2()
+                            - min_distance_result.getNearestPoint1()
+                        )
+                        # t_frame_to_point = data.oMf[parent_frame1].inverse() * pinocchio.SE3(
+                        #     np.eye(3), min_distance_result.getNearestPoint1()
+                        # )
+                        t_frame_to_point = pinocchio.SE3(
+                            np.eye(3),
+                            min_distance_result.getNearestPoint1()
+                            - data.oMf[parent_frame1].translation,
+                        ).inverse()
+                    else:
+                        Jframe = pinocchio.computeFrameJacobian(
+                            self.model,
+                            data,
+                            q,
+                            parent_frame2,
+                            pinocchio.ReferenceFrame.LOCAL,
+                        )
+                        distance_vec = (
+                            min_distance_result.getNearestPoint1()
+                            - min_distance_result.getNearestPoint2()
+                        )
+                        # t_frame_to_point = data.oMf[parent_frame2].inverse() * pinocchio.SE3(
+                        #     np.eye(3), min_distance_result.getNearestPoint2()
+                        # )
+                        t_frame_to_point = pinocchio.SE3(
+                            np.eye(3),
+                            min_distance_result.getNearestPoint2()
+                            - data.oMf[parent_frame2].translation,
+                        ).inverse()
+
+                    # Now that we have the collision Jacobian, figure out the gradient of this distance.
+                    Jcoll = t_frame_to_point.toActionMatrix()[:3, :] @ Jframe
+
+                    if np.linalg.norm(distance_vec) > 1e-9:
+                        dist_vec_norm = distance_vec / np.linalg.norm(distance_vec)
+                        dist_vec_norm *= np.clip(
+                            (MAX_DIST - min_distance) / MAX_DIST, 0.0, 1.0
+                        )
+
+                        gradient = -Jcoll.T @ np.linalg.solve(
+                            Jcoll.dot(Jcoll.T) + 0.0001**2 * np.eye(3), dist_vec_norm
+                        )
+
+                        name1 = self.collision_model.geometryObjects[cp.first].name
+                        name2 = self.collision_model.geometryObjects[cp.second].name
+                        print(
+                            f"MIN DISTANCE: {min_distance} between {name1} and {name2}"
+                        )
+                        print(f"  Gradient: {gradient}")
+
+                return np.array(
+                    [
+                        AutoDiffXd(
+                            min_distance,
+                            gradient,
+                        )
+                    ]
+                )
+
+        for k in range(1, num_waypoints - 1):
+            # Collision checking at the waypoints and collocation points.
+            prog.AddConstraint(check_collisions, [0.01], [np.inf], x[k, :])
+            prog.AddConstraint(check_collisions, [0.01], [np.inf], xc[k, :])
 
         for n in range(num_dofs):
             # Collocation point constraints.

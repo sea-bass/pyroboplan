@@ -11,7 +11,11 @@ from pyroboplan.core.utils import (
     get_random_collision_free_state,
     extract_cartesian_poses,
 )
-from pyroboplan.models.panda import load_models, add_self_collisions
+from pyroboplan.models.panda import (
+    load_models,
+    add_self_collisions,
+    add_object_collisions,
+)
 from pyroboplan.trajectory.trajectory_optimization import (
     CubicTrajectoryOptimization,
     CubicTrajectoryOptimizationOptions,
@@ -23,6 +27,7 @@ if __name__ == "__main__":
     # Create models and data.
     model, collision_model, visual_model = load_models()
     add_self_collisions(model, collision_model)
+    add_object_collisions(model, collision_model, visual_model)
     data = model.createData()
 
     # Initialize visualizer.
@@ -36,7 +41,7 @@ if __name__ == "__main__":
     # Configure trajectory optimization.
     dt = 0.025
     options = CubicTrajectoryOptimizationOptions(
-        num_waypoints=5,
+        num_waypoints=7,
         samples_per_segment=11,
         min_segment_time=0.01,
         max_segment_time=10.0,
@@ -47,7 +52,7 @@ if __name__ == "__main__":
     )
 
     # Perform trajectory optimization.
-    multi_point = True
+    multi_point = False
     if multi_point:
         # Multi point means we set all the waypoints and optimize how to move between them.
         q_path = [q_start] + [
@@ -59,7 +64,7 @@ if __name__ == "__main__":
         # All other intermediate waypoints are optimized automatically.
         q_path = [q_start, get_random_collision_free_state(model, collision_model)]
 
-    planner = CubicTrajectoryOptimization(model, options)
+    planner = CubicTrajectoryOptimization(model, collision_model, options)
     traj = planner.plan(q_path)
 
     if traj is not None:
