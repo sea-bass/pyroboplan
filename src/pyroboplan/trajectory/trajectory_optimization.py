@@ -386,6 +386,12 @@ class CubicTrajectoryOptimization:
                     )
                 ]
             )
+        else:
+            # This case should not be used by optimization, but can be used when testing without autodiff.
+            pinocchio.computeDistances(
+                self.model, self.data, self.collision_model, self.collision_data, q_val
+            )
+            return min([dr.min_distance for dr in self.collision_data.distanceResults])
 
     def plan(self, q_path):
         """
