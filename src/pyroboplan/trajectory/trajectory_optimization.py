@@ -367,7 +367,7 @@ class CubicTrajectoryOptimization:
                     np.eye(3),
                     coll_points[0] - self.data.oMf[parent_frame1].translation,
                 )
-                Jcoll1 = t_frame1_to_point1.toActionMatrixInverse()[3:, :] @ Jframe1
+                Jcoll1 = t_frame1_to_point1.toActionMatrix()[3:, :] @ Jframe1
 
                 if parent_frame2 >= self.model.nframes:
                     parent_frame2 = 0
@@ -382,7 +382,7 @@ class CubicTrajectoryOptimization:
                     np.eye(3),
                     coll_points[1] - self.data.oMf[parent_frame2].translation,
                 )
-                Jcoll2 = t_frame2_to_point2.toActionMatrixInverse()[3:, :] @ Jframe2
+                Jcoll2 = t_frame2_to_point2.toActionMatrix()[3:, :] @ Jframe2
 
                 # Calculate the gradients.
                 if np.linalg.norm(distance_vec) > 1e-6:
@@ -390,8 +390,8 @@ class CubicTrajectoryOptimization:
 
                     gradient = distance_vec @ (Jcoll2 - Jcoll1)
 
-                    name1 = self.collision_model.geometryObjects[cp.first].name
-                    name2 = self.collision_model.geometryObjects[cp.second].name
+                    # name1 = self.collision_model.geometryObjects[cp.first].name
+                    # name2 = self.collision_model.geometryObjects[cp.second].name
                     # print(f"MIN DISTANCE: {min_distance} between {name1} and {name2}")
                     # print(f"  Gradient: {gradient}")
 
