@@ -130,12 +130,7 @@ def collision_avoidance_nullspace_component(
         collision_data.collisionResults,
         collision_data.distanceResults,
     ):
-        geom1 = collision_model.geometryObjects[cp.first].name
-        geom2 = collision_model.geometryObjects[cp.first].name
-        import pdb
-
         if cr.isCollision():
-            # pdb.set_trace()
             dist = cr.distance_lower_bound
         else:
             dist = dr.min_distance
@@ -148,7 +143,7 @@ def collision_avoidance_nullspace_component(
             contact = cr.getContact(0)
             coll_points = [
                 contact.pos,
-                contact.pos - contact.normal * contact.penetration_depth,
+                contact.pos + contact.normal * contact.penetration_depth,
             ]
         else:
             coll_points = [dr.getNearestPoint1(), dr.getNearestPoint2()]
