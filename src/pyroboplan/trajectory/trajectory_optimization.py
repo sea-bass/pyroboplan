@@ -277,21 +277,20 @@ class CubicTrajectoryOptimization:
         """
         return 8.0 * (x_d[k, n] - 2.0 * xc_d[k, n] + x_d[k + 1, n]) / h[k] ** 2
 
-    def _collision_constraint(self, q_val):
+    def _collision_constraint(self, q_val, max_dist):
         """
         Helper function to evaluate collision constraint and its gradients.
 
-        The gradients are based on this resource:
-        https://typeset.io/pdf/a-collision-free-mpc-for-whole-body-dynamic-locomotion-and-1l6itpfk.pdf
+        These calculations are based off the following resources:
+          * https://typeset.io/pdf/a-collision-free-mpc-for-whole-body-dynamic-locomotion-and-1l6itpfk.pdf
+          * https://laas.hal.science/hal-04425002
         """
-        MAX_DIST = 0.02
-
         if q_val.dtype != float:
             q = ExtractValue(q_val)
 
             # Get the minimum distance in the allowable range
             min_distance_idx = -1
-            min_distance = MAX_DIST
+            min_distance = max_dist
             gradient = np.zeros_like(q)
 
             pinocchio.framesForwardKinematics(self.model, self.data, q)
@@ -323,7 +322,7 @@ class CubicTrajectoryOptimization:
                 else:
                     dist = dr.min_distance
 
-                if dist <= MAX_DIST and dist < min_distance:
+                if dist <= max_dist and dist < min_distance:
                     min_distance_idx = p
                     min_distance = dist
 
@@ -336,11 +335,18 @@ class CubicTrajectoryOptimization:
                 if cr.isCollision():
                     contact = cr.getContact(0)
                     if np.allclose(contact.pos, dr.getNearestPoint1()):
-                        distance_vec = contact.normal * contact.penetration_depth
+                        coll_points = [
+                            contact.pos,
+                            contact.pos - contact.normal * contact.penetration_depth,
+                        ]
                     else:
-                        distance_vec = -contact.normal * contact.penetration_depth
+                        coll_points = [
+                            contact.pos - contact.normal * contact.penetration_depth,
+                            contact.pos,
+                        ]
                 else:
-                    distance_vec = dr.getNearestPoint2() - dr.getNearestPoint1()
+                    coll_points = [dr.getNearestPoint1(), dr.getNearestPoint2()]
+                distance_vec = coll_points[1] - coll_points[0]
 
                 parent_frame1 = self.collision_model.geometryObjects[
                     cp.first
@@ -355,13 +361,13 @@ class CubicTrajectoryOptimization:
                     self.data,
                     q,
                     parent_frame1,
-                    pinocchio.ReferenceFrame.LOCAL,
+                    pinocchio.ReferenceFrame.LOCAL_WORLD_ALIGNED,
                 )
-                tf1 = pinocchio.SE3(
+                t_frame1_to_point1 = pinocchio.SE3(
                     np.eye(3),
-                    dr.getNearestPoint1() - self.data.oMf[parent_frame1].translation,
+                    coll_points[0] - self.data.oMf[parent_frame1].translation,
                 )
-                Jframe1 = tf1.toActionMatrix() @ Jframe1
+                Jcoll1 = t_frame1_to_point1.toActionMatrixInverse()[3:, :] @ Jframe1
 
                 if parent_frame2 >= self.model.nframes:
                     parent_frame2 = 0
@@ -370,18 +376,19 @@ class CubicTrajectoryOptimization:
                     self.data,
                     q,
                     parent_frame2,
-                    pinocchio.ReferenceFrame.LOCAL,
+                    pinocchio.ReferenceFrame.LOCAL_WORLD_ALIGNED,
                 )
-                tf2 = pinocchio.SE3(
+                t_frame2_to_point2 = pinocchio.SE3(
                     np.eye(3),
-                    dr.getNearestPoint2() - self.data.oMf[parent_frame2].translation,
+                    coll_points[1] - self.data.oMf[parent_frame2].translation,
                 )
-                Jframe2 = tf2.toActionMatrix() @ Jframe2
+                Jcoll2 = t_frame2_to_point2.toActionMatrixInverse()[3:, :] @ Jframe2
 
+                # Calculate the gradients.
                 if np.linalg.norm(distance_vec) > 1e-6:
                     distance_vec = distance_vec / np.linalg.norm(distance_vec)
 
-                    gradient = distance_vec @ (Jframe2[:3, :] - Jframe1[:3, :])
+                    gradient = distance_vec @ (Jcoll2 - Jcoll1)
 
                     name1 = self.collision_model.geometryObjects[cp.first].name
                     name2 = self.collision_model.geometryObjects[cp.second].name
@@ -403,7 +410,7 @@ class CubicTrajectoryOptimization:
             )
             return min([dr.min_distance for dr in self.collision_data.distanceResults])
 
-    def plan(self, q_path):
+    def plan(self, q_path, init_path=None):
         """
         Plans a trajectory from a start to a goal configuration, or along an entire trajectory.
 
@@ -416,6 +423,8 @@ class CubicTrajectoryOptimization:
         ----------
             q_path : list[array-like]
                 A list of joint configurations describing the desired motion.
+            init_path : list[array-like], optional
+                If set, defines the initial guess for the path waypoints.
 
         Return
         ------
@@ -463,18 +472,19 @@ class CubicTrajectoryOptimization:
         prog.AddBoundingBoxConstraint(0.0, 0.0, x_d[num_waypoints - 1, :])
 
         # Collision checking at the waypoints and collocation points.
-        MIN_COLLISION_DIST = 0.01
+        MIN_COLLISION_DIST = 0.02
+        collision_expr = lambda q: self._collision_constraint(q, MIN_COLLISION_DIST)
         if self.options.check_collisions:
             for k in range(num_waypoints - 1):
                 if k > 0:
                     prog.AddConstraint(
-                        self._collision_constraint,
+                        collision_expr,
                         [MIN_COLLISION_DIST],
                         [np.inf],
                         x[k, :],
                     )
                 prog.AddConstraint(
-                    self._collision_constraint, [MIN_COLLISION_DIST], [np.inf], xc[k, :]
+                    collision_expr, [MIN_COLLISION_DIST], [np.inf], xc[k, :]
                 )
 
         for n in range(num_dofs):
@@ -537,8 +547,10 @@ class CubicTrajectoryOptimization:
         )
 
         # Set initial conditions to help search.
-        if fully_specified_path:
+        if init_path or fully_specified_path:
             # Set initial guess assuming collocation points are exactly between the waypoints.
+            if init_path:
+                q_path = init_path
             prog.SetInitialGuess(x, np.array(q_path))
             init_collocation_points = []
             for k in range(num_waypoints - 1):
