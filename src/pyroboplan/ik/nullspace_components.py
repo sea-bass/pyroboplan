@@ -130,8 +130,12 @@ def collision_avoidance_nullspace_component(
         collision_data.collisionResults,
         collision_data.distanceResults,
     ):
+        geom1 = collision_model.geometryObjects[cp.first].name
+        geom2 = collision_model.geometryObjects[cp.first].name
+        import pdb
 
         if cr.isCollision():
+            # pdb.set_trace()
             dist = cr.distance_lower_bound
         else:
             dist = dr.min_distance
@@ -140,17 +144,12 @@ def collision_avoidance_nullspace_component(
             continue
 
         if cr.isCollision():
+            # According to the HPP-FCL documentation, the normal always points from object1 to object2.
             contact = cr.getContact(0)
-            if np.allclose(contact.pos, dr.getNearestPoint1()):
-                coll_points = [
-                    contact.pos,
-                    contact.pos - contact.normal * contact.penetration_depth,
-                ]
-            else:
-                coll_points = [
-                    contact.pos - contact.normal * contact.penetration_depth,
-                    contact.pos,
-                ]
+            coll_points = [
+                contact.pos,
+                contact.pos - contact.normal * contact.penetration_depth,
+            ]
         else:
             coll_points = [dr.getNearestPoint1(), dr.getNearestPoint2()]
         distance_vec = coll_points[1] - coll_points[0]
@@ -180,9 +179,9 @@ def collision_avoidance_nullspace_component(
 
         # Normalize the distance vector and add this collision pair to the nullspace component.
         dist_norm = np.linalg.norm(distance_vec)
-        if dist_norm > 1e-6:
+        if dist_norm > 1e-12:
             distance_vec /= dist_norm
-            coll_component -= distance_vec @ (Jcoll1 - Jcoll2)
+            coll_component += distance_vec @ (Jcoll2 - Jcoll1)
 
     coll_component = gain * coll_component
 
