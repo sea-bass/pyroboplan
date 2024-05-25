@@ -84,12 +84,14 @@ def collision_avoidance_nullspace_component(
     collision_data,
     q,
     dist_padding=0.05,
-    max_vel=1.0,
-    damping=0.0001,
     gain=1.0,
 ):
     """
     Returns a collision avoidance nullspace component.
+
+    These calculations are based off the following resources:
+       * https://typeset.io/pdf/a-collision-free-mpc-for-whole-body-dynamic-locomotion-and-1l6itpfk.pdf
+       * https://laas.hal.science/hal-04425002
 
     Parameters
     ----------
@@ -105,11 +107,7 @@ def collision_avoidance_nullspace_component(
             The joint configuration for the model.
         dist_padding : float
             The distance padding, in meters, on the collision distances.
-            For example, a distance padding of 0.1 means collisions have an influence 10 cm away from actual collision.
-        max_vel : float
-            The maximum velocity norm that can be returned by this component.
-        damping : float
-            Damping value, between 0 and 1, for the collision Jacobian pseudoinverse.
+            For example, a distance padding of 0.1 means collisions have an influence 10 cm away from actual collision..
         gain : float, optional
             A gain to modify the relative weight of this term.
 
@@ -122,65 +120,70 @@ def collision_avoidance_nullspace_component(
 
     # Find all the collision distances at the current state.
     pinocchio.framesForwardKinematics(model, data, q)
-    pinocchio.computeCollisions(
-        model, data, collision_model, collision_data, q, False
-    )
+    pinocchio.computeCollisions(model, data, collision_model, collision_data, q, False)
     pinocchio.computeDistances(model, data, collision_model, collision_data, q)
 
-    # For each collision pair within a distance threshold, calculate its collision Jacobian
-    # and use it to push the corresponding joint values away from collision.
-    for cp, cr, dr in zip(collision_model.collisionPairs, collision_data.collisionResults, collision_data.distanceResults):
-        
+    # For each collision pair within a distance threshold, calculate its collision Jacobians
+    # and use them to push the corresponding joint values away from collision.
+    for cp, cr, dr in zip(
+        collision_model.collisionPairs,
+        collision_data.collisionResults,
+        collision_data.distanceResults,
+    ):
+
         if cr.isCollision():
             dist = cr.distance_lower_bound
         else:
             dist = dr.min_distance
-        
+
         if dist > dist_padding:
             continue
 
         if cr.isCollision():
             contact = cr.getContact(0)
             if np.allclose(contact.pos, dr.getNearestPoint1()):
-                distance_vec = -contact.normal * contact.penetration_depth
+                coll_points = [
+                    contact.pos,
+                    contact.pos - contact.normal * contact.penetration_depth,
+                ]
             else:
-                distance_vec = contact.normal * contact.penetration_depth
+                coll_points = [
+                    contact.pos - contact.normal * contact.penetration_depth,
+                    contact.pos,
+                ]
         else:
-            distance_vec = dr.getNearestPoint2() - dr.getNearestPoint1()
+            coll_points = [dr.getNearestPoint1(), dr.getNearestPoint2()]
+        distance_vec = coll_points[1] - coll_points[0]
 
-        # Pick as the base the parent frame that is not the universe frame
-        # (which you can find if its index is greater than the number of frames, as it overflows).
-        # If both parent frames are actually on the robot, pick the higher indexed one as the base
-        # since it corresponds to a frame farther along the kinematic chain.
+        # Calculate the Jacobians at the parent frames of both collision points.
         parent_frame1 = collision_model.geometryObjects[cp.first].parentFrame
         parent_frame2 = collision_model.geometryObjects[cp.second].parentFrame
-        flip_order = (parent_frame1 >= model.nframes) or (parent_frame2 > parent_frame1)
-        if not flip_order:
-            Jframe = pinocchio.computeFrameJacobian(
-                model, data, q, parent_frame1, pinocchio.ReferenceFrame.LOCAL
-            )
-        else:
-            Jframe = pinocchio.computeFrameJacobian(
-                model, data, q, parent_frame2, pinocchio.ReferenceFrame.LOCAL
-            )
-            distance_vec *= -1.0
-
-        # Pad the distance vector.
-        if abs(dist) > 1e-6:
-            distance_vec *= 1.0 - dist_padding / abs(dist)
-
-        # Now that we have the collision Jacobian, figure out the effective joint velocity to move away from collision.
-        Jcoll = Jframe[:3,:]
-        delta_q = Jcoll.T @ np.linalg.solve(
-            Jcoll.dot(Jcoll.T) + damping**2 * np.eye(3), distance_vec
+        if parent_frame1 >= model.nframes:
+            parent_frame1 = 0
+        Jframe1 = pinocchio.computeFrameJacobian(
+            model, data, q, parent_frame1, pinocchio.ReferenceFrame.LOCAL_WORLD_ALIGNED
         )
-        coll_component -= delta_q
+        t_frame1_to_point1 = pinocchio.SE3(
+            np.eye(3), coll_points[0] - data.oMf[parent_frame1].translation
+        )
+        Jcoll1 = t_frame1_to_point1.toActionMatrixInverse()[3:, :] @ Jframe1
+
+        if parent_frame2 >= model.nframes:
+            parent_frame2 = 0
+        Jframe2 = pinocchio.computeFrameJacobian(
+            model, data, q, parent_frame2, pinocchio.ReferenceFrame.LOCAL_WORLD_ALIGNED
+        )
+        t_frame2_to_point2 = pinocchio.SE3(
+            np.eye(3), coll_points[1] - data.oMf[parent_frame2].translation
+        )
+        Jcoll2 = t_frame2_to_point2.toActionMatrixInverse()[3:, :] @ Jframe2
+
+        # Normalize the distance vector and add this collision pair to the nullspace component.
+        dist_norm = np.linalg.norm(distance_vec)
+        if dist_norm > 1e-6:
+            distance_vec /= dist_norm
+            coll_component -= distance_vec @ (Jcoll1 - Jcoll2)
 
     coll_component = gain * coll_component
-
-    # Limit the maximum velocity returned by this component.
-    final_norm = np.linalg.norm(coll_component)
-    if final_norm > max_vel:
-        coll_component *= max_vel / final_norm
 
     return coll_component

@@ -68,9 +68,7 @@ if __name__ == "__main__":
             collision_data,
             q,
             gain=1.0,
-            damping=options.damping,
-            dist_padding=0.1,
-            max_vel=0.5,
+            dist_padding=0.05,
         ),
         lambda model, q: joint_limit_nullspace_component(
             model, q, gain=0.1, padding=0.05

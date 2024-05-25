@@ -82,8 +82,8 @@ def add_object_collisions(model, collision_model, visual_model, inflation_radius
     ground_plane = pinocchio.GeometryObject(
         "ground_plane",
         0,
-        hppfcl.Box(2.0, 2.0, 0.1),
-        pinocchio.SE3(np.eye(3), np.array([0.0, 0.0, -0.051])),
+        hppfcl.Box(2.0, 2.0, 0.3),
+        pinocchio.SE3(np.eye(3), np.array([0.0, 0.0, -0.151])),
     )
     ground_plane.meshColor = np.array([0.5, 0.5, 0.5, 0.5])
     visual_model.addGeometryObject(ground_plane)
