@@ -337,17 +337,12 @@ class CubicTrajectoryOptimization:
                 cp = self.collision_model.collisionPairs[min_distance_idx]
 
                 if cr.isCollision():
+                    # According to the HPP-FCL documentation, the normal always points from object1 to object2.
                     contact = cr.getContact(0)
-                    if np.allclose(contact.pos, dr.getNearestPoint1()):
-                        coll_points = [
-                            contact.pos,
-                            contact.pos - contact.normal * contact.penetration_depth,
-                        ]
-                    else:
-                        coll_points = [
-                            contact.pos - contact.normal * contact.penetration_depth,
-                            contact.pos,
-                        ]
+                    coll_points = [
+                        contact.pos,
+                        contact.pos - contact.normal * contact.penetration_depth,
+                    ]
                 else:
                     coll_points = [dr.getNearestPoint1(), dr.getNearestPoint2()]
                 distance_vec = coll_points[1] - coll_points[0]
@@ -389,7 +384,7 @@ class CubicTrajectoryOptimization:
                 Jcoll2 = t_frame2_to_point2.toActionMatrix()[3:, :] @ Jframe2
 
                 # Calculate the gradients.
-                if np.linalg.norm(distance_vec) > 1e-6:
+                if np.linalg.norm(distance_vec) > 1e-12:
                     distance_vec = distance_vec / np.linalg.norm(distance_vec)
                     gradient = distance_vec @ (Jcoll2 - Jcoll1)
 
