@@ -26,6 +26,7 @@ class CubicTrajectoryOptimizationOptions:
         max_jerk=np.inf,
         check_collisions=False,
         min_collision_dist=0.0,
+        collision_influence_dist=0.05,
     ):
         """
         Initializes a set of options for cubic polynomial trajectory optimization.
@@ -62,6 +63,8 @@ class CubicTrajectoryOptimizationOptions:
                 If true, adds collision constraints to trajectory optimization.
             min_collision_dist : float
                 The minimum allowable collision distance, in meters.
+            collision_influence_dist : float
+                The distance for collision/distance checks, in meters, above which to ignore results.
         """
         if num_waypoints < 2:
             raise ValueError(
@@ -82,6 +85,7 @@ class CubicTrajectoryOptimizationOptions:
         self.max_jerk = max_jerk
         self.check_collisions = check_collisions
         self.min_collision_dist = min_collision_dist
+        self.collision_influence_dist = collision_influence_dist
 
 
 class CubicTrajectoryOptimization:
@@ -281,7 +285,7 @@ class CubicTrajectoryOptimization:
         """
         return 8.0 * (x_d[k, n] - 2.0 * xc_d[k, n] + x_d[k + 1, n]) / h[k] ** 2
 
-    def _collision_constraint(self, q_val, max_dist):
+    def _collision_constraint(self, q_val, influence_dist):
         """
         Helper function to evaluate collision constraint and its gradients.
 
@@ -292,11 +296,7 @@ class CubicTrajectoryOptimization:
         if q_val.dtype != float:
             q = ExtractValue(q_val)
 
-            # Get the minimum distance in the allowable range
-            min_distance_idx = -1
-            min_distance = max_dist
-            gradient = np.zeros_like(q)
-
+            # Compute collision and distance checks
             pinocchio.framesForwardKinematics(self.model, self.data, q)
             pinocchio.computeCollisions(
                 self.model,
@@ -309,16 +309,23 @@ class CubicTrajectoryOptimization:
             pinocchio.computeDistances(
                 self.model, self.data, self.collision_model, self.collision_data, q
             )
+
+            # Get the minimum distance in the allowable range
+            min_distance_idx = -1
+            min_distance = influence_dist
+            gradient = np.zeros_like(q)
             for p in range(len(self.collision_model.collisionPairs)):
                 cp = self.collision_model.collisionPairs[p]
                 cr = self.collision_data.collisionResults[p]
                 dr = self.collision_data.distanceResults[p]
 
+                # Must remove these collision pairs
+                # ... or specify the collision pairs we do want to check
                 name1 = self.collision_model.geometryObjects[cp.first].name
                 name2 = self.collision_model.geometryObjects[cp.second].name
-
-                # Must remove joint fixed to ground in SRDF
                 if "panda_link0" in name1 or "panda_link0" in name2:
+                    continue
+                if not ("obstacle" in name1 or "obstacle" in name2):
                     continue
 
                 if cr.isCollision():
@@ -326,7 +333,7 @@ class CubicTrajectoryOptimization:
                 else:
                     dist = dr.min_distance
 
-                if dist <= max_dist and dist < min_distance:
+                if dist <= influence_dist and dist < min_distance:
                     min_distance_idx = p
                     min_distance = dist
 
@@ -387,11 +394,6 @@ class CubicTrajectoryOptimization:
                 if np.linalg.norm(distance_vec) > 1e-12:
                     distance_vec = distance_vec / np.linalg.norm(distance_vec)
                     gradient = distance_vec @ (Jcoll2 - Jcoll1)
-
-                    # name1 = self.collision_model.geometryObjects[cp.first].name
-                    # name2 = self.collision_model.geometryObjects[cp.second].name
-                    # print(f"MIN DISTANCE: {min_distance} between {name1} and {name2}")
-                    # print(f"  Gradient: {gradient}")
 
             return np.array(
                 [
@@ -471,7 +473,9 @@ class CubicTrajectoryOptimization:
 
         # Collision checking at the waypoints and collocation points.
         min_dist = self.options.min_collision_dist
-        collision_expr = lambda q: self._collision_constraint(q, min_dist)
+        collision_expr = lambda q: self._collision_constraint(
+            q, self.options.collision_influence_dist
+        )
         if self.options.check_collisions:
             for k in range(1, num_waypoints - 1):
                 prog.AddConstraint(collision_expr, [min_dist], [np.inf], x[k, :])

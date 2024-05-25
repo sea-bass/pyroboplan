@@ -80,7 +80,7 @@ def add_object_collisions(model, collision_model, visual_model, inflation_radius
     """
     # Add the collision objects
     ground_plane = pinocchio.GeometryObject(
-        "ground_plane",
+        "obstacle_ground",
         0,
         hppfcl.Box(2.0, 2.0, 0.3),
         pinocchio.SE3(np.eye(3), np.array([0.0, 0.0, -0.151])),
@@ -142,7 +142,7 @@ def add_object_collisions(model, collision_model, visual_model, inflation_radius
         cobj.name for cobj in collision_model.geometryObjects if "panda" in cobj.name
     ]
     obstacle_names = [
-        "ground_plane",
+        "obstacle_ground",
         "obstacle_box_1",
         "obstacle_box_2",
         "obstacle_sphere_1",

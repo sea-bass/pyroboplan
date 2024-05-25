@@ -52,7 +52,8 @@ if __name__ == "__main__":
             min_accel=-0.75,
             max_accel=0.75,
             check_collisions=True,
-            min_collision_dist=0.02,
+            min_collision_dist=0.01,
+            collision_influence_dist=0.05,
         )
 
         # Perform trajectory optimization.
