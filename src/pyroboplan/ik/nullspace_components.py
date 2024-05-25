@@ -143,7 +143,7 @@ def collision_avoidance_nullspace_component(
             contact = cr.getContact(0)
             coll_points = [
                 contact.pos,
-                contact.pos + contact.normal * contact.penetration_depth,
+                contact.pos - contact.normal * contact.penetration_depth,
             ]
         else:
             coll_points = [dr.getNearestPoint1(), dr.getNearestPoint2()]
