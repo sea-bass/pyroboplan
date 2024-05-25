@@ -48,7 +48,7 @@ if __name__ == "__main__":
     # Set up the IK solver
     options = DifferentialIkOptions(
         damping=0.0001,
-        min_step_size=0.01,
+        min_step_size=0.025,
         max_step_size=0.1,
         max_delta_q=0.25,
         ignore_joint_indices=ignore_joint_indices,
@@ -71,7 +71,7 @@ if __name__ == "__main__":
             dist_padding=0.05,
         ),
         lambda model, q: joint_limit_nullspace_component(
-            model, q, gain=0.1, padding=0.05
+            model, q, gain=0.1, padding=0.025
         ),
     ]
 
