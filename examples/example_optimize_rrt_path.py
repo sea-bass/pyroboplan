@@ -70,6 +70,7 @@ if __name__ == "__main__":
         min_accel=-0.75,
         max_accel=0.75,
         check_collisions=True,
+        min_collision_dist=0.02,
     )
     print("Optimizing the path...")
     optimizer = CubicTrajectoryOptimization(model, collision_model, options)

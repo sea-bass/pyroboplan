@@ -25,6 +25,7 @@ class CubicTrajectoryOptimizationOptions:
         min_jerk=-np.inf,
         max_jerk=np.inf,
         check_collisions=False,
+        min_collision_dist=0.0,
     ):
         """
         Initializes a set of options for cubic polynomial trajectory optimization.
@@ -59,6 +60,8 @@ class CubicTrajectoryOptimizationOptions:
                 If scalar, applies to all degrees of freedom; otherwise allows for different limits per degree of freedom.
             check_collisions: bool
                 If true, adds collision constraints to trajectory optimization.
+            min_collision_dist : float
+                The minimum allowable collision distance, in meters.
         """
         if num_waypoints < 2:
             raise ValueError(
@@ -78,6 +81,7 @@ class CubicTrajectoryOptimizationOptions:
         self.min_jerk = min_jerk
         self.max_jerk = max_jerk
         self.check_collisions = check_collisions
+        self.min_collision_dist = min_collision_dist
 
 
 class CubicTrajectoryOptimization:
@@ -326,7 +330,7 @@ class CubicTrajectoryOptimization:
                     min_distance_idx = p
                     min_distance = dist
 
-            # Find the collision Jacobian
+            # Find the collision Jacobian for the closest point pair.
             if min_distance_idx >= 0:
                 cr = self.collision_data.collisionResults[min_distance_idx]
                 dr = self.collision_data.distanceResults[min_distance_idx]
@@ -387,7 +391,6 @@ class CubicTrajectoryOptimization:
                 # Calculate the gradients.
                 if np.linalg.norm(distance_vec) > 1e-6:
                     distance_vec = distance_vec / np.linalg.norm(distance_vec)
-
                     gradient = distance_vec @ (Jcoll2 - Jcoll1)
 
                     # name1 = self.collision_model.geometryObjects[cp.first].name
@@ -472,20 +475,13 @@ class CubicTrajectoryOptimization:
         prog.AddBoundingBoxConstraint(0.0, 0.0, x_d[num_waypoints - 1, :])
 
         # Collision checking at the waypoints and collocation points.
-        MIN_COLLISION_DIST = 0.02
-        collision_expr = lambda q: self._collision_constraint(q, MIN_COLLISION_DIST)
+        min_dist = self.options.min_collision_dist
+        collision_expr = lambda q: self._collision_constraint(q, min_dist)
         if self.options.check_collisions:
+            for k in range(1, num_waypoints - 1):
+                prog.AddConstraint(collision_expr, [min_dist], [np.inf], x[k, :])
             for k in range(num_waypoints - 1):
-                if k > 0:
-                    prog.AddConstraint(
-                        collision_expr,
-                        [MIN_COLLISION_DIST],
-                        [np.inf],
-                        x[k, :],
-                    )
-                prog.AddConstraint(
-                    collision_expr, [MIN_COLLISION_DIST], [np.inf], xc[k, :]
-                )
+                prog.AddConstraint(collision_expr, [min_dist], [np.inf], xc[k, :])
 
         for n in range(num_dofs):
             # Collocation point constraints.
