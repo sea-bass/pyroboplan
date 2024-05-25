@@ -55,7 +55,7 @@ class DifferentialIkOptions:
                 Maximum gradient step size, between 0 and 1, based on ratio of current distance to target to initial distance to target.
                 To use a fixed step size, set both minimum and maximum values to be equal.
             max_delta_q : float
-                Maximum allowable norm of the joint configuration change in a single iteration.
+                Maximum allowable joint position change in a single iteration.
             ignore_joint_indices : list[int], optional
                 A list of joints to ignore changing when solving IK.
                 TODO: This should eventually be done through a concept of joint groups.
@@ -253,10 +253,10 @@ class DifferentialIk:
                 for idx in self.options.ignore_joint_indices:
                     q_step[idx] = 0.0
 
-                # Bound the maximum step norm.
-                q_step_norm = np.linalg.norm(q_step)
-                if q_step_norm > self.options.max_delta_q:
-                    q_step *= self.options.max_delta_q / q_step_norm
+                # Bound the maximum change in joint configuration.
+                q_step = np.clip(
+                    q_step, -self.options.max_delta_q, self.options.max_delta_q
+                )
 
                 q_cur += q_step
                 n_iters += 1
