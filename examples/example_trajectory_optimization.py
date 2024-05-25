@@ -52,7 +52,7 @@ if __name__ == "__main__":
             min_accel=-0.75,
             max_accel=0.75,
             check_collisions=True,
-            min_collision_dist=0.01,
+            min_collision_dist=0.02,
             collision_influence_dist=0.05,
         )
 
@@ -70,6 +70,7 @@ if __name__ == "__main__":
             q_path = [q_start, get_random_collision_free_state(model, collision_model)]
 
         planner = CubicTrajectoryOptimization(model, collision_model, options)
+        print("Optimizing trajectory...")
         traj = planner.plan(q_path)
 
         if traj is not None:
@@ -91,6 +92,7 @@ if __name__ == "__main__":
 
             tforms = extract_cartesian_poses(model, "panda_hand", q_vec.T)
             viz.display(q_start)
+            viz.viewer["waypoints"].delete()
             visualize_frames(viz, "waypoints", tforms, line_length=0.075, line_width=2)
             time.sleep(1.0)
 

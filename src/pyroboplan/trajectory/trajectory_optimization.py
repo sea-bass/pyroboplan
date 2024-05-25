@@ -393,7 +393,7 @@ class CubicTrajectoryOptimization:
                 # Calculate the gradients.
                 if np.linalg.norm(distance_vec) > 1e-12:
                     distance_vec = distance_vec / np.linalg.norm(distance_vec)
-                    gradient = distance_vec @ (Jcoll2 - Jcoll1)
+                    gradient = np.sign(distance_vec) * distance_vec @ (Jcoll2 - Jcoll1)
 
             return np.array(
                 [
