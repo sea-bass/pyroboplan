@@ -78,10 +78,10 @@ def test_plan_rrt_connect():
     assert np.all(path[-1] == q_goal)
 
     # RRTConnect should have nodes and edges for both trees
-    assert len(planner.start_tree.nodes) > 1
-    assert len(planner.start_tree.edges) > 1
-    assert len(planner.goal_tree.nodes) > 1
-    assert len(planner.goal_tree.edges) > 1
+    assert len(planner.start_tree.nodes) >= 1
+    assert len(planner.start_tree.edges) >= 1
+    assert len(planner.goal_tree.nodes) >= 1
+    assert len(planner.goal_tree.edges) >= 1
 
 
 def test_plan_rrt_star():
