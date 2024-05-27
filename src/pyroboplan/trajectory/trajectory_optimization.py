@@ -7,6 +7,7 @@ import warnings
 import pinocchio
 from pydrake.autodiffutils import AutoDiffXd, ExtractValue
 from pydrake.solvers import MathematicalProgram, Solve
+from pyroboplan.core.utils import calculate_collision_vector_and_jacobians
 from pyroboplan.trajectory.polynomial import CubicPolynomialTrajectory
 
 
@@ -345,72 +346,25 @@ class CubicTrajectoryOptimization:
                     gradient = np.zeros_like(q_all)
 
                     for p in pairs:
-                        cp = self.collision_model.collisionPairs[p]
-                        cr = self.collision_data.collisionResults[p]
-                        dr = self.collision_data.distanceResults[p]
-
-                        dist = dr.min_distance
-
+                        dist = self.collision_data.distanceResults[p].min_distance
                         if dist <= influence_dist and dist < min_distance:
                             min_distance_idx = p
                             min_distance = dist
 
-                    # Find the collision Jacobian for the closest point pair.
+                    # Find the collision Jacobian for the closest point pair, and calculate gradients.
                     if min_distance_idx >= 0:
-                        cr = self.collision_data.collisionResults[min_distance_idx]
-                        dr = self.collision_data.distanceResults[min_distance_idx]
-                        cp = self.collision_model.collisionPairs[min_distance_idx]
-
-                        if cr.isCollision():
-                            # According to the HPP-FCL documentation, the normal always points from object1 to object2.
-                            contact = cr.getContact(0)
-                            coll_points = [
-                                contact.pos,
-                                contact.pos
-                                - contact.normal * contact.penetration_depth,
-                            ]
-                        else:
-                            coll_points = [dr.getNearestPoint1(), dr.getNearestPoint2()]
-                        distance_vec = coll_points[1] - coll_points[0]
-
-                        parent_frame1 = self.collision_model.geometryObjects[
-                            cp.first
-                        ].parentFrame
-                        parent_frame2 = self.collision_model.geometryObjects[
-                            cp.second
-                        ].parentFrame
-                        if parent_frame1 >= self.model.nframes:
-                            parent_frame1 = 0
-                        Jframe1 = pinocchio.computeFrameJacobian(
-                            self.model,
-                            self.data,
-                            q,
-                            parent_frame1,
-                            pinocchio.ReferenceFrame.LOCAL_WORLD_ALIGNED,
+                        distance_vec, Jcoll1, Jcoll2 = (
+                            calculate_collision_vector_and_jacobians(
+                                self.model,
+                                self.collision_model,
+                                self.data,
+                                self.collision_data,
+                                min_distance_idx,
+                                q,
+                            )
                         )
-                        t_frame1_to_point1 = pinocchio.SE3(
-                            np.eye(3),
-                            coll_points[0] - self.data.oMf[parent_frame1].translation,
-                        )
-                        Jcoll1 = t_frame1_to_point1.toActionMatrix()[3:, :] @ Jframe1
-
-                        if parent_frame2 >= self.model.nframes:
-                            parent_frame2 = 0
-                        Jframe2 = pinocchio.computeFrameJacobian(
-                            self.model,
-                            self.data,
-                            q,
-                            parent_frame2,
-                            pinocchio.ReferenceFrame.LOCAL_WORLD_ALIGNED,
-                        )
-                        t_frame2_to_point2 = pinocchio.SE3(
-                            np.eye(3),
-                            coll_points[1] - self.data.oMf[parent_frame2].translation,
-                        )
-                        Jcoll2 = t_frame2_to_point2.toActionMatrix()[3:, :] @ Jframe2
-
-                        # Calculate the gradients.
                         distance_vec = distance_vec / np.linalg.norm(distance_vec)
+
                         grad = np.sign(dist) * distance_vec @ (Jcoll2 - Jcoll1)
 
                         gradient[widx * num_dofs : (widx + 1) * num_dofs] = grad[
