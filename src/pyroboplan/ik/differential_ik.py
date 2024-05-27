@@ -13,7 +13,7 @@ from ..core.utils import (
 from ..visualization.meshcat_utils import visualize_frame
 
 VIZ_INITIAL_RENDER_TIME = 0.5
-VIZ_SLEEP_TIME = 0.05
+VIZ_SLEEP_TIME = 0.025
 
 
 class DifferentialIkOptions:
