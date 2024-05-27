@@ -6,7 +6,8 @@ import warnings
 
 import pinocchio
 from pydrake.autodiffutils import AutoDiffXd, ExtractValue
-from pydrake.solvers import MathematicalProgram, Solve
+from pydrake.solvers import MathematicalProgram, Solve, SolverOptions, SnoptSolver
+
 from pyroboplan.core.utils import calculate_collision_vector_and_jacobians
 from pyroboplan.trajectory.polynomial import CubicPolynomialTrajectory
 
@@ -562,7 +563,9 @@ class CubicTrajectoryOptimization:
         prog.SetInitialGuess(xc_d, np.zeros((num_waypoints - 1, num_dofs)))
 
         # Solve the program.
-        result = Solve(prog)
+        solver_options = SolverOptions()
+        solver_options.SetOption(SnoptSolver.id(), "Time limit", 10.0)
+        result = Solve(prog, solver_options=solver_options)
         if not result.is_success():
             print("Trajectory optimization failed.")
             return None
