@@ -27,7 +27,7 @@ from pyroboplan.visualization.meshcat_utils import visualize_frames
 if __name__ == "__main__":
     # Create models and data.
     model, collision_model, visual_model = load_models()
-    add_self_collisions(model, collision_model)
+    # add_self_collisions(model, collision_model)
     add_object_collisions(model, collision_model, visual_model)
     data = model.createData()
 
@@ -74,6 +74,14 @@ if __name__ == "__main__":
             check_collisions=True,
             min_collision_dist=0.01,
             collision_influence_dist=0.05,
+            collision_link_list=[
+                "panda_link3",
+                "panda_link4",
+                "panda_link6",
+                "panda_hand",
+                "panda_leftfinger",
+                "panda_rightfinger",
+            ],
         )
         print("Optimizing the path...")
         optimizer = CubicTrajectoryOptimization(model, collision_model, options)

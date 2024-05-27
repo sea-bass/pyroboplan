@@ -1,5 +1,6 @@
 """ Utilities for trajectory optimization based planning. """
 
+from functools import partial
 import numpy as np
 import warnings
 
@@ -25,6 +26,7 @@ class CubicTrajectoryOptimizationOptions:
         min_jerk=-np.inf,
         max_jerk=np.inf,
         check_collisions=False,
+        collision_link_list=[],
         min_collision_dist=0.0,
         collision_influence_dist=0.05,
     ):
@@ -59,8 +61,10 @@ class CubicTrajectoryOptimizationOptions:
             max_jerk : float or array-like
                 The maximum jerk along the trajectory.
                 If scalar, applies to all degrees of freedom; otherwise allows for different limits per degree of freedom.
-            check_collisions: bool
+            check_collisions : bool
                 If true, adds collision constraints to trajectory optimization.
+            collision_link_list : list[str]
+                A list of collision objects over which to check minimum distance constraints.
             min_collision_dist : float
                 The minimum allowable collision distance, in meters.
             collision_influence_dist : float
@@ -84,6 +88,7 @@ class CubicTrajectoryOptimizationOptions:
         self.min_jerk = min_jerk
         self.max_jerk = max_jerk
         self.check_collisions = check_collisions
+        self.collision_link_list = collision_link_list
         self.min_collision_dist = min_collision_dist
         self.collision_influence_dist = collision_influence_dist
 
@@ -300,7 +305,9 @@ class CubicTrajectoryOptimization:
 
         return pairs
 
-    def _collision_constraint(self, q_val, influence_dist, collision_pairs):
+    def _collision_constraint(
+        self, q_val, num_waypoints, num_dofs, influence_dist, collision_pairs
+    ):
         """
         Helper function to evaluate collision constraint and its gradients.
 
@@ -309,103 +316,113 @@ class CubicTrajectoryOptimization:
           * https://laas.hal.science/hal-04425002
         """
         if q_val.dtype != float:
-            q = ExtractValue(q_val)
 
-            # Compute collision and distance checks
-            pinocchio.framesForwardKinematics(self.model, self.data, q)
-            pinocchio.computeCollisions(
-                self.model,
-                self.data,
-                self.collision_model,
-                self.collision_data,
-                q,
-                False,
-            )
-            pinocchio.computeDistances(
-                self.model, self.data, self.collision_model, self.collision_data, q
-            )
-
+            q_all = ExtractValue(q_val)
             autodiffs = []
-            for pairs in collision_pairs:
-                # Get the minimum distance in the allowable range
-                min_distance_idx = -1
-                min_distance = influence_dist
-                gradient = np.zeros_like(q)
+            for widx in range(
+                num_waypoints
+            ):  # TODO Should pass in num waypoints and num_dofs
+                q = q_all[widx * num_dofs : (widx + 1) * num_dofs]
 
-                for p in pairs:
-                    cp = self.collision_model.collisionPairs[p]
-                    cr = self.collision_data.collisionResults[p]
-                    dr = self.collision_data.distanceResults[p]
-
-                    dist = dr.min_distance
-
-                    if dist <= influence_dist and dist < min_distance:
-                        min_distance_idx = p
-                        min_distance = dist
-
-                # Find the collision Jacobian for the closest point pair.
-                if min_distance_idx >= 0:
-                    cr = self.collision_data.collisionResults[min_distance_idx]
-                    dr = self.collision_data.distanceResults[min_distance_idx]
-                    cp = self.collision_model.collisionPairs[min_distance_idx]
-
-                    if cr.isCollision():
-                        # According to the HPP-FCL documentation, the normal always points from object1 to object2.
-                        contact = cr.getContact(0)
-                        coll_points = [
-                            contact.pos,
-                            contact.pos + contact.normal * contact.penetration_depth,
-                        ]
-                    else:
-                        coll_points = [dr.getNearestPoint1(), dr.getNearestPoint2()]
-                    distance_vec = coll_points[1] - coll_points[0]
-
-                    parent_frame1 = self.collision_model.geometryObjects[
-                        cp.first
-                    ].parentFrame
-                    parent_frame2 = self.collision_model.geometryObjects[
-                        cp.second
-                    ].parentFrame
-                    if parent_frame1 >= self.model.nframes:
-                        parent_frame1 = 0
-                    Jframe1 = pinocchio.computeFrameJacobian(
-                        self.model,
-                        self.data,
-                        q,
-                        parent_frame1,
-                        pinocchio.ReferenceFrame.LOCAL_WORLD_ALIGNED,
-                    )
-                    t_frame1_to_point1 = pinocchio.SE3(
-                        np.eye(3),
-                        coll_points[0] - self.data.oMf[parent_frame1].translation,
-                    )
-                    Jcoll1 = t_frame1_to_point1.toActionMatrix()[3:, :] @ Jframe1
-
-                    if parent_frame2 >= self.model.nframes:
-                        parent_frame2 = 0
-                    Jframe2 = pinocchio.computeFrameJacobian(
-                        self.model,
-                        self.data,
-                        q,
-                        parent_frame2,
-                        pinocchio.ReferenceFrame.LOCAL_WORLD_ALIGNED,
-                    )
-                    t_frame2_to_point2 = pinocchio.SE3(
-                        np.eye(3),
-                        coll_points[1] - self.data.oMf[parent_frame2].translation,
-                    )
-                    Jcoll2 = t_frame2_to_point2.toActionMatrix()[3:, :] @ Jframe2
-
-                    # Calculate the gradients.
-                    distance_vec = distance_vec / np.linalg.norm(distance_vec)
-                    gradient = np.sign(dist) * distance_vec @ (Jcoll2 - Jcoll1)
-
-                autodiffs.append(
-                    AutoDiffXd(
-                        min_distance,
-                        gradient,
-                    )
+                # Compute collision and distance checks
+                pinocchio.framesForwardKinematics(self.model, self.data, q)
+                pinocchio.computeCollisions(
+                    self.model,
+                    self.data,
+                    self.collision_model,
+                    self.collision_data,
+                    q,
+                    False,
                 )
+                pinocchio.computeDistances(
+                    self.model, self.data, self.collision_model, self.collision_data, q
+                )
+
+                for pairs in collision_pairs:
+                    # Get the minimum distance in the allowable range
+                    min_distance_idx = -1
+                    min_distance = influence_dist
+                    gradient = np.zeros_like(q_all)
+
+                    for p in pairs:
+                        cp = self.collision_model.collisionPairs[p]
+                        cr = self.collision_data.collisionResults[p]
+                        dr = self.collision_data.distanceResults[p]
+
+                        dist = dr.min_distance
+
+                        if dist <= influence_dist and dist < min_distance:
+                            min_distance_idx = p
+                            min_distance = dist
+
+                    # Find the collision Jacobian for the closest point pair.
+                    if min_distance_idx >= 0:
+                        cr = self.collision_data.collisionResults[min_distance_idx]
+                        dr = self.collision_data.distanceResults[min_distance_idx]
+                        cp = self.collision_model.collisionPairs[min_distance_idx]
+
+                        if cr.isCollision():
+                            # According to the HPP-FCL documentation, the normal always points from object1 to object2.
+                            contact = cr.getContact(0)
+                            coll_points = [
+                                contact.pos,
+                                contact.pos
+                                - contact.normal * contact.penetration_depth,
+                            ]
+                        else:
+                            coll_points = [dr.getNearestPoint1(), dr.getNearestPoint2()]
+                        distance_vec = coll_points[1] - coll_points[0]
+
+                        parent_frame1 = self.collision_model.geometryObjects[
+                            cp.first
+                        ].parentFrame
+                        parent_frame2 = self.collision_model.geometryObjects[
+                            cp.second
+                        ].parentFrame
+                        if parent_frame1 >= self.model.nframes:
+                            parent_frame1 = 0
+                        Jframe1 = pinocchio.computeFrameJacobian(
+                            self.model,
+                            self.data,
+                            q,
+                            parent_frame1,
+                            pinocchio.ReferenceFrame.LOCAL_WORLD_ALIGNED,
+                        )
+                        t_frame1_to_point1 = pinocchio.SE3(
+                            np.eye(3),
+                            coll_points[0] - self.data.oMf[parent_frame1].translation,
+                        )
+                        Jcoll1 = t_frame1_to_point1.toActionMatrix()[3:, :] @ Jframe1
+
+                        if parent_frame2 >= self.model.nframes:
+                            parent_frame2 = 0
+                        Jframe2 = pinocchio.computeFrameJacobian(
+                            self.model,
+                            self.data,
+                            q,
+                            parent_frame2,
+                            pinocchio.ReferenceFrame.LOCAL_WORLD_ALIGNED,
+                        )
+                        t_frame2_to_point2 = pinocchio.SE3(
+                            np.eye(3),
+                            coll_points[1] - self.data.oMf[parent_frame2].translation,
+                        )
+                        Jcoll2 = t_frame2_to_point2.toActionMatrix()[3:, :] @ Jframe2
+
+                        # Calculate the gradients.
+                        distance_vec = distance_vec / np.linalg.norm(distance_vec)
+                        grad = np.sign(dist) * distance_vec @ (Jcoll2 - Jcoll1)
+
+                        gradient[widx * num_dofs : (widx + 1) * num_dofs] = grad[
+                            :, np.newaxis
+                        ]
+
+                    autodiffs.append(
+                        AutoDiffXd(
+                            min_distance,
+                            gradient,
+                        )
+                    )
 
             return np.array(autodiffs)
         else:
@@ -477,36 +494,38 @@ class CubicTrajectoryOptimization:
         prog.AddBoundingBoxConstraint(0.0, 0.0, x_d[num_waypoints - 1, :])
 
         # Collision checking at the waypoints and collocation points.
-        min_dist = self.options.min_collision_dist
-        from functools import partial
+        link_list = self.options.collision_link_list
+        num_collision_links = len(link_list)
+        if self.options.check_collisions and num_collision_links > 0:
+            min_dist = self.options.min_collision_dist
+            all_pairs = []
+            for link in link_list:
+                all_pairs.append(self.get_collision_pairs_involving([link]))
 
-        link_list = [
-            "panda_hand",
-            "panda_link1",
-            "panda_link2",
-            "panda_link3",
-            "panda_link4",
-            "panda_link5",
-            "panda_link6",
-            "panda_link7",
-            "panda_leftfinger",
-            "panda_rightfinger",
-        ]
-        min_dist_val = [min_dist for _ in link_list]
-        max_dist_val = [np.inf for _ in link_list]
-        all_pairs = []
-        for link in link_list:
-            all_pairs.append(self.get_collision_pairs_involving([link]))
-        collision_expr = partial(
-            self._collision_constraint,
-            influence_dist=self.options.collision_influence_dist,
-            collision_pairs=all_pairs,
-        )
-        if self.options.check_collisions:
-            for k in range(1, num_waypoints - 1):
-                prog.AddConstraint(collision_expr, min_dist_val, max_dist_val, x[k, :])
-            for k in range(num_waypoints - 1):
-                prog.AddConstraint(collision_expr, min_dist_val, max_dist_val, xc[k, :])
+            min_dist_val = min_dist * np.ones(num_waypoints * len(link_list))
+            max_dist_val = np.inf * np.ones(num_waypoints * len(link_list))
+
+            collision_expr = partial(
+                self._collision_constraint,
+                num_waypoints=num_waypoints,
+                num_dofs=num_dofs,
+                influence_dist=self.options.collision_influence_dist,
+                collision_pairs=all_pairs,
+            )
+            prog.AddConstraint(collision_expr, min_dist_val, max_dist_val, x.flatten())
+
+            min_dist_val_coll = min_dist * np.ones((num_waypoints - 1) * len(link_list))
+            max_dist_val_coll = np.inf * np.ones((num_waypoints - 1) * len(link_list))
+            collision_expr_coll = partial(
+                self._collision_constraint,
+                num_waypoints=num_waypoints - 1,
+                num_dofs=num_dofs,
+                influence_dist=self.options.collision_influence_dist,
+                collision_pairs=all_pairs,
+            )
+            prog.AddConstraint(
+                collision_expr_coll, min_dist_val_coll, max_dist_val_coll, xc.flatten()
+            )
 
         for n in range(num_dofs):
             # Collocation point constraints.

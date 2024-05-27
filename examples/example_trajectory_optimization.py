@@ -43,7 +43,7 @@ if __name__ == "__main__":
         # Configure trajectory optimization.
         dt = 0.025
         options = CubicTrajectoryOptimizationOptions(
-            num_waypoints=9,
+            num_waypoints=5,
             samples_per_segment=5,
             min_segment_time=0.1,
             max_segment_time=10.0,
@@ -54,6 +54,14 @@ if __name__ == "__main__":
             check_collisions=True,
             min_collision_dist=0.01,
             collision_influence_dist=0.05,
+            collision_link_list=[
+                "panda_link3",
+                "panda_link4",
+                "panda_link6",
+                "panda_hand",
+                "panda_leftfinger",
+                "panda_rightfinger",
+            ],
         )
 
         # Perform trajectory optimization.
