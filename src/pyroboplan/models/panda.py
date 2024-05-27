@@ -25,9 +25,11 @@ def load_models():
     return pinocchio.buildModelsFromUrdf(urdf_filename, package_dirs=models_folder)
 
 
-def add_self_collisions(model, collision_model):
+def add_self_collisions(model, collision_model, srdf_filename=None):
     """
     Adds link self-collisions to the Panda collision model.
+
+    This uses an SRDF file to remove any excluded collision pairs.
 
     Parameters
     ----------
@@ -35,32 +37,17 @@ def add_self_collisions(model, collision_model):
             The Panda model.
         collision_model : `pinocchio.Model`
             The Panda collision geometry model.
+        srdf_filename : str, optional
+            Path to the SRDF file describing the excluded collision pairs.
+            If not specified, uses a default file included with the Panda model.
     """
-    self_collision_pair_names = [
-        ("panda_link0", "panda_link2"),
-        ("panda_link0", "panda_link3"),
-        ("panda_link0", "panda_link4"),
-        ("panda_link0", "panda_link5"),
-        ("panda_link0", "panda_link6"),
-        ("panda_link0", "panda_link7"),
-        ("panda_link1", "panda_link3"),
-        ("panda_link1", "panda_link4"),
-        ("panda_link1", "panda_link5"),
-        ("panda_link1", "panda_link6"),
-        ("panda_link1", "panda_link7"),
-        ("panda_link2", "panda_link4"),
-        ("panda_link2", "panda_link5"),
-        ("panda_link2", "panda_link6"),
-        ("panda_link2", "panda_link7"),
-        ("panda_link3", "panda_link5"),
-        ("panda_link3", "panda_link6"),
-        ("panda_link3", "panda_link7"),
-        ("panda_link4", "panda_link6"),
-        ("panda_link4", "panda_link7"),
-        ("panda_link5", "panda_link7"),
-    ]
-    for pair in self_collision_pair_names:
-        set_collisions(model, collision_model, pair[0], pair[1], True)
+    if srdf_filename is None:
+        models_folder = get_example_models_folder()
+        package_dir = os.path.join(models_folder, "panda_description")
+        srdf_filename = os.path.join(package_dir, "srdf", "panda.srdf")
+
+    collision_model.addAllCollisionPairs()
+    pinocchio.removeCollisionPairs(model, collision_model, srdf_filename)
 
 
 def add_object_collisions(model, collision_model, visual_model, inflation_radius=0.0):
@@ -83,7 +70,7 @@ def add_object_collisions(model, collision_model, visual_model, inflation_radius
         "obstacle_ground",
         0,
         hppfcl.Box(2.0, 2.0, 0.3),
-        pinocchio.SE3(np.eye(3), np.array([0.0, 0.0, -0.152])),
+        pinocchio.SE3(np.eye(3), np.array([0.0, 0.0, -0.151])),
     )
     ground_plane.meshColor = np.array([0.5, 0.5, 0.5, 0.5])
     visual_model.addGeometryObject(ground_plane)
@@ -152,5 +139,5 @@ def add_object_collisions(model, collision_model, visual_model, inflation_radius
         for collision_name in collision_names:
             set_collisions(model, collision_model, obstacle_name, collision_name, True)
 
-    # temporary fix
-    set_collisions(model, collision_model, "panda_link0", "obstacle_ground", False)
+    # Exclude the collision between the ground and the base link
+    set_collisions(model, collision_model, "panda_link0", "ground_plane", False)

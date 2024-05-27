@@ -24,7 +24,11 @@ def main():
     )
 
     # Modify the collision model for display.
+    srdf_filename = join(
+        pinocchio_model_dir, "ur_description", "srdf", "ur5_gripper.srdf"
+    )
     collision_model.addAllCollisionPairs()
+    pinocchio.removeCollisionPairs(model, collision_model, srdf_filename)
     for cobj in collision_model.geometryObjects:
         cobj.meshColor = np.array([0.7, 0.7, 0.7, 0.2])
 
@@ -122,6 +126,9 @@ def visualize_collisions(viz, collision_model, collision_data):
                 )
         else:
             distances.extend([dr.getNearestPoint1(), dr.getNearestPoint2()])
+
+    if len(contacts) == 0:
+        print("no collisions!")
 
     viz.viewer["collision_display"].set_object(
         mg.LineSegments(

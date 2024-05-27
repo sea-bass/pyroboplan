@@ -9,6 +9,9 @@ on:
   schedule:
     - cron: '0 0 * * *'
 
+  # Allow tests to be run manually
+  workflow_dispatch:
+
 # Ensures that only one workflow runs at a time for this branch
 concurrency:
   group: ${{ github.ref }}
