@@ -328,10 +328,7 @@ class CubicTrajectoryOptimization:
                 if not ("obstacle" in name1 or "obstacle" in name2):
                     continue
 
-                if cr.isCollision():
-                    dist = cr.distance_lower_bound
-                else:
-                    dist = dr.min_distance
+                dist = dr.min_distance
 
                 if dist <= influence_dist and dist < min_distance:
                     min_distance_idx = p
@@ -348,7 +345,7 @@ class CubicTrajectoryOptimization:
                     contact = cr.getContact(0)
                     coll_points = [
                         contact.pos,
-                        contact.pos - contact.normal * contact.penetration_depth,
+                        contact.pos - contact.normal * dr.min_distance,
                     ]
                 else:
                     coll_points = [dr.getNearestPoint1(), dr.getNearestPoint2()]
@@ -393,7 +390,7 @@ class CubicTrajectoryOptimization:
                 # Calculate the gradients.
                 if np.linalg.norm(distance_vec) > 1e-12:
                     distance_vec = distance_vec / np.linalg.norm(distance_vec)
-                    gradient = np.sign(distance_vec) * distance_vec @ (Jcoll2 - Jcoll1)
+                    gradient = np.sign(dist) * distance_vec @ (Jcoll2 - Jcoll1)
 
             return np.array(
                 [
