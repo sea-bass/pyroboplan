@@ -130,11 +130,7 @@ def collision_avoidance_nullspace_component(
         collision_data.collisionResults,
         collision_data.distanceResults,
     ):
-        if cr.isCollision():
-            dist = cr.distance_lower_bound
-        else:
-            dist = dr.min_distance
-
+        dist = dr.min_distance
         if dist > dist_padding:
             continue
 
@@ -143,7 +139,7 @@ def collision_avoidance_nullspace_component(
             contact = cr.getContact(0)
             coll_points = [
                 contact.pos,
-                contact.pos - contact.normal * contact.penetration_depth,
+                contact.pos + contact.normal * contact.penetration_depth,
             ]
         else:
             coll_points = [dr.getNearestPoint1(), dr.getNearestPoint2()]
@@ -176,7 +172,8 @@ def collision_avoidance_nullspace_component(
         dist_norm = np.linalg.norm(distance_vec)
         if dist_norm > 1e-12:
             distance_vec /= dist_norm
-            coll_component += np.sign(dist) * distance_vec @ (Jcoll2 - Jcoll1)
+            distance_vec *= np.clip(dist_padding - dist, 0.0, 0.1)
+            coll_component -= np.sign(dist) * distance_vec @ (Jcoll2 - Jcoll1)
 
     coll_component = gain * coll_component
 

@@ -28,7 +28,6 @@ class DifferentialIkOptions:
         damping=1e-3,
         min_step_size=0.1,
         max_step_size=0.5,
-        max_delta_q=0.2,
         ignore_joint_indices=[],
     ):
         """
@@ -54,8 +53,6 @@ class DifferentialIkOptions:
             max_step_size : float
                 Maximum gradient step size, between 0 and 1, based on ratio of current distance to target to initial distance to target.
                 To use a fixed step size, set both minimum and maximum values to be equal.
-            max_delta_q : float
-                Maximum allowable joint position change in a single iteration.
             ignore_joint_indices : list[int], optional
                 A list of joints to ignore changing when solving IK.
                 TODO: This should eventually be done through a concept of joint groups.
@@ -67,7 +64,6 @@ class DifferentialIkOptions:
         self.damping = damping
         self.min_step_size = min_step_size
         self.max_step_size = max_step_size
-        self.max_delta_q = max_delta_q
         self.ignore_joint_indices = ignore_joint_indices
 
 
@@ -252,11 +248,6 @@ class DifferentialIk:
                 # Zero out the values for the ignored indices before returning.
                 for idx in self.options.ignore_joint_indices:
                     q_step[idx] = 0.0
-
-                # Bound the maximum change in joint configuration.
-                q_step = np.clip(
-                    q_step, -self.options.max_delta_q, self.options.max_delta_q
-                )
 
                 q_cur += q_step
                 n_iters += 1

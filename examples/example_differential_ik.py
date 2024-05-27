@@ -50,7 +50,6 @@ if __name__ == "__main__":
         damping=0.0001,
         min_step_size=0.025,
         max_step_size=0.1,
-        max_delta_q=0.25,
         ignore_joint_indices=ignore_joint_indices,
     )
     ik = DifferentialIk(
