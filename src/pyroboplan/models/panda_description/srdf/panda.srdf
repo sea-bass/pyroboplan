@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<robot name="panda">
+    <group name="arm">
+        <joint name="panda_joint1"/>
+        <joint name="panda_joint2"/>
+        <joint name="panda_joint3"/>
+        <joint name="panda_joint4"/>
+        <joint name="panda_joint5"/>
+        <joint name="panda_joint6"/>
+        <joint name="panda_joint7"/>
+    </group>
+
+    <group name="hand">
+        <joint name="panda_finger_joint1"/>
+    </group>
+
+    <group name="arm_and_hand">
+        <group name="arm"/>
+        <group name="hand"/>
+    </group>
+
+    <group_state name="default" group="arm_and_hand">
+        <joint name="panda_finger_joint1" value="0.001"/>
+        <joint name="panda_joint1" value="0"/>
+        <joint name="panda_joint2" value="-0.785398"/>
+        <joint name="panda_joint3" value="0"/>
+        <joint name="panda_joint4" value="-2.35619"/>
+        <joint name="panda_joint5" value="0"/>
+        <joint name="panda_joint6" value="1.5707"/>
+        <joint name="panda_joint7" value="0.785398"/>
+    </group_state>
+
+    <end_effector name="end_effector" parent_link="panda_hand_tcp" group="arm"/>
+
+    <disable_collisions link1="panda_hand" link2="panda_leftfinger" reason="Adjacent"/>
+    <disable_collisions link1="panda_hand" link2="panda_link3" reason="Never"/>
+    <disable_collisions link1="panda_hand" link2="panda_link4" reason="Never"/>
+    <disable_collisions link1="panda_hand" link2="panda_link5" reason="Default"/>
+    <disable_collisions link1="panda_hand" link2="panda_link6" reason="Never"/>
+    <disable_collisions link1="panda_hand" link2="panda_link7" reason="Adjacent"/>
+    <disable_collisions link1="panda_hand" link2="panda_rightfinger" reason="Adjacent"/>
+    <disable_collisions link1="panda_leftfinger" link2="panda_link3" reason="Never"/>
+    <disable_collisions link1="panda_leftfinger" link2="panda_link4" reason="Never"/>
+    <disable_collisions link1="panda_leftfinger" link2="panda_link6" reason="Never"/>
+    <disable_collisions link1="panda_leftfinger" link2="panda_link7" reason="Never"/>
+    <disable_collisions link1="panda_leftfinger" link2="panda_rightfinger" reason="Default"/>
+    <disable_collisions link1="panda_link0" link2="panda_link1" reason="Adjacent"/>
+    <disable_collisions link1="panda_link0" link2="panda_link2" reason="Never"/>
+    <disable_collisions link1="panda_link0" link2="panda_link3" reason="Never"/>
+    <disable_collisions link1="panda_link0" link2="panda_link4" reason="Never"/>
+    <disable_collisions link1="panda_link1" link2="panda_link2" reason="Adjacent"/>
+    <disable_collisions link1="panda_link1" link2="panda_link3" reason="Never"/>
+    <disable_collisions link1="panda_link1" link2="panda_link4" reason="Never"/>
+    <disable_collisions link1="panda_link2" link2="panda_link3" reason="Adjacent"/>
+    <disable_collisions link1="panda_link2" link2="panda_link4" reason="Never"/>
+    <disable_collisions link1="panda_link3" link2="panda_link4" reason="Adjacent"/>
+    <disable_collisions link1="panda_link3" link2="panda_link5" reason="Never"/>
+    <disable_collisions link1="panda_link3" link2="panda_link6" reason="Never"/>
+    <disable_collisions link1="panda_link3" link2="panda_link7" reason="Never"/>
+    <disable_collisions link1="panda_link3" link2="panda_rightfinger" reason="Never"/>
+    <disable_collisions link1="panda_link4" link2="panda_link5" reason="Adjacent"/>
+    <disable_collisions link1="panda_link4" link2="panda_link6" reason="Never"/>
+    <disable_collisions link1="panda_link4" link2="panda_link7" reason="Never"/>
+    <disable_collisions link1="panda_link4" link2="panda_rightfinger" reason="Never"/>
+    <disable_collisions link1="panda_link5" link2="panda_link6" reason="Adjacent"/>
+    <disable_collisions link1="panda_link5" link2="panda_link7" reason="Default"/>
+    <disable_collisions link1="panda_link6" link2="panda_link7" reason="Adjacent"/>
+    <disable_collisions link1="panda_link6" link2="panda_rightfinger" reason="Never"/>
+    <disable_collisions link1="panda_link7" link2="panda_rightfinger" reason="Never"/>
+</robot>
