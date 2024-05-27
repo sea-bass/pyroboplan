@@ -3,6 +3,8 @@
 import numpy as np
 import pinocchio
 
+from pyroboplan.core.utils import calculate_collision_vector_and_jacobians
+
 
 def zero_nullspace_component(model, q):
     """
@@ -125,48 +127,14 @@ def collision_avoidance_nullspace_component(
 
     # For each collision pair within a distance threshold, calculate its collision Jacobians
     # and use them to push the corresponding joint values away from collision.
-    for cp, cr, dr in zip(
-        collision_model.collisionPairs,
-        collision_data.collisionResults,
-        collision_data.distanceResults,
-    ):
-        dist = dr.min_distance
+    for idx in range(len(collision_model.collisionPairs)):
+        dist = collision_data.distanceResults[idx].min_distance
         if dist > dist_padding:
             continue
 
-        if cr.isCollision():
-            # According to the HPP-FCL documentation, the normal always points from object1 to object2.
-            contact = cr.getContact(0)
-            coll_points = [
-                contact.pos,
-                contact.pos - contact.normal * contact.penetration_depth,
-            ]
-        else:
-            coll_points = [dr.getNearestPoint1(), dr.getNearestPoint2()]
-        distance_vec = coll_points[1] - coll_points[0]
-
-        # Calculate the Jacobians at the parent frames of both collision points.
-        parent_frame1 = collision_model.geometryObjects[cp.first].parentFrame
-        parent_frame2 = collision_model.geometryObjects[cp.second].parentFrame
-        if parent_frame1 >= model.nframes:
-            parent_frame1 = 0
-        Jframe1 = pinocchio.computeFrameJacobian(
-            model, data, q, parent_frame1, pinocchio.ReferenceFrame.LOCAL_WORLD_ALIGNED
+        distance_vec, Jcoll1, Jcoll2 = calculate_collision_vector_and_jacobians(
+            model, collision_model, data, collision_data, idx, q
         )
-        t_frame1_to_point1 = pinocchio.SE3(
-            np.eye(3), coll_points[0] - data.oMf[parent_frame1].translation
-        )
-        Jcoll1 = t_frame1_to_point1.toActionMatrix()[3:, :] @ Jframe1
-
-        if parent_frame2 >= model.nframes:
-            parent_frame2 = 0
-        Jframe2 = pinocchio.computeFrameJacobian(
-            model, data, q, parent_frame2, pinocchio.ReferenceFrame.LOCAL_WORLD_ALIGNED
-        )
-        t_frame2_to_point2 = pinocchio.SE3(
-            np.eye(3), coll_points[1] - data.oMf[parent_frame2].translation
-        )
-        Jcoll2 = t_frame2_to_point2.toActionMatrix()[3:, :] @ Jframe2
 
         # Normalize the distance vector and add this collision pair to the nullspace component.
         dist_norm = np.linalg.norm(distance_vec)
