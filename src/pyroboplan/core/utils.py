@@ -345,6 +345,39 @@ def get_collision_geometry_ids(model, collision_model, body):
     return body_collision_geom_ids
 
 
+def get_collision_pair_indices_from_bodies(model, collision_model, body_list):
+    """
+    Returns a list of all the collision pair indices involving a list of objects.
+
+    Parameters
+    ----------
+        model : `pinocchio.Model`
+            The model to use for getting frame IDs.
+        collision_model : `pinocchio.Model`
+            The model to use for collision checking.
+        body_list : list[str]
+            A list containing the names of bodies.
+            These can be directly the name of a geometry in the collision model,
+            or they can be the name of the frame in the main model.
+
+    Return
+    ------
+        list[int]
+            The indices of the collision pairs list involving the bodies in the specified list.
+    """
+    collision_ids = set()
+    for obj in body_list:
+        ids = get_collision_geometry_ids(model, collision_model, obj)
+        collision_ids.update(ids)
+
+    pairs = []
+    for idx, p in enumerate(collision_model.collisionPairs):
+        if p.first in collision_ids or p.second in collision_ids:
+            pairs.append(idx)
+
+    return pairs
+
+
 def set_collisions(model, collision_model, body1, body2, enable):
     """
     Sets collision checking between two bodies by searching for their corresponding geometry objects in the collision model.

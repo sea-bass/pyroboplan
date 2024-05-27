@@ -8,7 +8,10 @@ import pinocchio
 from pydrake.autodiffutils import AutoDiffXd, ExtractValue
 from pydrake.solvers import MathematicalProgram, Solve, SolverOptions, SnoptSolver
 
-from pyroboplan.core.utils import calculate_collision_vector_and_jacobians
+from pyroboplan.core.utils import (
+    calculate_collision_vector_and_jacobians,
+    get_collision_pair_indices_from_bodies,
+)
 from pyroboplan.trajectory.polynomial import CubicPolynomialTrajectory
 
 
@@ -292,21 +295,6 @@ class CubicTrajectoryOptimization:
         """
         return 8.0 * (x_d[k, n] - 2.0 * xc_d[k, n] + x_d[k + 1, n]) / h[k] ** 2
 
-    def get_collision_pairs_involving(self, obj_list):
-        pairs = []
-        collision_ids = set()
-
-        from pyroboplan.core.utils import get_collision_geometry_ids
-
-        for obj in obj_list:
-            ids = get_collision_geometry_ids(self.model, self.collision_model, obj)
-            collision_ids.update(ids)
-        for idx, p in enumerate(self.collision_model.collisionPairs):
-            if p.first in collision_ids or p.second in collision_ids:
-                pairs.append(idx)
-
-        return pairs
-
     def _collision_constraint(
         self, q_val, num_waypoints, num_dofs, influence_dist, collision_pairs
     ):
@@ -321,10 +309,10 @@ class CubicTrajectoryOptimization:
 
             q_all = ExtractValue(q_val)
             autodiffs = []
-            for widx in range(
-                num_waypoints
-            ):  # TODO Should pass in num waypoints and num_dofs
-                q = q_all[widx * num_dofs : (widx + 1) * num_dofs]
+            for wp_idx in range(num_waypoints):
+                start_idx = wp_idx * num_dofs
+                end_idx = start_idx + num_dofs
+                q = q_all[start_idx:end_idx]
 
                 # Compute collision and distance checks
                 pinocchio.framesForwardKinematics(self.model, self.data, q)
@@ -365,12 +353,20 @@ class CubicTrajectoryOptimization:
                             )
                         )
                         distance_vec = distance_vec / np.linalg.norm(distance_vec)
-
                         grad = np.sign(dist) * distance_vec @ (Jcoll2 - Jcoll1)
+                        gradient[start_idx:end_idx] = grad[:, np.newaxis]
 
-                        gradient[widx * num_dofs : (widx + 1) * num_dofs] = grad[
-                            :, np.newaxis
-                        ]
+                        cp = self.collision_model.collisionPairs[min_distance_idx]
+                        o1 = self.collision_model.geometryObjects[cp.first].name
+                        o2 = self.collision_model.geometryObjects[cp.second].name
+                        if min_distance < 0:
+                            print(
+                                f"[COLLISION] Min distance: {min_distance} between {o1} and {o2}"
+                            )
+                        else:
+                            print(
+                                f"[FREE] Min distance: {min_distance} between {o1} and {o2}"
+                            )
 
                     autodiffs.append(
                         AutoDiffXd(
@@ -455,7 +451,11 @@ class CubicTrajectoryOptimization:
             min_dist = self.options.min_collision_dist
             all_pairs = []
             for link in link_list:
-                all_pairs.append(self.get_collision_pairs_involving([link]))
+                all_pairs.append(
+                    get_collision_pair_indices_from_bodies(
+                        self.model, self.collision_model, [link]
+                    )
+                )
 
             min_dist_val = min_dist * np.ones(num_waypoints * len(link_list))
             max_dist_val = np.inf * np.ones(num_waypoints * len(link_list))
