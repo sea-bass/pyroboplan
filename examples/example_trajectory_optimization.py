@@ -43,8 +43,8 @@ if __name__ == "__main__":
         # Configure trajectory optimization.
         dt = 0.025
         options = CubicTrajectoryOptimizationOptions(
-            num_waypoints=5,
-            samples_per_segment=11,
+            num_waypoints=9,
+            samples_per_segment=5,
             min_segment_time=0.1,
             max_segment_time=10.0,
             min_vel=-1.5,
@@ -52,7 +52,7 @@ if __name__ == "__main__":
             min_accel=-0.75,
             max_accel=0.75,
             check_collisions=True,
-            min_collision_dist=0.02,
+            min_collision_dist=0.01,
             collision_influence_dist=0.05,
         )
 
@@ -70,7 +70,7 @@ if __name__ == "__main__":
             q_path = [q_start, get_random_collision_free_state(model, collision_model)]
 
         planner = CubicTrajectoryOptimization(model, collision_model, options)
-        print("Optimizing trajectory...")
+        print("\nOptimizing trajectory...")
         traj = planner.plan(q_path)
 
         if traj is not None:

@@ -83,7 +83,7 @@ def add_object_collisions(model, collision_model, visual_model, inflation_radius
         "obstacle_ground",
         0,
         hppfcl.Box(2.0, 2.0, 0.3),
-        pinocchio.SE3(np.eye(3), np.array([0.0, 0.0, -0.151])),
+        pinocchio.SE3(np.eye(3), np.array([0.0, 0.0, -0.152])),
     )
     ground_plane.meshColor = np.array([0.5, 0.5, 0.5, 0.5])
     visual_model.addGeometryObject(ground_plane)
@@ -151,3 +151,6 @@ def add_object_collisions(model, collision_model, visual_model, inflation_radius
     for obstacle_name in obstacle_names:
         for collision_name in collision_names:
             set_collisions(model, collision_model, obstacle_name, collision_name, True)
+
+    # temporary fix
+    set_collisions(model, collision_model, "panda_link0", "obstacle_ground", False)
