@@ -38,8 +38,6 @@ These include **forward kinematics** (computing transforms from joint positions)
 
 You can also use the collision model to perform collision checking at specific states.
 This uses the `HPP-FCL <https://github.com/humanoid-path-planner/hpp-fcl>`_ library internally, as well as a list of the active collision pairs in the model.
-While the example below activates all collision pairs, this is not always useful since there may be bodies that can never collide, or bodies that always collide because of how the geometric primitives or meshes are placed in the model.
-Some tools like the `MoveIt Setup Assistant <https://moveit.picknik.ai/main/doc/examples/setup_assistant/setup_assistant_tutorial.html>`_ generate "good" lists of collision pairs automatically by sampling over the set of valid robot states and checking collisions.
 
 .. code-block:: python
 
@@ -49,6 +47,18 @@ Some tools like the `MoveIt Setup Assistant <https://moveit.picknik.ai/main/doc/
     results = pinocchio.computeCollisions(
         model, data, collision_model, collision_data, q, False,
     )
+
+While the example above activates all collision pairs, this is not always useful since there may be bodies that can never collide, or bodies that always collide because of how the geometric primitives or meshes are placed in the model.
+These excluded collisions are kept in a `Semantic Robot Description Format (SRDF) <https://moveit.picknik.ai/main/doc/examples/urdf_srdf/urdf_srdf_tutorial.html#srdf>`_ file.
+Some tools like the `MoveIt Setup Assistant <https://moveit.picknik.ai/main/doc/examples/setup_assistant/setup_assistant_tutorial.html>`_ can generate "good" lists of collision pairs automatically by sampling over the set of valid robot states and checking collisions.
+
+In Pinocchio, you can exclude collision pairs using an SRDF file as follows:
+
+.. code-block:: python
+
+    srdf_filename = "/path/to/your.srdf"
+    collision_model.addAllCollisionPairs()
+    pinocchio.removeCollisionPairs(model, collision_model, srdf_filename)
 
 The :examples:`Introduction to Pinocchio examples folder <intro_pinocchio>` includes code examples for robot models that are manually created and automatically imported from URDF.
 
