@@ -54,7 +54,6 @@ if __name__ == "__main__":
 
         # Search for a path
         options = RRTPlannerOptions(
-            max_planning_time=15.0,
             max_step_size=0.05,
             max_connection_dist=0.25,
             rrt_connect=False,
@@ -83,6 +82,7 @@ if __name__ == "__main__":
         # Perform trajectory optimization.
         dt = 0.025
         options = CubicTrajectoryOptimizationOptions(
+            max_planning_time=15.0,
             num_waypoints=len(q_path),
             samples_per_segment=11,
             min_segment_time=0.1,
@@ -93,7 +93,7 @@ if __name__ == "__main__":
             max_accel=0.75,
             check_collisions=True,
             min_collision_dist=distance_padding,
-            collision_influence_dist=0.02,
+            collision_influence_dist=0.025,
             collision_link_list=[
                 "obstacle_box_1",
                 "obstacle_box_2",

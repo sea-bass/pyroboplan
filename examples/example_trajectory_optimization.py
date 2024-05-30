@@ -53,7 +53,7 @@ if __name__ == "__main__":
         max_accel=0.75,
         check_collisions=True,
         min_collision_dist=0.005,
-        collision_influence_dist=0.02,
+        collision_influence_dist=0.1,
         collision_link_list=[
             "obstacle_box_1",
             "obstacle_box_2",
@@ -82,7 +82,7 @@ if __name__ == "__main__":
 
     planner = CubicTrajectoryOptimization(model, collision_model, options)
 
-    max_retries = 20
+    max_retries = 10
     for idx in range(max_retries):
         print(f"Optimizing trajectory, try {idx+1}/{max_retries}...")
         if idx == 0:

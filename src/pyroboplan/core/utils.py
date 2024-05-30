@@ -275,7 +275,12 @@ def get_random_transform(model, target_frame, joint_padding=0.0):
 
 
 def get_random_collision_free_transform(
-    model, collision_model, target_frame, joint_padding=0.0, max_tries=100
+    model,
+    collision_model,
+    target_frame,
+    joint_padding=0.0,
+    distance_padding=0.0,
+    max_tries=100,
 ):
     """
     Returns a random transform for a target frame that is within the model's joint limits and is collision-free.
@@ -290,6 +295,8 @@ def get_random_collision_free_transform(
             The name of the frame for which to generate a random transform.
         joint_padding : float or array-like, optional
             The padding to use around the sampled joint limits.
+        distance_padding : float, optional
+            The padding, in meters, to use for distance to nearest collision.
         max_tries : int, optional
             The maximum number of tries for sampling a collision-free state.
 
@@ -299,7 +306,11 @@ def get_random_collision_free_transform(
             A randomly generated transform for the specified target frame.
     """
     q_target = get_random_collision_free_state(
-        model, collision_model, joint_padding, max_tries
+        model,
+        collision_model,
+        joint_padding=joint_padding,
+        distance_padding=distance_padding,
+        max_tries=max_tries,
     )
     data = model.createData()
     target_frame_id = model.getFrameId(target_frame)
