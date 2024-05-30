@@ -6,7 +6,12 @@ import pinocchio
 
 
 def check_collisions_at_state(
-    model, collision_model, q, data=None, collision_data=None
+    model,
+    collision_model,
+    q,
+    data=None,
+    collision_data=None,
+    distance_padding=0.0,
 ):
     """
     Checks whether a specified joint configuration is collision-free.
@@ -14,20 +19,22 @@ def check_collisions_at_state(
     Parameters
     ----------
         model : `pinocchio.Model`
-            The model from which to generate a random state.
-        collision_model : `pinocchio.Model`
             The model to use for collision checking.
+        collision_model : `pinocchio.Model`
+            The collision model to use for collision checking.
         q : array-like
             The joint configuration of the model.
         data : `pinocchio.Data`, optional
             The model data to use for collision checking. If None, data is created automatically.
         collision_data : `pinocchio.GeometryData`, optional
             The collision_model data to use for collision checking. If None, data is created automatically.
+        distance_padding : float, optional
+            The padding, in meters, to use for distance to nearest collision.
 
     Returns
     -------
         bool
-            True is there are any collisions, otherwise False.
+            True is there are any collisions or minimum distance violations, otherwise False.
     """
     if not data:
         data = model.createData()
@@ -38,11 +45,60 @@ def check_collisions_at_state(
     pinocchio.computeCollisions(
         model, data, collision_model, collision_data, q, stop_at_first_collision
     )
-    return np.any([cr.isCollision() for cr in collision_data.collisionResults])
+    if np.any([cr.isCollision() for cr in collision_data.collisionResults]):
+        return True
+
+    if distance_padding > 0:
+        pinocchio.computeDistances(model, data, collision_model, collision_data, q)
+        if np.any(
+            [
+                dr.min_distance < distance_padding
+                for dr in collision_data.distanceResults
+            ]
+        ):
+            return True
+
+    return False
+
+
+def get_minimum_distance_at_state(
+    model, collision_model, q, data=None, collision_data=None
+):
+    """
+    Gets the minimum distance to collision at a specified state.
+
+    Parameters
+    ----------
+        model : `pinocchio.Model`
+            The model to use for collision checking.
+        collision_model : `pinocchio.Model`
+            The collision model to use for collision checking.
+        q : array-like
+            The joint configuration of the model.
+        data : `pinocchio.Data`, optional
+            The model data to use for collision checking. If None, data is created automatically.
+        collision_data : `pinocchio.GeometryData`, optional
+            The collision_model data to use for collision checking. If None, data is created automatically.
+
+    Returns
+    -------
+        float
+            The minimum distance to collision, in meters.
+    """
+    if len(collision_model.collisionPairs) == 0:
+        return np.inf
+
+    if not data:
+        data = model.createData()
+    if not collision_data:
+        collision_data = collision_model.createData()
+
+    pinocchio.computeDistances(model, data, collision_model, collision_data, q)
+    return np.min([dr.min_distance for dr in collision_data.distanceResults])
 
 
 def check_collisions_along_path(
-    model, collision_model, q_path, data=None, collision_data=None
+    model, collision_model, q_path, data=None, collision_data=None, distance_padding=0.0
 ):
     """
     Checks whether a path consisting of multiple joint configurations is collision-free.
@@ -59,11 +115,13 @@ def check_collisions_along_path(
             The model data to use for collision checking. If None, data is created automatically.
         collision_data : `pinocchio.GeometryData`, optional
             The collision_model data to use for collision checking. If None, data is created automatically.
+        distance_padding : float, optional
+            The padding, in meters, to use for distance to nearest collision.
 
     Returns
     -------
         bool
-            True is there are any collisions, otherwise False.
+            True is there are any collisions or minimum distance violations, otherwise False.
     """
     if not data:
         data = model.createData()
@@ -77,6 +135,16 @@ def check_collisions_along_path(
         )
         if np.any([cr.isCollision() for cr in collision_data.collisionResults]):
             return True
+
+        if distance_padding > 0:
+            pinocchio.computeDistances(model, data, collision_model, collision_data, q)
+            if np.any(
+                [
+                    dr.min_distance < distance_padding
+                    for dr in collision_data.distanceResults
+                ]
+            ):
+                return True
 
     return False
 
@@ -141,7 +209,9 @@ def get_random_state(model, padding=0.0):
     )
 
 
-def get_random_collision_free_state(model, collision_model, padding=0.0, max_tries=100):
+def get_random_collision_free_state(
+    model, collision_model, joint_padding=0.0, distance_padding=0.0, max_tries=100
+):
     """
     Returns a random state that is within the model's joint limits and is collision-free according to the collision model.
 
@@ -151,8 +221,10 @@ def get_random_collision_free_state(model, collision_model, padding=0.0, max_tri
             The model from which to generate a random state.
         collision_model : `pinocchio.Model`
             The model to use for collision checking.
-        padding : float or array-like, optional
+        joint_padding : float or array-like, optional
             The padding to use around the sampled joint limits.
+        distance_padding : float, optional
+            The padding, in meters, to use for distance to nearest collision.
         max_tries : int, optional
             The maximum number of tries for sampling a collision-free state.
 
@@ -163,9 +235,14 @@ def get_random_collision_free_state(model, collision_model, padding=0.0, max_tri
     """
     num_tries = 0
     while num_tries < max_tries:
-        state = get_random_state(model, padding=padding)
+        state = get_random_state(model, padding=joint_padding)
         if not check_collisions_at_state(model, collision_model, state):
-            return state
+            if (
+                distance_padding == 0.0
+                or get_minimum_distance_at_state(model, collision_model, state)
+                >= distance_padding
+            ):
+                return state
         num_tries += 1
 
     print(f"Could not generate collision-free state after {max_tries} tries.")
@@ -445,6 +522,8 @@ def calculate_collision_vector_and_jacobians(
     dr = collision_data.distanceResults[pair_idx]
 
     if cr.isCollision():
+        # import pdb
+        # pdb.set_trace()
         # According to the HPP-FCL documentation, the normal always points from object1 to object2.
         contact = cr.getContact(0)
         coll_points = [

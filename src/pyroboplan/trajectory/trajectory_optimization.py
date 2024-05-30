@@ -20,6 +20,7 @@ class CubicTrajectoryOptimizationOptions:
 
     def __init__(
         self,
+        max_planning_time=30.0,
         num_waypoints=3,
         samples_per_segment=11,
         min_segment_time=0.01,
@@ -40,6 +41,8 @@ class CubicTrajectoryOptimizationOptions:
 
         Parameters
         ----------
+            max_planning_time : float
+                The maximum planning time, in seconds.
             num_waypoints : int
                 The number of waypoints in the trajectory. Must be greater than or equal to 2.
             samples_per_segment : int
@@ -82,6 +85,7 @@ class CubicTrajectoryOptimizationOptions:
         if min_segment_time <= 0:
             raise ValueError("The minimum segment time must be positive.")
 
+        self.max_planning_time = max_planning_time
         self.num_waypoints = num_waypoints
         self.samples_per_segment = samples_per_segment
         self.min_segment_time = min_segment_time
@@ -296,7 +300,13 @@ class CubicTrajectoryOptimization:
         return 8.0 * (x_d[k, n] - 2.0 * xc_d[k, n] + x_d[k + 1, n]) / h[k] ** 2
 
     def _collision_constraint(
-        self, q_val, num_waypoints, num_dofs, influence_dist, collision_pairs
+        self,
+        q_val,
+        num_waypoints,
+        num_dofs,
+        min_allowable_dist,
+        influence_dist,
+        collision_pairs,
     ):
         """
         Helper function to evaluate collision constraint and its gradients.
@@ -335,7 +345,14 @@ class CubicTrajectoryOptimization:
                     gradient = np.zeros_like(q_all)
 
                     for p in pairs:
-                        dist = self.collision_data.distanceResults[p].min_distance
+                        if self.collision_data.collisionResults[p].isCollision():
+                            dist = (
+                                -self.collision_data.collisionResults[p]
+                                .getContacts()[0]
+                                .penetration_depth
+                            )
+                        else:
+                            dist = self.collision_data.distanceResults[p].min_distance
                         if dist <= influence_dist and dist < min_distance:
                             min_distance_idx = p
                             min_distance = dist
@@ -353,25 +370,18 @@ class CubicTrajectoryOptimization:
                             )
                         )
                         distance_vec = distance_vec / np.linalg.norm(distance_vec)
-                        grad = np.sign(dist) * distance_vec @ (Jcoll2 - Jcoll1)
+                        grad = np.sign(min_distance) * distance_vec @ (Jcoll2 - Jcoll1)
+
                         gradient[start_idx:end_idx] = grad[:, np.newaxis]
 
-                        cp = self.collision_model.collisionPairs[min_distance_idx]
-                        o1 = self.collision_model.geometryObjects[cp.first].name
-                        o2 = self.collision_model.geometryObjects[cp.second].name
-                        if min_distance < 0:
-                            print(
-                                f"[COLLISION] Min distance: {min_distance} between {o1} and {o2}"
-                            )
-                        else:
-                            print(
-                                f"[FREE] Min distance: {min_distance} between {o1} and {o2}"
-                            )
-
+                    min_distance_smoothed = (min_distance - influence_dist) / (
+                        influence_dist - min_allowable_dist
+                    )
+                    gradient_smoothed = gradient / (influence_dist - min_allowable_dist)
                     autodiffs.append(
                         AutoDiffXd(
-                            min_distance,
-                            gradient,
+                            min_distance_smoothed,
+                            gradient_smoothed,
                         )
                     )
 
@@ -457,24 +467,26 @@ class CubicTrajectoryOptimization:
                     )
                 )
 
-            min_dist_val = min_dist * np.ones(num_waypoints * len(link_list))
+            min_dist_val = -1.0 * np.ones(num_waypoints * len(link_list))
             max_dist_val = np.inf * np.ones(num_waypoints * len(link_list))
 
             collision_expr = partial(
                 self._collision_constraint,
                 num_waypoints=num_waypoints,
                 num_dofs=num_dofs,
+                min_allowable_dist=min_dist,
                 influence_dist=self.options.collision_influence_dist,
                 collision_pairs=all_pairs,
             )
             prog.AddConstraint(collision_expr, min_dist_val, max_dist_val, x.flatten())
 
-            min_dist_val_coll = min_dist * np.ones((num_waypoints - 1) * len(link_list))
+            min_dist_val_coll = -1.0 * np.ones((num_waypoints - 1) * len(link_list))
             max_dist_val_coll = np.inf * np.ones((num_waypoints - 1) * len(link_list))
             collision_expr_coll = partial(
                 self._collision_constraint,
                 num_waypoints=num_waypoints - 1,
                 num_dofs=num_dofs,
+                min_allowable_dist=min_dist,
                 influence_dist=self.options.collision_influence_dist,
                 collision_pairs=all_pairs,
             )
@@ -564,7 +576,10 @@ class CubicTrajectoryOptimization:
 
         # Solve the program.
         solver_options = SolverOptions()
-        solver_options.SetOption(SnoptSolver.id(), "Time limit", 10.0)
+        solver_options.SetOption(
+            SnoptSolver.id(), "Time limit", self.options.max_planning_time
+        )
+        solver_options.SetOption(SnoptSolver.id(), "Timing level", 3)
         result = Solve(prog, solver_options=solver_options)
         if not result.is_success():
             print("Trajectory optimization failed.")

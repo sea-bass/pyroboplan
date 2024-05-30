@@ -35,6 +35,7 @@ class RRTPlannerOptions:
         max_planning_time=10.0,
         fast_return=True,
         goal_biasing_probability=0.0,
+        collision_distance_padding=0.0,
     ):
         """
         Initializes a set of RRT planner options.
@@ -64,6 +65,8 @@ class RRTPlannerOptions:
                 until max_planning_time is reached.
             goal_biasing_probability : float
                 Probability of sampling the goal configuration itself, which can help planning converge.
+            collision_distance_padding : float
+                The padding, in meters, to use for distance to nearest collision.
         """
         self.max_step_size = max_step_size
         self.max_connection_dist = max_connection_dist
@@ -74,6 +77,7 @@ class RRTPlannerOptions:
         self.max_planning_time = max_planning_time
         self.fast_return = fast_return
         self.goal_biasing_probability = goal_biasing_probability
+        self.collision_distance_padding = collision_distance_padding
 
 
 class RRTPlanner:
@@ -138,12 +142,22 @@ class RRTPlanner:
 
         # Check start and end pose collisions.
         if check_collisions_at_state(
-            self.model, self.collision_model, q_start, self.data, self.collision_data
+            self.model,
+            self.collision_model,
+            q_start,
+            self.data,
+            self.collision_data,
+            distance_padding=self.options.collision_distance_padding,
         ):
             print("Start configuration in collision.")
             return None
         if check_collisions_at_state(
-            self.model, self.collision_model, q_goal, self.data, self.collision_data
+            self.model,
+            self.collision_model,
+            q_goal,
+            self.data,
+            self.collision_data,
+            distance_padding=self.options.collision_distance_padding,
         ):
             print("Goal configuration in collision.")
             return None
@@ -153,7 +167,10 @@ class RRTPlanner:
             [q_start, q_goal], self.options.max_step_size
         )
         if not check_collisions_along_path(
-            self.model, self.collision_model, path_to_goal
+            self.model,
+            self.collision_model,
+            path_to_goal,
+            distance_padding=self.options.collision_distance_padding,
         ):
             print("Start and goal can be directly connected!")
             goal_found = True
@@ -202,7 +219,10 @@ class RRTPlanner:
                     self.options.max_step_size,
                 )
                 if not check_collisions_along_path(
-                    self.model, self.collision_model, path_to_other_tree
+                    self.model,
+                    self.collision_model,
+                    path_to_other_tree,
+                    distance_padding=self.options.collision_distance_padding,
                 ):
                     new_node = self.add_node_to_tree(
                         tree, nearest_node_in_other_tree.q, new_node
@@ -259,6 +279,7 @@ class RRTPlanner:
                 self.options.max_step_size,
                 self.model,
                 self.collision_model,
+                distance_padding=self.options.collision_distance_padding,
             ):
                 q_out = q_cur = q_extend
                 # If we have reached the sampled state then we are done.
@@ -343,7 +364,10 @@ class RRTPlanner:
                         [q_new, other_node.q], self.options.max_step_size
                     )
                     if not check_collisions_along_path(
-                        self.model, self.collision_model, new_path
+                        self.model,
+                        self.collision_model,
+                        new_path,
+                        distance_padding=self.options.collision_distance_padding,
                     ):
                         new_node.parent = other_node
                         new_node.cost = new_cost

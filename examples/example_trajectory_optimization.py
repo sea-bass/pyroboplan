@@ -35,57 +35,71 @@ if __name__ == "__main__":
     viz.initViewer(open=True)
     viz.loadViewerModel()
 
-    while True:
-        q_start = get_random_collision_free_state(model, collision_model)
-        viz.display(q_start)
-        time.sleep(1.0)
+    q_start = get_random_collision_free_state(model, collision_model)
+    viz.display(q_start)
+    time.sleep(1.0)
 
-        # Configure trajectory optimization.
-        dt = 0.025
-        options = CubicTrajectoryOptimizationOptions(
-            num_waypoints=5,
-            samples_per_segment=11,
-            min_segment_time=0.1,
-            max_segment_time=10.0,
-            min_vel=-1.5,
-            max_vel=1.5,
-            min_accel=-0.75,
-            max_accel=0.75,
-            check_collisions=True,
-            min_collision_dist=0.01,
-            collision_influence_dist=0.05,
-            collision_link_list=[
-                "panda_link3",
-                "panda_link4",
-                "panda_link6",
-                "panda_hand",
-                "panda_leftfinger",
-                "panda_rightfinger",
-            ],
+    # Configure trajectory optimization.
+    dt = 0.025
+    options = CubicTrajectoryOptimizationOptions(
+        max_planning_time=15.0,
+        num_waypoints=7,
+        samples_per_segment=11,
+        min_segment_time=0.1,
+        max_segment_time=10.0,
+        min_vel=-1.5,
+        max_vel=1.5,
+        min_accel=-0.75,
+        max_accel=0.75,
+        check_collisions=True,
+        min_collision_dist=0.005,
+        collision_influence_dist=0.02,
+        collision_link_list=[
+            "obstacle_box_1",
+            "obstacle_box_2",
+            "obstacle_sphere_1",
+            "obstacle_sphere_2",
+            "ground_plane",
+        ],
+    )
+
+    def random_valid_state():
+        return get_random_collision_free_state(
+            model, collision_model, distance_padding=options.min_collision_dist
         )
 
-        # Perform trajectory optimization.
-        multi_point = False
-        if multi_point:
-            # Multi point means we set all the waypoints and optimize how to move between them.
-            q_path = [q_start] + [
-                get_random_collision_free_state(model, collision_model)
-                for _ in range(options.num_waypoints - 1)
-            ]
-        else:
-            # Single point means we set just the start and goal.
-            # All other intermediate waypoints are optimized automatically.
-            q_path = [q_start, get_random_collision_free_state(model, collision_model)]
+    # Perform trajectory optimization.
+    multi_point = False
+    if multi_point:
+        # Multi point means we set all the waypoints and optimize how to move between them.
+        q_path = [q_start] + [
+            random_valid_state() for _ in range(options.num_waypoints - 1)
+        ]
+    else:
+        # Single point means we set just the start and goal.
+        # All other intermediate waypoints are optimized automatically.
+        q_path = [q_start, random_valid_state()]
 
-        planner = CubicTrajectoryOptimization(model, collision_model, options)
-        print("\nOptimizing trajectory...")
-        traj = planner.plan(q_path)
+    planner = CubicTrajectoryOptimization(model, collision_model, options)
+
+    max_retries = 20
+    for idx in range(max_retries):
+        print(f"Optimizing trajectory, try {idx+1}/{max_retries}...")
+        if idx == 0:
+            init_path = None
+        else:
+            print("Restarting with random path")
+            init_path = (
+                [q_start]
+                + [random_valid_state() for _ in range(options.num_waypoints - 2)]
+                + [q_path[-1]]
+            )
+        traj = planner.plan(q_path, init_path=init_path)
 
         if traj is not None:
             print("Trajectory optimization successful")
             traj_gen = traj.generate(dt)
             q_vec = traj_gen[1]
-
             # Display the trajectory and points along the path.
             plt.ion()
             traj.visualize(
@@ -109,3 +123,5 @@ if __name__ == "__main__":
             for idx in range(q_vec.shape[1]):
                 viz.display(q_vec[:, idx])
                 time.sleep(dt)
+
+            break

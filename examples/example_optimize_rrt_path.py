@@ -16,6 +16,7 @@ from pyroboplan.models.panda import (
     add_self_collisions,
     add_object_collisions,
 )
+from pyroboplan.planning.path_shortcutting import shortcut_path
 from pyroboplan.planning.rrt import RRTPlanner, RRTPlannerOptions
 from pyroboplan.trajectory.trajectory_optimization import (
     CubicTrajectoryOptimization,
@@ -36,29 +37,48 @@ if __name__ == "__main__":
     viz.initViewer(open=True)
     viz.loadViewerModel()
 
+    distance_padding = 0.005
+    max_rrt_tries = 3
+
+    def random_valid_state():
+        return get_random_collision_free_state(
+            model, collision_model, distance_padding=distance_padding
+        )
+
     while True:
-        q_start = get_random_collision_free_state(model, collision_model)
-        q_goal = get_random_collision_free_state(model, collision_model)
-        viz.viewer["waypoints"].delete()
+        q_start = random_valid_state()
+        q_goal = random_valid_state()
+        viz.viewer["optimized_trajectory"].delete()
         viz.display(q_start)
         time.sleep(1.0)
 
         # Search for a path
         options = RRTPlannerOptions(
+            max_planning_time=15.0,
             max_step_size=0.05,
             max_connection_dist=0.25,
             rrt_connect=False,
             bidirectional_rrt=True,
             rrt_star=True,
-            max_rewire_dist=3.0,
+            max_rewire_dist=2.0,
             max_planning_time=10.0,
             fast_return=True,
             goal_biasing_probability=0.15,
+            collision_distance_padding=distance_padding,
         )
-        print("\nPlanning a path...")
-        planner = RRTPlanner(model, collision_model, options=options)
-        q_path = planner.plan(q_start, q_goal)
-        print(f"Got a path with {len(q_path)} waypoints")
+        print("")
+        for idx in range(max_rrt_tries):
+            print(f"Planning a path, try {idx+1}/{max_rrt_tries}...")
+            planner = RRTPlanner(model, collision_model, options=options)
+            q_path = planner.plan(q_start, q_goal)
+            if len(q_path) > 0:
+                print(f"Got a path with {len(q_path)} waypoints")
+                planner.visualize(viz, "panda_hand", show_tree=True)
+                break
+
+        if len(q_path) == 0:
+            print("Failed to plan.")
+            continue
 
         # Perform trajectory optimization.
         dt = 0.025
@@ -72,15 +92,14 @@ if __name__ == "__main__":
             min_accel=-0.75,
             max_accel=0.75,
             check_collisions=True,
-            min_collision_dist=0.01,
-            collision_influence_dist=0.05,
+            min_collision_dist=distance_padding,
+            collision_influence_dist=0.02,
             collision_link_list=[
-                "panda_link3",
-                "panda_link4",
-                "panda_link6",
-                "panda_hand",
-                "panda_leftfinger",
-                "panda_rightfinger",
+                "obstacle_box_1",
+                "obstacle_box_2",
+                "obstacle_sphere_1",
+                "obstacle_sphere_2",
+                "ground_plane",
             ],
         )
         print("Optimizing the path...")
@@ -106,7 +125,9 @@ if __name__ == "__main__":
 
             tforms = extract_cartesian_poses(model, "panda_hand", q_vec.T)
             viz.display(q_start)
-            visualize_frames(viz, "waypoints", tforms, line_length=0.075, line_width=2)
+            visualize_frames(
+                viz, "optimized_trajectory", tforms, line_length=0.075, line_width=2
+            )
             time.sleep(1.0)
 
             # Animate the generated trajectory.
