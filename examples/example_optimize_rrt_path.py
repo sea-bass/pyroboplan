@@ -66,6 +66,7 @@ if __name__ == "__main__":
             max_planning_time=10.0,
             fast_return=True,
             goal_biasing_probability=0.15,
+            collision_distance_padding=distance_padding,
         )
         print("")
         for idx in range(max_rrt_tries):

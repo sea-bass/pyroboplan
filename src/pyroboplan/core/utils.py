@@ -42,23 +42,13 @@ def check_collisions_at_state(
         collision_data = collision_model.createData()
     stop_at_first_collision = True  # For faster computation
 
+    for elem in collision_data.collisionRequests:
+        elem.security_margin = distance_padding
+
     pinocchio.computeCollisions(
         model, data, collision_model, collision_data, q, stop_at_first_collision
     )
-    if np.any([cr.isCollision() for cr in collision_data.collisionResults]):
-        return True
-
-    if distance_padding > 0:
-        pinocchio.computeDistances(model, data, collision_model, collision_data, q)
-        if np.any(
-            [
-                dr.min_distance < distance_padding
-                for dr in collision_data.distanceResults
-            ]
-        ):
-            return True
-
-    return False
+    return np.any([cr.isCollision() for cr in collision_data.collisionResults])
 
 
 def get_minimum_distance_at_state(
@@ -129,22 +119,15 @@ def check_collisions_along_path(
         collision_data = collision_model.createData()
     stop_at_first_collision = True  # For faster computation
 
+    for elem in collision_data.collisionRequests:
+        elem.security_margin = distance_padding
+
     for q in q_path:
         pinocchio.computeCollisions(
             model, data, collision_model, collision_data, q, stop_at_first_collision
         )
         if np.any([cr.isCollision() for cr in collision_data.collisionResults]):
             return True
-
-        if distance_padding > 0:
-            pinocchio.computeDistances(model, data, collision_model, collision_data, q)
-            if np.any(
-                [
-                    dr.min_distance < distance_padding
-                    for dr in collision_data.distanceResults
-                ]
-            ):
-                return True
 
     return False
 
@@ -236,13 +219,10 @@ def get_random_collision_free_state(
     num_tries = 0
     while num_tries < max_tries:
         state = get_random_state(model, padding=joint_padding)
-        if not check_collisions_at_state(model, collision_model, state):
-            if (
-                distance_padding == 0.0
-                or get_minimum_distance_at_state(model, collision_model, state)
-                >= distance_padding
-            ):
-                return state
+        if not check_collisions_at_state(
+            model, collision_model, state, distance_padding=distance_padding
+        ):
+            return state
         num_tries += 1
 
     print(f"Could not generate collision-free state after {max_tries} tries.")
