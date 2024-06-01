@@ -37,7 +37,7 @@ if __name__ == "__main__":
     viz.initViewer(open=True)
     viz.loadViewerModel()
 
-    distance_padding = 0.005
+    distance_padding = 0.001
     max_rrt_tries = 3
 
     def random_valid_state():
@@ -48,6 +48,9 @@ if __name__ == "__main__":
     while True:
         q_start = random_valid_state()
         q_goal = random_valid_state()
+        viz.viewer["rrt_start"].delete()
+        viz.viewer["rrt_goal"].delete()
+        viz.viewer["planned_path"].delete()
         viz.viewer["optimized_trajectory"].delete()
         viz.display(q_start)
         time.sleep(1.0)
@@ -59,11 +62,10 @@ if __name__ == "__main__":
             rrt_connect=False,
             bidirectional_rrt=True,
             rrt_star=True,
-            max_rewire_dist=2.0,
+            max_rewire_dist=3.0,
             max_planning_time=10.0,
             fast_return=True,
             goal_biasing_probability=0.15,
-            collision_distance_padding=distance_padding,
         )
         print("")
         for idx in range(max_rrt_tries):
@@ -93,7 +95,7 @@ if __name__ == "__main__":
             max_accel=0.75,
             check_collisions=True,
             min_collision_dist=distance_padding,
-            collision_influence_dist=0.025,
+            collision_influence_dist=0.05,
             collision_link_list=[
                 "obstacle_box_1",
                 "obstacle_box_2",

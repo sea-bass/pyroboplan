@@ -533,8 +533,6 @@ def calculate_collision_vector_and_jacobians(
     dr = collision_data.distanceResults[pair_idx]
 
     if cr.isCollision():
-        # import pdb
-        # pdb.set_trace()
         # According to the HPP-FCL documentation, the normal always points from object1 to object2.
         contact = cr.getContact(0)
         coll_points = [

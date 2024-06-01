@@ -35,10 +35,6 @@ if __name__ == "__main__":
     viz.initViewer(open=True)
     viz.loadViewerModel()
 
-    q_start = get_random_collision_free_state(model, collision_model)
-    viz.display(q_start)
-    time.sleep(1.0)
-
     # Configure trajectory optimization.
     dt = 0.025
     options = CubicTrajectoryOptimizationOptions(
@@ -52,8 +48,8 @@ if __name__ == "__main__":
         min_accel=-0.75,
         max_accel=0.75,
         check_collisions=True,
-        min_collision_dist=0.005,
-        collision_influence_dist=0.1,
+        min_collision_dist=0.001,
+        collision_influence_dist=0.05,
         collision_link_list=[
             "obstacle_box_1",
             "obstacle_box_2",
@@ -68,60 +64,64 @@ if __name__ == "__main__":
             model, collision_model, distance_padding=options.min_collision_dist
         )
 
-    # Perform trajectory optimization.
-    multi_point = False
-    if multi_point:
-        # Multi point means we set all the waypoints and optimize how to move between them.
-        q_path = [q_start] + [
-            random_valid_state() for _ in range(options.num_waypoints - 1)
-        ]
-    else:
-        # Single point means we set just the start and goal.
-        # All other intermediate waypoints are optimized automatically.
-        q_path = [q_start, random_valid_state()]
+    while True:
+        print("")
+        q_start = get_random_collision_free_state(model, collision_model)
+        viz.display(q_start)
+        viz.viewer["waypoints"].delete()
+        time.sleep(1.0)
 
-    planner = CubicTrajectoryOptimization(model, collision_model, options)
-
-    max_retries = 10
-    for idx in range(max_retries):
-        print(f"Optimizing trajectory, try {idx+1}/{max_retries}...")
-        if idx == 0:
-            init_path = None
+        # Perform trajectory optimization.
+        multi_point = False
+        if multi_point:
+            # Multi point means we set all the waypoints and optimize how to move between them.
+            q_path = [q_start] + [
+                random_valid_state() for _ in range(options.num_waypoints - 1)
+            ]
         else:
-            print("Restarting with random path")
-            init_path = (
-                [q_start]
-                + [random_valid_state() for _ in range(options.num_waypoints - 2)]
-                + [q_path[-1]]
-            )
-        traj = planner.plan(q_path, init_path=init_path)
+            # Single point means we set just the start and goal.
+            # All other intermediate waypoints are optimized automatically.
+            q_path = [q_start, random_valid_state()]
 
-        if traj is not None:
-            print("Trajectory optimization successful")
-            traj_gen = traj.generate(dt)
-            q_vec = traj_gen[1]
-            # Display the trajectory and points along the path.
-            plt.ion()
-            traj.visualize(
-                dt=dt,
-                joint_names=model.names[1:],
-                show_position=True,
-                show_velocity=True,
-                show_acceleration=True,
-                show_jerk=True,
-            )
-            time.sleep(0.5)
+        planner = CubicTrajectoryOptimization(model, collision_model, options)
 
-            tforms = extract_cartesian_poses(model, "panda_hand", q_vec.T)
-            viz.display(q_start)
-            viz.viewer["waypoints"].delete()
-            visualize_frames(viz, "waypoints", tforms, line_length=0.075, line_width=2)
-            time.sleep(1.0)
+        max_retries = 5
+        for idx in range(max_retries):
+            print(f"Optimizing trajectory, try {idx+1}/{max_retries}...")
+            if idx == 0:
+                init_path = None
+            else:
+                print("Restarting with random path")
+                init_path = (
+                    [q_start]
+                    + [random_valid_state() for _ in range(options.num_waypoints - 2)]
+                    + [q_path[-1]]
+                )
+            traj = planner.plan(q_path, init_path=init_path)
 
-            # Animate the generated trajectory.
-            input("Press 'Enter' to animate the path.")
-            for idx in range(q_vec.shape[1]):
-                viz.display(q_vec[:, idx])
-                time.sleep(dt)
+            if traj is not None:
+                print("Trajectory optimization successful")
+                traj_gen = traj.generate(dt)
+                q_vec = traj_gen[1]
+                # Display the trajectory and points along the path.
+                plt.ion()
+                traj.visualize(
+                    dt=dt,
+                    joint_names=model.names[1:],
+                    show_position=True,
+                    show_velocity=True,
+                    show_acceleration=True,
+                    show_jerk=True,
+                )
+                tforms = extract_cartesian_poses(model, "panda_hand", q_vec.T)
+                visualize_frames(
+                    viz, "waypoints", tforms, line_length=0.075, line_width=2
+                )
 
-            break
+                # Animate the generated trajectory.
+                input("Press 'Enter' to animate the path.")
+                for idx in range(q_vec.shape[1]):
+                    viz.display(q_vec[:, idx])
+                    time.sleep(dt)
+
+                break
