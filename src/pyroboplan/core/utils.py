@@ -34,7 +34,7 @@ def check_collisions_at_state(
     Returns
     -------
         bool
-            True is there are any collisions or minimum distance violations, otherwise False.
+            True if there are any collisions or minimum distance violations, otherwise False.
     """
     if not data:
         data = model.createData()
@@ -111,7 +111,7 @@ def check_collisions_along_path(
     Returns
     -------
         bool
-            True is there are any collisions or minimum distance violations, otherwise False.
+            True if there are any collisions or minimum distance violations, otherwise False.
     """
     if not data:
         data = model.createData()

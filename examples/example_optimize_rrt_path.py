@@ -16,7 +16,6 @@ from pyroboplan.models.panda import (
     add_self_collisions,
     add_object_collisions,
 )
-from pyroboplan.planning.path_shortcutting import shortcut_path
 from pyroboplan.planning.rrt import RRTPlanner, RRTPlannerOptions
 from pyroboplan.trajectory.trajectory_optimization import (
     CubicTrajectoryOptimization,
@@ -96,7 +95,7 @@ if __name__ == "__main__":
             max_accel=0.75,
             check_collisions=True,
             min_collision_dist=distance_padding,
-            collision_influence_dist=0.05,
+            collision_influence_dist=0.01,
             collision_link_list=[
                 "obstacle_box_1",
                 "obstacle_box_2",

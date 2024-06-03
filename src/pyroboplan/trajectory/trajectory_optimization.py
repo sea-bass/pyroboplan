@@ -5,7 +5,7 @@ import numpy as np
 import warnings
 
 import pinocchio
-from pydrake.autodiffutils import AutoDiffXd, ExtractValue
+from pydrake.autodiffutils import InitializeAutoDiff, ExtractValue
 from pydrake.solvers import MathematicalProgram, Solve, SolverOptions, SnoptSolver
 
 from pyroboplan.core.utils import (
@@ -318,7 +318,9 @@ class CubicTrajectoryOptimization:
         if q_val.dtype != float:
 
             q_all = ExtractValue(q_val)
-            autodiffs = []
+            num_links = len(collision_pairs)
+            min_distance_smoothed = np.zeros(num_waypoints * num_links)
+            gradient = np.zeros((num_waypoints * num_links, num_waypoints * num_dofs))
             for wp_idx in range(num_waypoints):
                 start_idx = wp_idx * num_dofs
                 end_idx = start_idx + num_dofs
@@ -338,12 +340,11 @@ class CubicTrajectoryOptimization:
                     self.model, self.data, self.collision_model, self.collision_data, q
                 )
 
-                for pairs in collision_pairs:
-                    # Get the minimum distance in the allowable range
+                # Get the minimum distance in the allowable range
+                for link_idx, pairs in enumerate(collision_pairs):
                     min_distance_idx = -1
                     min_distance = influence_dist
-                    gradient = np.zeros_like(q_all)
-
+                    grad_idx = wp_idx * num_links + link_idx
                     for p in pairs:
                         if self.collision_data.collisionResults[p].isCollision():
                             dist = (
@@ -371,21 +372,14 @@ class CubicTrajectoryOptimization:
                         )
                         distance_vec = distance_vec / np.linalg.norm(distance_vec)
                         grad = np.sign(min_distance) * distance_vec @ (Jcoll2 - Jcoll1)
+                        gradient[grad_idx, start_idx:end_idx] = grad
 
-                        gradient[start_idx:end_idx] = grad[:, np.newaxis]
+                    min_distance_smoothed[grad_idx] = (
+                        min_distance - influence_dist
+                    ) / (influence_dist - min_allowable_dist)
 
-                    min_distance_smoothed = (min_distance - influence_dist) / (
-                        influence_dist - min_allowable_dist
-                    )
-                    gradient_smoothed = gradient / (influence_dist - min_allowable_dist)
-                    autodiffs.append(
-                        AutoDiffXd(
-                            min_distance_smoothed,
-                            gradient_smoothed,
-                        )
-                    )
-
-            return np.array(autodiffs)
+            gradient_smoothed = gradient / (influence_dist - min_allowable_dist)
+            return InitializeAutoDiff(min_distance_smoothed, gradient_smoothed)
         else:
             # This case should not be used by optimization, but can be used when testing without autodiff.
             pinocchio.computeDistances(
