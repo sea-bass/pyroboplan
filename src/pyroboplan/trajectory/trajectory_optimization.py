@@ -380,12 +380,6 @@ class CubicTrajectoryOptimization:
 
             gradient_smoothed = gradient / (influence_dist - min_allowable_dist)
             return InitializeAutoDiff(min_distance_smoothed, gradient_smoothed)
-        else:
-            # This case should not be used by optimization, but can be used when testing without autodiff.
-            pinocchio.computeDistances(
-                self.model, self.data, self.collision_model, self.collision_data, q_val
-            )
-            return min([dr.min_distance for dr in self.collision_data.distanceResults])
 
     def plan(self, q_path, init_path=None):
         """
@@ -448,46 +442,6 @@ class CubicTrajectoryOptimization:
         prog.AddBoundingBoxConstraint(0.0, 0.0, x_d[0, :])
         prog.AddBoundingBoxConstraint(0.0, 0.0, x_d[num_waypoints - 1, :])
 
-        # Collision checking at the waypoints and collocation points.
-        link_list = self.options.collision_link_list
-        num_collision_links = len(link_list)
-        if self.options.check_collisions and num_collision_links > 0:
-            min_dist = self.options.min_collision_dist
-            all_pairs = []
-            for link in link_list:
-                all_pairs.append(
-                    get_collision_pair_indices_from_bodies(
-                        self.model, self.collision_model, [link]
-                    )
-                )
-
-            min_dist_val = -1.0 * np.ones(num_waypoints * len(link_list))
-            max_dist_val = np.inf * np.ones(num_waypoints * len(link_list))
-
-            collision_expr = partial(
-                self._collision_constraint,
-                num_waypoints=num_waypoints,
-                num_dofs=num_dofs,
-                min_allowable_dist=min_dist,
-                influence_dist=self.options.collision_influence_dist,
-                collision_pairs=all_pairs,
-            )
-            prog.AddConstraint(collision_expr, min_dist_val, max_dist_val, x.flatten())
-
-            min_dist_val_coll = -1.0 * np.ones((num_waypoints - 1) * len(link_list))
-            max_dist_val_coll = np.inf * np.ones((num_waypoints - 1) * len(link_list))
-            collision_expr_coll = partial(
-                self._collision_constraint,
-                num_waypoints=num_waypoints - 1,
-                num_dofs=num_dofs,
-                min_allowable_dist=min_dist,
-                influence_dist=self.options.collision_influence_dist,
-                collision_pairs=all_pairs,
-            )
-            prog.AddConstraint(
-                collision_expr_coll, min_dist_val_coll, max_dist_val_coll, xc.flatten()
-            )
-
         for n in range(num_dofs):
             # Collocation point constraints.
             # Specifically, this constrains the position and velocities of the collocation points to be
@@ -546,6 +500,44 @@ class CubicTrajectoryOptimization:
             c=0.0,
             vars=h,
         )
+
+        # Collision checking at the waypoints and collocation points.
+        link_list = self.options.collision_link_list
+        num_links = len(link_list)
+        if self.options.check_collisions and num_links > 0:
+            min_dist = self.options.min_collision_dist
+            all_pairs = [
+                get_collision_pair_indices_from_bodies(
+                    self.model, self.collision_model, [link]
+                )
+                for link in link_list
+            ]
+
+            min_dist_val = -1.0 * np.ones(num_waypoints * num_links)
+            max_dist_val = np.inf * np.ones(num_waypoints * num_links)
+            collision_expr = partial(
+                self._collision_constraint,
+                num_waypoints=num_waypoints,
+                num_dofs=num_dofs,
+                min_allowable_dist=min_dist,
+                influence_dist=self.options.collision_influence_dist,
+                collision_pairs=all_pairs,
+            )
+            prog.AddConstraint(collision_expr, min_dist_val, max_dist_val, x.flatten())
+
+            min_dist_val_coll = -1.0 * np.ones((num_waypoints - 1) * num_links)
+            max_dist_val_coll = np.inf * np.ones((num_waypoints - 1) * num_links)
+            collision_expr_coll = partial(
+                self._collision_constraint,
+                num_waypoints=num_waypoints - 1,
+                num_dofs=num_dofs,
+                min_allowable_dist=min_dist,
+                influence_dist=self.options.collision_influence_dist,
+                collision_pairs=all_pairs,
+            )
+            prog.AddConstraint(
+                collision_expr_coll, min_dist_val_coll, max_dist_val_coll, xc.flatten()
+            )
 
         # Set initial conditions to help search.
         if init_path or fully_specified_path:

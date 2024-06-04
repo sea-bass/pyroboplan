@@ -95,7 +95,7 @@ if __name__ == "__main__":
             max_accel=0.75,
             check_collisions=True,
             min_collision_dist=distance_padding,
-            collision_influence_dist=0.01,
+            collision_influence_dist=0.1,
             collision_link_list=[
                 "obstacle_box_1",
                 "obstacle_box_2",
