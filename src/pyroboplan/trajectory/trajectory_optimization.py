@@ -346,14 +346,7 @@ class CubicTrajectoryOptimization:
                     min_distance = influence_dist
                     grad_idx = wp_idx * num_links + link_idx
                     for p in pairs:
-                        if self.collision_data.collisionResults[p].isCollision():
-                            dist = (
-                                -self.collision_data.collisionResults[p]
-                                .getContacts()[0]
-                                .penetration_depth
-                            )
-                        else:
-                            dist = self.collision_data.distanceResults[p].min_distance
+                        dist = self.collision_data.distanceResults[p].min_distance
                         if dist <= influence_dist and dist < min_distance:
                             min_distance_idx = p
                             min_distance = dist
@@ -555,7 +548,7 @@ class CubicTrajectoryOptimization:
             prog.SetInitialGuess(x, init_points[::2])
             prog.SetInitialGuess(xc, init_points[1::2])
 
-        h_init = 0.5 * (self.options.max_segment_time - self.options.min_segment_time)
+        h_init = 0.5 * (self.options.min_segment_time + self.options.max_segment_time)
         prog.SetInitialGuess(h, h_init * np.ones(num_waypoints - 1))
         prog.SetInitialGuess(x_d, np.zeros((num_waypoints, num_dofs)))
         prog.SetInitialGuess(xc_d, np.zeros((num_waypoints - 1, num_dofs)))
