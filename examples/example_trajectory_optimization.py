@@ -38,10 +38,10 @@ if __name__ == "__main__":
     # Configure trajectory optimization.
     dt = 0.025
     options = CubicTrajectoryOptimizationOptions(
-        max_planning_time=15.0,
+        max_planning_time=30.0,
         num_waypoints=7,
         samples_per_segment=11,
-        min_segment_time=0.1,
+        min_segment_time=0.2,
         max_segment_time=10.0,
         min_vel=-1.5,
         max_vel=1.5,

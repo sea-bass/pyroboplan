@@ -227,7 +227,7 @@ class CubicTrajectoryOptimization:
 
         Return
         ------
-            pydrake.autodiffutils.AutodiffXd
+            pydrake.autodiffutils.AutoDiffXd
                 The velocity along the specified segment evaluated at the specified step.
         """
         return (
@@ -264,7 +264,7 @@ class CubicTrajectoryOptimization:
 
         Return
         ------
-            pydrake.autodiffutils.AutodiffXd
+            pydrake.autodiffutils.AutoDiffXd
                 The acceleration along the specified segment evaluated at the specified step.
         """
         return (-3.0 * x_d[k, n] + 4.0 * xc_d[k, n] - x_d[k + 1, n]) / h[k] + 4.0 * (
@@ -294,7 +294,7 @@ class CubicTrajectoryOptimization:
 
         Return
         ------
-            pydrake.autodiffutils.AutodiffXd
+            pydrake.autodiffutils.AutoDiffXd
                 The jerk along the specified segment evaluated at the specified step.
         """
         return 8.0 * (x_d[k, n] - 2.0 * xc_d[k, n] + x_d[k + 1, n]) / h[k] ** 2
@@ -304,9 +304,9 @@ class CubicTrajectoryOptimization:
         q_val,
         num_waypoints,
         num_dofs,
+        collision_pairs,
         min_allowable_dist,
         influence_dist,
-        collision_pairs,
     ):
         """
         Helper function to evaluate collision constraint and its gradients.
@@ -314,12 +314,35 @@ class CubicTrajectoryOptimization:
         These calculations are based off the following resources:
           * https://typeset.io/pdf/a-collision-free-mpc-for-whole-body-dynamic-locomotion-and-1l6itpfk.pdf
           * https://laas.hal.science/hal-04425002
+
+        Parameters
+        ----------
+            q_val : pydrake.autodiffutils.AutoDiffXd
+                The joint configuration at each waypoint.
+            num_waypoints : int
+                The number of waypoints.
+            num_dofs : int
+                The number of degrees of freedom.
+            collision_pairs : list[list[int]]
+                A nested list containing the indices of collision model pairs for each geometry to check.
+            min_allowable_dist : float
+                The minimum allowable collision distance, in meters, for the constraint to be satisfied.
+                Positive is out of collision and negative is in collision.
+            influence_dist : float
+                The distance over which the collision distance has an effect on the constraint gradient.
+                This value should be larger than `min_allowable_dist`.
+
+        Return
+        ------
+            pydrake.autodiffutils.AutoDiffXd
+                The constraint value representing the minimum collision distance for every collision object and waypoint,
+                as well as its corresponding gradient.
         """
         if q_val.dtype != float:
 
             q_all = ExtractValue(q_val)
             num_links = len(collision_pairs)
-            min_distance_smoothed = np.zeros(num_waypoints * num_links)
+            min_distance_smoothed_squared = np.zeros(num_waypoints * num_links)
             gradient = np.zeros((num_waypoints * num_links, num_waypoints * num_dofs))
             for wp_idx in range(num_waypoints):
                 start_idx = wp_idx * num_dofs
@@ -365,14 +388,26 @@ class CubicTrajectoryOptimization:
                         )
                         distance_vec = distance_vec / np.linalg.norm(distance_vec)
                         grad = np.sign(min_distance) * distance_vec @ (Jcoll2 - Jcoll1)
-                        gradient[grad_idx, start_idx:end_idx] = grad
+                    else:
+                        grad = np.zeros(num_dofs)
 
-                    min_distance_smoothed[grad_idx] = (
-                        min_distance - influence_dist
-                    ) / (influence_dist - min_allowable_dist)
+                    # Minimum distances are smoothed using a squared hinge loss to have better gradients.
+                    min_distance_smoothed = np.clip(
+                        1.0
+                        + (min_distance - min_allowable_dist)
+                        / (min_allowable_dist - influence_dist),
+                        0.0,
+                        np.inf,
+                    )
+                    min_distance_smoothed_squared[grad_idx] = min_distance_smoothed**2
+                    gradient[grad_idx, start_idx:end_idx] = (
+                        2.0
+                        * grad
+                        * min_distance_smoothed
+                        / (min_allowable_dist - influence_dist)
+                    )
 
-            gradient_smoothed = gradient / (influence_dist - min_allowable_dist)
-            return InitializeAutoDiff(min_distance_smoothed, gradient_smoothed)
+            return InitializeAutoDiff(min_distance_smoothed_squared, gradient)
 
     def plan(self, q_path, init_path=None):
         """
@@ -495,10 +530,10 @@ class CubicTrajectoryOptimization:
         )
 
         # Collision checking at the waypoints and collocation points.
+        # TODO: This could instead be done by sampling points along the entire trajectory.
         link_list = self.options.collision_link_list
         num_links = len(link_list)
         if self.options.check_collisions and num_links > 0:
-            min_dist = self.options.min_collision_dist
             all_pairs = [
                 get_collision_pair_indices_from_bodies(
                     self.model, self.collision_model, [link]
@@ -506,27 +541,30 @@ class CubicTrajectoryOptimization:
                 for link in link_list
             ]
 
-            min_dist_val = -1.0 * np.ones(num_waypoints * num_links)
-            max_dist_val = np.inf * np.ones(num_waypoints * num_links)
+            # The minimum distance values are smoothed in the constraint such that a value of
+            # 1.0 or lower satisfies the constraint.
+
+            min_dist_val = -np.inf * np.ones(num_waypoints * num_links)
+            max_dist_val = 1.0 * np.ones(num_waypoints * num_links)
             collision_expr = partial(
                 self._collision_constraint,
                 num_waypoints=num_waypoints,
                 num_dofs=num_dofs,
-                min_allowable_dist=min_dist,
-                influence_dist=self.options.collision_influence_dist,
                 collision_pairs=all_pairs,
+                min_allowable_dist=self.options.min_collision_dist,
+                influence_dist=self.options.collision_influence_dist,
             )
             prog.AddConstraint(collision_expr, min_dist_val, max_dist_val, x.flatten())
 
-            min_dist_val_coll = -1.0 * np.ones((num_waypoints - 1) * num_links)
-            max_dist_val_coll = np.inf * np.ones((num_waypoints - 1) * num_links)
+            min_dist_val_coll = -np.inf * np.ones((num_waypoints - 1) * num_links)
+            max_dist_val_coll = 1.0 * np.ones((num_waypoints - 1) * num_links)
             collision_expr_coll = partial(
                 self._collision_constraint,
                 num_waypoints=num_waypoints - 1,
                 num_dofs=num_dofs,
-                min_allowable_dist=min_dist,
-                influence_dist=self.options.collision_influence_dist,
                 collision_pairs=all_pairs,
+                min_allowable_dist=self.options.min_collision_dist,
+                influence_dist=self.options.collision_influence_dist,
             )
             prog.AddConstraint(
                 collision_expr_coll, min_dist_val_coll, max_dist_val_coll, xc.flatten()
