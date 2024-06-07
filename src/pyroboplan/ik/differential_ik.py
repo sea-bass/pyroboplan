@@ -8,11 +8,12 @@ from ..core.utils import (
     check_collisions_at_state,
     check_within_limits,
     get_random_state,
+    get_random_collision_free_state,
 )
 from ..visualization.meshcat_utils import visualize_frame
 
 VIZ_INITIAL_RENDER_TIME = 0.5
-VIZ_SLEEP_TIME = 0.05
+VIZ_SLEEP_TIME = 0.025
 
 
 class DifferentialIkOptions:
@@ -27,6 +28,7 @@ class DifferentialIkOptions:
         damping=1e-3,
         min_step_size=0.1,
         max_step_size=0.5,
+        ignore_joint_indices=[],
     ):
         """
         Initializes a set of differential IK options.
@@ -51,6 +53,9 @@ class DifferentialIkOptions:
             max_step_size : float
                 Maximum gradient step size, between 0 and 1, based on ratio of current distance to target to initial distance to target.
                 To use a fixed step size, set both minimum and maximum values to be equal.
+            ignore_joint_indices : list[int], optional
+                A list of joints to ignore changing when solving IK.
+                TODO: This should eventually be done through a concept of joint groups.
         """
         self.max_iters = max_iters
         self.max_retries = max_retries
@@ -59,6 +64,7 @@ class DifferentialIkOptions:
         self.damping = damping
         self.min_step_size = min_step_size
         self.max_step_size = max_step_size
+        self.ignore_joint_indices = ignore_joint_indices
 
 
 class DifferentialIk:
@@ -78,6 +84,7 @@ class DifferentialIk:
         model,
         collision_model=None,
         data=None,
+        collision_data=None,
         visualizer=None,
         options=DifferentialIkOptions(),
     ):
@@ -92,6 +99,8 @@ class DifferentialIk:
                 The model to use for collision checking. If None, no collision checking takes place.
             data : `pinocchio.Data`, optional
                 The model data to use for this solver. If None, data is created automatically.
+            collision_data : `pinocchio.GeometryData`, optional
+                The collision_model data to use for this solver. If None, data is created automatically.
             visualizer : `pinocchio.visualize.meshcat_visualizer.MeshcatVisualizer`, optional
                 The visualizer to use for this solver.
             options : `DifferentialIkOptions`, optional
@@ -103,6 +112,9 @@ class DifferentialIk:
         if not data:
             data = model.createData()
         self.data = data
+        if not collision_data and self.collision_model is not None:
+            collision_data = collision_model.createData()
+        self.collision_data = collision_data
 
         self.visualizer = visualizer
         self.options = options
@@ -175,11 +187,15 @@ class DifferentialIk:
                     if check_within_limits(self.model, q_cur):
                         if self.collision_model is not None:
                             if check_collisions_at_state(
-                                self.model, self.collision_model, q_cur
+                                self.model,
+                                self.collision_model,
+                                q_cur,
+                                self.data,
+                                self.collision_data,
                             ):
                                 if verbose:
                                     print(
-                                        "Solved and within joint limits, but in collision."
+                                        "Solved within joint limits, but in collision."
                                     )
                             else:
                                 solved = True
@@ -190,7 +206,7 @@ class DifferentialIk:
                         else:
                             solved = True
                             if verbose:
-                                print("Solved and within joint limits!")
+                                print("Solved within joint limits!")
                     else:
                         if verbose:
                             print("Solved, but outside joint limits.")
@@ -219,16 +235,21 @@ class DifferentialIk:
 
                 # Gradient descent step
                 if not nullspace_components:
-                    q_cur += alpha * J.T @ np.linalg.solve(jjt, error)
+                    q_step = alpha * J.T @ np.linalg.solve(jjt, error)
                 else:
                     nullspace_term = sum(
                         [comp(self.model, q_cur) for comp in nullspace_components]
                     )
-                    q_cur += alpha * (
+                    q_step = alpha * (
                         J.T @ (np.linalg.solve(jjt, error - J @ (nullspace_term)))
                         + nullspace_term
                     )
 
+                # Zero out the values for the ignored indices before returning.
+                for idx in self.options.ignore_joint_indices:
+                    q_step[idx] = 0.0
+
+                q_cur += q_step
                 n_iters += 1
 
                 if self.visualizer:
@@ -241,7 +262,12 @@ class DifferentialIk:
                     print(f"Solved in {n_tries+1} tries.")
                 break
             else:
-                q_cur = get_random_state(self.model)
+                if self.collision_model is not None:
+                    q_cur = get_random_collision_free_state(
+                        self.model, self.collision_model
+                    )
+                else:
+                    q_cur = get_random_state(self.model)
                 n_tries += 1
                 if verbose:
                     print(f"Retry {n_tries}")

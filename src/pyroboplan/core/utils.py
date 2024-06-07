@@ -5,7 +5,9 @@ import numpy as np
 import pinocchio
 
 
-def check_collisions_at_state(model, collision_model, q):
+def check_collisions_at_state(
+    model, collision_model, q, data=None, collision_data=None
+):
     """
     Checks whether a specified joint configuration is collision-free.
 
@@ -17,14 +19,20 @@ def check_collisions_at_state(model, collision_model, q):
             The model to use for collision checking.
         q : array-like
             The joint configuration of the model.
+        data : `pinocchio.Data`, optional
+            The model data to use for collision checking. If None, data is created automatically.
+        collision_data : `pinocchio.GeometryData`, optional
+            The collision_model data to use for collision checking. If None, data is created automatically.
 
     Returns
     -------
         bool
             True is there are any collisions, otherwise False.
     """
-    data = model.createData()
-    collision_data = collision_model.createData()
+    if not data:
+        data = model.createData()
+    if not collision_data:
+        collision_data = collision_model.createData()
     stop_at_first_collision = True  # For faster computation
 
     pinocchio.computeCollisions(
@@ -33,7 +41,9 @@ def check_collisions_at_state(model, collision_model, q):
     return np.any([cr.isCollision() for cr in collision_data.collisionResults])
 
 
-def check_collisions_along_path(model, collision_model, q_path):
+def check_collisions_along_path(
+    model, collision_model, q_path, data=None, collision_data=None
+):
     """
     Checks whether a path consisting of multiple joint configurations is collision-free.
 
@@ -45,14 +55,20 @@ def check_collisions_along_path(model, collision_model, q_path):
             The model to use for collision checking.
         q_path : list[array-like]
             A list of joint configurations describing the path.
+        data : `pinocchio.Data`, optional
+            The model data to use for collision checking. If None, data is created automatically.
+        collision_data : `pinocchio.GeometryData`, optional
+            The collision_model data to use for collision checking. If None, data is created automatically.
 
     Returns
     -------
         bool
             True is there are any collisions, otherwise False.
     """
-    data = model.createData()
-    collision_data = collision_model.createData()
+    if not data:
+        data = model.createData()
+    if not collision_data:
+        collision_data = collision_model.createData()
     stop_at_first_collision = True  # For faster computation
 
     for q in q_path:
@@ -356,3 +372,79 @@ def set_collisions(model, collision_model, body1, body2, enable):
                 collision_model.addCollisionPair(pair)
             else:
                 collision_model.removeCollisionPair(pair)
+
+
+def calculate_collision_vector_and_jacobians(
+    model, collision_model, data, collision_data, pair_idx, q
+):
+    """
+    Given collision and distance results from collision model data, computes the collision vector
+    and collision Jacobians at both collision points.
+
+    This is useful for algorithms that perform collision avoidance, such as IK and trajectory optimization.
+
+    Note that forward kinematics, collision, and distance checks must be evaluated first to populate the
+    `data` and `collision_data` variables.
+
+    Parameters
+    ----------
+        model : `pinocchio.Model`
+            The model to use for Jacobian computation.
+        collision_model : `pinocchio.Model`
+            The model to use for collision checking.
+        data : `pinocchio.Data`
+            The model data to use for Jacobian computation.
+        collision_data : `pinocchio.GeometryData`
+            The collision_model data to use for collision checking.
+        pair_idx : int
+            The index of the collision pair from which to extract information.
+        q : array-like
+            The joint configuration of the model.
+
+    Return
+    ------
+        tuple(array-like, array-like, array-like)
+            A tuple containing collision distance vector from frame1 to frame2,
+            and the collision Jacobians at frame1 and frame2.
+    """
+    cp = collision_model.collisionPairs[pair_idx]
+    cr = collision_data.collisionResults[pair_idx]
+    dr = collision_data.distanceResults[pair_idx]
+
+    if cr.isCollision():
+        # According to the HPP-FCL documentation, the normal always points from object1 to object2.
+        # TODO: Once HPP-FCL Python bindings expose the getNearestPointN() functions, use those instead.
+        contact = cr.getContact(0)
+        coll_points = [
+            contact.pos,
+            contact.pos - contact.normal * contact.penetration_depth,
+        ]
+    else:
+        coll_points = [dr.getNearestPoint1(), dr.getNearestPoint2()]
+
+    distance_vec = coll_points[1] - coll_points[0]
+
+    # Calculate the Jacobians at the parent frames of both collision points.
+    parent_frame1 = collision_model.geometryObjects[cp.first].parentFrame
+    if parent_frame1 >= model.nframes:
+        parent_frame1 = 0
+    Jframe1 = pinocchio.computeFrameJacobian(
+        model, data, q, parent_frame1, pinocchio.ReferenceFrame.LOCAL_WORLD_ALIGNED
+    )
+    t_frame1_to_point1 = pinocchio.SE3(
+        np.eye(3), coll_points[0] - data.oMf[parent_frame1].translation
+    )
+    Jcoll1 = t_frame1_to_point1.toActionMatrix()[3:, :] @ Jframe1
+
+    parent_frame2 = collision_model.geometryObjects[cp.second].parentFrame
+    if parent_frame2 >= model.nframes:
+        parent_frame2 = 0
+    Jframe2 = pinocchio.computeFrameJacobian(
+        model, data, q, parent_frame2, pinocchio.ReferenceFrame.LOCAL_WORLD_ALIGNED
+    )
+    t_frame2_to_point2 = pinocchio.SE3(
+        np.eye(3), coll_points[1] - data.oMf[parent_frame2].translation
+    )
+    Jcoll2 = t_frame2_to_point2.toActionMatrix()[3:, :] @ Jframe2
+
+    return distance_vec, Jcoll1, Jcoll2

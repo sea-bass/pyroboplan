@@ -98,6 +98,8 @@ class PRMPlanner:
         """
         self.model = model
         self.collision_model = collision_model
+        self.data = self.model.createData()
+        self.collision_data = self.collision_model.createData()
         self.options = options
         self.latest_path = None
 
@@ -132,7 +134,13 @@ class PRMPlanner:
 
             # At each iteration we naively sample a valid random state and attempt to connect it to the roadmap.
             q_sample = next(sample_generator)
-            if check_collisions_at_state(self.model, self.collision_model, q_sample):
+            if check_collisions_at_state(
+                self.model,
+                self.collision_model,
+                q_sample,
+                self.data,
+                self.collision_data,
+            ):
                 continue
 
             radius = self.options.max_neighbor_radius
@@ -254,10 +262,14 @@ class PRMPlanner:
         """
 
         # Check start and end pose collisions.
-        if check_collisions_at_state(self.model, self.collision_model, q_start):
+        if check_collisions_at_state(
+            self.model, self.collision_model, q_start, self.data, self.collision_data
+        ):
             print("Start configuration in collision.")
             return None
-        if check_collisions_at_state(self.model, self.collision_model, q_goal):
+        if check_collisions_at_state(
+            self.model, self.collision_model, q_goal, self.data, self.collision_data
+        ):
             print("Goal configuration in collision.")
             return None
 

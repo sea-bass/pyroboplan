@@ -3,7 +3,12 @@ import numpy as np
 import pinocchio
 
 from pyroboplan.ik.differential_ik import DifferentialIk, DifferentialIkOptions
+from pyroboplan.ik.nullspace_components import collision_avoidance_nullspace_component
 from pyroboplan.models.panda import load_models, add_self_collisions
+
+
+# Use a fixed seed for random number generation in tests.
+np.random.seed(1234)
 
 
 def test_ik_solve_trivial_ik():
@@ -126,3 +131,52 @@ def test_ik_in_collision():
     )
 
     assert q_sol is None, "Solution should be in self-collision!"
+
+
+def test_ik_with_nullspace_components():
+    model, collision_model, _ = load_models()
+    add_self_collisions(model, collision_model)
+    data = model.createData()
+    collision_data = collision_model.createData()
+    target_frame = "panda_hand"
+
+    # Initial joint states
+    q_init = np.array([0.0, 1.57, 0.0, 0.0, 1.57, 1.57, 0.0, 0.0, 0.0])
+
+    # Set the target transform 1 cm along z axis
+    offset = 0.01
+    target_frame_id = model.getFrameId(target_frame)
+    pinocchio.framesForwardKinematics(model, data, q_init)
+    target_tform = copy.deepcopy(data.oMf[target_frame_id])
+    target_tform.translation[2] = target_tform.translation[2] + offset
+
+    # Solve IK
+    options = DifferentialIkOptions()
+    ik = DifferentialIk(model, data=None, options=options, visualizer=None)
+    q_sol = ik.solve(
+        target_frame,
+        target_tform,
+        init_state=q_init,
+        nullspace_components=[
+            lambda model, q: collision_avoidance_nullspace_component(
+                model,
+                data,
+                collision_model,
+                collision_data,
+                q,
+                gain=1.0,
+                dist_padding=0.05,
+            )
+        ],
+    )
+    assert q_sol is not None
+
+    # Get the resulting FK
+    pinocchio.framesForwardKinematics(model, data, q_sol)
+    result_tform = data.oMf[target_frame_id]
+
+    # Assert that they are very, very close, lines up with the max pos/rot error from
+    # the options.
+    error = target_tform.actInv(result_tform)
+    np.testing.assert_almost_equal(np.identity(3), error.rotation, decimal=3)
+    np.testing.assert_almost_equal(np.zeros(3), error.translation, decimal=3)

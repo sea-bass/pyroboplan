@@ -12,7 +12,10 @@ from pyroboplan.core.utils import (
     get_random_collision_free_transform,
 )
 from pyroboplan.ik.differential_ik import DifferentialIk, DifferentialIkOptions
-from pyroboplan.ik.nullspace_components import joint_limit_nullspace_component
+from pyroboplan.ik.nullspace_components import (
+    joint_limit_nullspace_component,
+    collision_avoidance_nullspace_component,
+)
 from pyroboplan.models.panda import (
     load_models,
     add_self_collisions,
@@ -24,10 +27,16 @@ if __name__ == "__main__":
     # Create models and data
     model, collision_model, visual_model = load_models()
     add_self_collisions(model, collision_model)
-    add_object_collisions(model, collision_model, visual_model)
+    add_object_collisions(model, collision_model, visual_model, inflation_radius=0.1)
 
     data = model.createData()
     collision_data = collision_model.createData()
+
+    target_frame = "panda_hand"
+    ignore_joint_indices = [
+        model.getJointId("panda_finger_joint1") - 1,
+        model.getJointId("panda_finger_joint2") - 1,
+    ]
 
     # Initialize visualizer
     viz = MeshcatVisualizer(model, collision_model, visual_model, data=data)
@@ -36,7 +45,12 @@ if __name__ == "__main__":
     np.set_printoptions(precision=3)
 
     # Set up the IK solver
-    options = DifferentialIkOptions()
+    options = DifferentialIkOptions(
+        damping=0.0001,
+        min_step_size=0.025,
+        max_step_size=0.1,
+        ignore_joint_indices=ignore_joint_indices,
+    )
     ik = DifferentialIk(
         model,
         data=data,
@@ -44,9 +58,19 @@ if __name__ == "__main__":
         options=options,
         visualizer=viz,
     )
-    target_frame = "panda_hand"
     nullspace_components = [
-        lambda model, q: joint_limit_nullspace_component(model, q, gain=0.5)
+        lambda model, q: collision_avoidance_nullspace_component(
+            model,
+            data,
+            collision_model,
+            collision_data,
+            q,
+            gain=1.0,
+            dist_padding=0.05,
+        ),
+        lambda model, q: joint_limit_nullspace_component(
+            model, q, gain=0.1, padding=0.025
+        ),
     ]
 
     # Solve IK several times and print the results
@@ -59,7 +83,7 @@ if __name__ == "__main__":
             target_frame,
             target_tform,
             init_state=init_state,
-            nullspace_components=[],
+            nullspace_components=nullspace_components,
             verbose=True,
         )
         print(f"Solution configuration:\n{q_sol}\n")
