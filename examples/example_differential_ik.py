@@ -13,7 +13,6 @@ from pyroboplan.core.utils import (
 )
 from pyroboplan.ik.differential_ik import DifferentialIk, DifferentialIkOptions
 from pyroboplan.ik.nullspace_components import (
-    joint_center_nullspace_component,
     joint_limit_nullspace_component,
     collision_avoidance_nullspace_component,
 )
