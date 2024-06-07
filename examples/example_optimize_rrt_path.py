@@ -37,7 +37,6 @@ if __name__ == "__main__":
     viz.loadViewerModel()
 
     distance_padding = 0.001
-    max_rrt_tries = 3
 
     def random_valid_state():
         return get_random_collision_free_state(
@@ -68,16 +67,13 @@ if __name__ == "__main__":
             collision_distance_padding=distance_padding,
         )
         print("")
-        for idx in range(max_rrt_tries):
-            print(f"Planning a path, try {idx+1}/{max_rrt_tries}...")
-            planner = RRTPlanner(model, collision_model, options=options)
-            q_path = planner.plan(q_start, q_goal)
-            if len(q_path) > 0:
-                print(f"Got a path with {len(q_path)} waypoints")
-                planner.visualize(viz, "panda_hand", show_tree=True)
-                break
-
-        if len(q_path) == 0:
+        print(f"Planning a path...")
+        planner = RRTPlanner(model, collision_model, options=options)
+        q_path = planner.plan(q_start, q_goal)
+        if len(q_path) > 0:
+            print(f"Got a path with {len(q_path)} waypoints")
+            planner.visualize(viz, "panda_hand", show_tree=True)
+        else:
             print("Failed to plan.")
             continue
 
