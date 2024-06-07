@@ -66,7 +66,7 @@ if __name__ == "__main__":
 
     while True:
         print("")
-        q_start = get_random_collision_free_state(model, collision_model)
+        q_start = random_valid_state()
         viz.display(q_start)
         viz.viewer["waypoints"].delete()
         time.sleep(1.0)
