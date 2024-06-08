@@ -41,15 +41,18 @@ if __name__ == "__main__":
         max_planning_time=30.0,
         num_waypoints=7,
         samples_per_segment=11,
-        min_segment_time=0.2,
+        min_segment_time=0.5,
         max_segment_time=10.0,
+        max_total_time=12.0,
         min_vel=-1.5,
         max_vel=1.5,
         min_accel=-0.75,
         max_accel=0.75,
+        min_jerk=-1.0,
+        max_jerk=1.0,
         check_collisions=True,
         min_collision_dist=0.001,
-        collision_influence_dist=0.1,
+        collision_influence_dist=0.05,
         collision_link_list=[
             "obstacle_box_1",
             "obstacle_box_2",
@@ -61,7 +64,7 @@ if __name__ == "__main__":
 
     def random_valid_state():
         return get_random_collision_free_state(
-            model, collision_model, distance_padding=options.min_collision_dist
+            model, collision_model, distance_padding=0.01
         )
 
     while True:
@@ -85,7 +88,7 @@ if __name__ == "__main__":
 
         planner = CubicTrajectoryOptimization(model, collision_model, options)
 
-        max_retries = 5
+        max_retries = 3
         for idx in range(max_retries):
             print(f"Optimizing trajectory, try {idx+1}/{max_retries}...")
             if idx == 0:

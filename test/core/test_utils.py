@@ -127,13 +127,6 @@ def test_check_collisions_at_state():
     model, collision_model, _ = load_models()
     add_self_collisions(model, collision_model)
 
-    # while True:
-    #     q = get_random_state(model)
-    #     if check_collisions_at_state(model, collision_model, q):
-    #         print(f"Q collision: {q}")
-    #     else:
-    #         print(f"Q free {q}")
-
     collision_state = np.array(
         [
             1.98103111,

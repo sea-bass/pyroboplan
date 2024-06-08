@@ -25,6 +25,7 @@ class CubicTrajectoryOptimizationOptions:
         samples_per_segment=11,
         min_segment_time=0.01,
         max_segment_time=10.0,
+        max_total_time=100.0,
         min_vel=-np.inf,
         max_vel=np.inf,
         min_accel=-np.inf,
@@ -51,6 +52,8 @@ class CubicTrajectoryOptimizationOptions:
                 The minimum duration of a trajectory segment, in seconds.
             max_segment_time : float
                 The maximum duration of a trajectory segment, in seconds.
+            max_total_time : float
+                The maximum total duration of the trajectory, in seconds.
             min_vel : float, or array-like
                 The minimum velocity along the trajectory.
                 If scalar, applies to all degrees of freedom; otherwise allows for different limits per degree of freedom.
@@ -90,6 +93,7 @@ class CubicTrajectoryOptimizationOptions:
         self.samples_per_segment = samples_per_segment
         self.min_segment_time = min_segment_time
         self.max_segment_time = max_segment_time
+        self.max_total_time = max_total_time
         self.min_vel = min_vel
         self.max_vel = max_vel
         self.min_accel = min_accel
@@ -518,15 +522,22 @@ class CubicTrajectoryOptimization:
                     == self._eval_acceleration(x_d, xc_d, h, k + 1, n, 0.0)
                 )
 
-        # Cost and bounds on trajectory segment times.
+        # Cost and bounds on trajectory times.
         prog.AddBoundingBoxConstraint(
             self.options.min_segment_time, self.options.max_segment_time, h
         )
-        prog.AddQuadraticCost(
-            Q=np.eye(num_waypoints - 1),
-            b=np.zeros(num_waypoints - 1),
-            c=0.0,
-            vars=h,
+
+        def total_traj_time(time_steps):
+            """Helper function that calculates the maximum trajectory time."""
+            total_time = 0.0
+            for step in time_steps:
+                total_time += step
+            return total_time
+
+        total_time_cost = lambda h_val: 1.0 * total_traj_time(h_val) ** 2
+        prog.AddCost(total_time_cost, h)
+        prog.AddConstraint(
+            total_traj_time(h), np.array([0.0]), np.array([self.options.max_total_time])
         )
 
         # Collision checking at the waypoints and collocation points.
@@ -597,6 +608,8 @@ class CubicTrajectoryOptimization:
             SnoptSolver.id(), "Time limit", self.options.max_planning_time
         )
         solver_options.SetOption(SnoptSolver.id(), "Timing level", 3)
+        # Uncommenting this option helps, but it also forces the trajectory to use all the allowable time?
+        # solver_options.SetOption(SnoptSolver.id(), "Max iterations", 10000)
         result = Solve(prog, solver_options=solver_options)
         if not result.is_success():
             print("Trajectory optimization failed.")
