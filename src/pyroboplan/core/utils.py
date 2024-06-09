@@ -416,6 +416,7 @@ def get_collision_geometry_ids(model, collision_model, body):
 def get_collision_pair_indices_from_bodies(model, collision_model, body_list):
     """
     Returns a list of all the collision pair indices involving a list of objects.
+
     Parameters
     ----------
         model : `pinocchio.Model`

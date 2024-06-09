@@ -136,3 +136,6 @@ if __name__ == "__main__":
             for idx in range(q_vec.shape[1]):
                 viz.display(q_vec[:, idx])
                 time.sleep(dt)
+
+        else:
+            input("Press 'Enter' to try another path.")

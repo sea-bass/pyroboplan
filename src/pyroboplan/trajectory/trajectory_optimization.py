@@ -348,76 +348,74 @@ class CubicTrajectoryOptimization:
                 The constraint value representing the minimum collision distance for every collision object and waypoint,
                 as well as its corresponding gradient.
         """
-        if q_val.dtype != float:
+        q_all = ExtractValue(q_val)
+        num_links = len(collision_pairs)
+        min_distance_smoothed_squared = np.zeros(num_waypoints * num_links)
+        gradient = np.zeros((num_waypoints * num_links, num_waypoints * num_dofs))
+        for wp_idx in range(num_waypoints):
+            start_idx = wp_idx * num_dofs
+            end_idx = start_idx + num_dofs
+            q = q_all[start_idx:end_idx]
 
-            q_all = ExtractValue(q_val)
-            num_links = len(collision_pairs)
-            min_distance_smoothed_squared = np.zeros(num_waypoints * num_links)
-            gradient = np.zeros((num_waypoints * num_links, num_waypoints * num_dofs))
-            for wp_idx in range(num_waypoints):
-                start_idx = wp_idx * num_dofs
-                end_idx = start_idx + num_dofs
-                q = q_all[start_idx:end_idx]
+            # Compute collision and distance checks
+            pinocchio.framesForwardKinematics(self.model, self.data, q)
+            pinocchio.computeCollisions(
+                self.model,
+                self.data,
+                self.collision_model,
+                self.collision_data,
+                q,
+                False,
+            )
+            pinocchio.computeDistances(
+                self.model, self.data, self.collision_model, self.collision_data, q
+            )
 
-                # Compute collision and distance checks
-                pinocchio.framesForwardKinematics(self.model, self.data, q)
-                pinocchio.computeCollisions(
-                    self.model,
-                    self.data,
-                    self.collision_model,
-                    self.collision_data,
-                    q,
-                    False,
-                )
-                pinocchio.computeDistances(
-                    self.model, self.data, self.collision_model, self.collision_data, q
-                )
+            # Get the minimum distance in the allowable range
+            for link_idx, pairs in enumerate(collision_pairs):
+                min_distance_idx = -1
+                min_distance = influence_dist
+                grad_idx = wp_idx * num_links + link_idx
+                for p in pairs:
+                    dist = self.collision_data.distanceResults[p].min_distance
+                    if dist <= influence_dist and dist < min_distance:
+                        min_distance_idx = p
+                        min_distance = dist
 
-                # Get the minimum distance in the allowable range
-                for link_idx, pairs in enumerate(collision_pairs):
-                    min_distance_idx = -1
-                    min_distance = influence_dist
-                    grad_idx = wp_idx * num_links + link_idx
-                    for p in pairs:
-                        dist = self.collision_data.distanceResults[p].min_distance
-                        if dist <= influence_dist and dist < min_distance:
-                            min_distance_idx = p
-                            min_distance = dist
-
-                    # Find the collision Jacobian for the closest point pair, and calculate gradients.
-                    if min_distance_idx >= 0:
-                        distance_vec, Jcoll1, Jcoll2 = (
-                            calculate_collision_vector_and_jacobians(
-                                self.model,
-                                self.collision_model,
-                                self.data,
-                                self.collision_data,
-                                min_distance_idx,
-                                q,
-                            )
+                # Find the collision Jacobian for the closest point pair, and calculate gradients.
+                if min_distance_idx >= 0:
+                    distance_vec, Jcoll1, Jcoll2 = (
+                        calculate_collision_vector_and_jacobians(
+                            self.model,
+                            self.collision_model,
+                            self.data,
+                            self.collision_data,
+                            min_distance_idx,
+                            q,
                         )
-                        distance_vec = distance_vec / np.linalg.norm(distance_vec)
-                        grad = np.sign(min_distance) * distance_vec @ (Jcoll2 - Jcoll1)
-                    else:
-                        grad = np.zeros(num_dofs)
-
-                    # Minimum distances are smoothed using a squared hinge loss to have better gradients.
-                    min_distance_smoothed = np.clip(
-                        1.0
-                        + (min_distance - min_allowable_dist)
-                        / (min_allowable_dist - influence_dist),
-                        0.0,
-                        np.inf,
                     )
-                    min_distance_smoothed_squared[grad_idx] = min_distance_smoothed**2
-                    gradient[grad_idx, start_idx:end_idx] = (
-                        2.0
-                        * grad
-                        * min_distance_smoothed
-                        / (min_allowable_dist - influence_dist)
-                    )
+                    distance_vec = distance_vec / np.linalg.norm(distance_vec)
+                    grad = np.sign(min_distance) * distance_vec @ (Jcoll2 - Jcoll1)
+                else:
+                    grad = np.zeros(num_dofs)
 
-            return InitializeAutoDiff(min_distance_smoothed_squared, gradient)
+                # Minimum distances are smoothed using a squared hinge loss to have better gradients.
+                min_distance_smoothed = np.clip(
+                    1.0
+                    + (min_distance - min_allowable_dist)
+                    / (min_allowable_dist - influence_dist),
+                    0.0,
+                    np.inf,
+                )
+                min_distance_smoothed_squared[grad_idx] = min_distance_smoothed**2
+                gradient[grad_idx, start_idx:end_idx] = (
+                    2.0
+                    * grad
+                    * min_distance_smoothed
+                    / (min_allowable_dist - influence_dist)
+                )
+
+        return InitializeAutoDiff(min_distance_smoothed_squared, gradient)
 
     def plan(self, q_path, init_path=None):
         """
