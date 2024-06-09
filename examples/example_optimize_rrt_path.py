@@ -36,7 +36,7 @@ if __name__ == "__main__":
     viz.initViewer(open=True)
     viz.loadViewerModel()
 
-    distance_padding = 0.001
+    distance_padding = 0.0025
 
     def random_valid_state():
         return get_random_collision_free_state(

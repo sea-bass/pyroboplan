@@ -51,7 +51,7 @@ if __name__ == "__main__":
         max_jerk=1.0,
         max_planning_time=30.0,
         check_collisions=True,
-        min_collision_dist=0.001,
+        min_collision_dist=0.0025,
         collision_influence_dist=0.05,
         collision_link_list=[
             "obstacle_box_1",
