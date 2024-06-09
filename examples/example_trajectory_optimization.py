@@ -38,7 +38,6 @@ if __name__ == "__main__":
     # Configure trajectory optimization.
     dt = 0.025
     options = CubicTrajectoryOptimizationOptions(
-        max_planning_time=30.0,
         num_waypoints=7,
         samples_per_segment=11,
         min_segment_time=0.5,
@@ -50,6 +49,7 @@ if __name__ == "__main__":
         max_accel=0.75,
         min_jerk=-1.0,
         max_jerk=1.0,
+        max_planning_time=30.0,
         check_collisions=True,
         min_collision_dist=0.001,
         collision_influence_dist=0.05,

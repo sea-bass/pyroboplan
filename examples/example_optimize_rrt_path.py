@@ -80,10 +80,9 @@ if __name__ == "__main__":
         # Perform trajectory optimization.
         dt = 0.025
         options = CubicTrajectoryOptimizationOptions(
-            max_planning_time=30.0,
             num_waypoints=len(q_path),
             samples_per_segment=11,
-            min_segment_time=1.0,
+            min_segment_time=0.5,
             max_segment_time=10.0,
             max_total_time=12.0,
             min_vel=-1.5,
@@ -92,6 +91,7 @@ if __name__ == "__main__":
             max_accel=0.75,
             min_jerk=-1.0,
             max_jerk=1.0,
+            max_planning_time=30.0,
             check_collisions=True,
             min_collision_dist=distance_padding,
             collision_influence_dist=0.05,
@@ -106,6 +106,10 @@ if __name__ == "__main__":
         print("Optimizing the path...")
         optimizer = CubicTrajectoryOptimization(model, collision_model, options)
         traj = optimizer.plan([q_path[0], q_path[-1]], init_path=q_path)
+
+        if traj is None:
+            print("Retrying with all the RRT waypoints...")
+            traj = optimizer.plan(q_path, init_path=q_path)
 
         if traj is not None:
             print("Trajectory optimization successful")

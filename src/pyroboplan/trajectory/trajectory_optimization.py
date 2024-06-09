@@ -26,7 +26,6 @@ class CubicTrajectoryOptimizationOptions:
 
     def __init__(
         self,
-        max_planning_time=30.0,
         num_waypoints=3,
         samples_per_segment=11,
         min_segment_time=0.01,
@@ -38,18 +37,17 @@ class CubicTrajectoryOptimizationOptions:
         max_accel=np.inf,
         min_jerk=-np.inf,
         max_jerk=np.inf,
+        max_planning_time=30.0,
         check_collisions=False,
         collision_link_list=[],
         min_collision_dist=0.0,
-        collision_influence_dist=0.05,
+        collision_influence_dist=0.1,
     ):
         """
         Initializes a set of options for cubic polynomial trajectory optimization.
 
         Parameters
         ----------
-            max_planning_time : float
-                The maximum planning time, in seconds.
             num_waypoints : int
                 The number of waypoints in the trajectory. Must be greater than or equal to 2.
             samples_per_segment : int
@@ -78,6 +76,8 @@ class CubicTrajectoryOptimizationOptions:
             max_jerk : float or array-like
                 The maximum jerk along the trajectory.
                 If scalar, applies to all degrees of freedom; otherwise allows for different limits per degree of freedom.
+            max_planning_time : float
+                The maximum planning time, in seconds.
             check_collisions : bool
                 If true, adds collision constraints to trajectory optimization.
             collision_link_list : list[str]
@@ -94,7 +94,6 @@ class CubicTrajectoryOptimizationOptions:
         if min_segment_time <= 0:
             raise ValueError("The minimum segment time must be positive.")
 
-        self.max_planning_time = max_planning_time
         self.num_waypoints = num_waypoints
         self.samples_per_segment = samples_per_segment
         self.min_segment_time = min_segment_time
@@ -106,6 +105,9 @@ class CubicTrajectoryOptimizationOptions:
         self.max_accel = max_accel
         self.min_jerk = min_jerk
         self.max_jerk = max_jerk
+
+        self.max_planning_time = max_planning_time
+
         self.check_collisions = check_collisions
         self.collision_link_list = collision_link_list
         self.min_collision_dist = min_collision_dist
@@ -615,8 +617,6 @@ class CubicTrajectoryOptimization:
             SnoptSolver.id(), "Time limit", self.options.max_planning_time
         )
         solver_options.SetOption(SnoptSolver.id(), "Timing level", 3)
-        # Uncommenting this option helps, but it also forces the trajectory to use all the allowable time?
-        # solver_options.SetOption(SnoptSolver.id(), "Max iterations", 10000)
         result = Solve(prog, solver_options=solver_options)
         if not result.is_success():
             print("Trajectory optimization failed.")
