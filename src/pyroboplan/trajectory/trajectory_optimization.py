@@ -6,7 +6,13 @@ import warnings
 
 import pinocchio
 from pydrake.autodiffutils import InitializeAutoDiff, ExtractValue
-from pydrake.solvers import MathematicalProgram, Solve, SolverOptions, SnoptSolver
+from pydrake.solvers import (
+    MathematicalProgram,
+    QuadraticConstraint,
+    Solve,
+    SolverOptions,
+    SnoptSolver,
+)
 
 from pyroboplan.core.utils import (
     calculate_collision_vector_and_jacobians,
@@ -481,10 +487,13 @@ class CubicTrajectoryOptimization:
             # This is described in the "Direct Collocation" section here:
             # https://underactuated.mit.edu/trajopt.html
             for k in range(num_waypoints - 1):
-                prog.AddConstraint(
-                    xc[k, n]
-                    == 0.5 * (x[k, n] + x[k + 1, n])
+                prog.AddQuadraticConstraint(
+                    0.5 * (x[k, n] + x[k + 1, n])
                     + (h[k] / 8.0) * (x_d[k, n] - x_d[k + 1, n])
+                    - xc[k, n],
+                    0.0,
+                    0.0,
+                    QuadraticConstraint.HessianType.kIndefinite,
                 )
                 prog.AddConstraint(
                     xc_d[k, n]

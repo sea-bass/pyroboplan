@@ -36,9 +36,11 @@ if __name__ == "__main__":
     viz.initViewer(open=True)
     viz.loadViewerModel()
 
+    distance_padding = 0.001
+
     def random_valid_state():
         return get_random_collision_free_state(
-            model, collision_model, distance_padding=0.01
+            model, collision_model, distance_padding=distance_padding
         )
 
     while True:
@@ -62,7 +64,7 @@ if __name__ == "__main__":
             max_planning_time=10.0,
             fast_return=True,
             goal_biasing_probability=0.15,
-            collision_distance_padding=0.01,
+            collision_distance_padding=distance_padding,
         )
         print("")
         print(f"Planning a path...")
@@ -81,7 +83,7 @@ if __name__ == "__main__":
             max_planning_time=30.0,
             num_waypoints=len(q_path),
             samples_per_segment=11,
-            min_segment_time=0.5,
+            min_segment_time=1.0,
             max_segment_time=10.0,
             max_total_time=12.0,
             min_vel=-1.5,
@@ -91,7 +93,7 @@ if __name__ == "__main__":
             min_jerk=-1.0,
             max_jerk=1.0,
             check_collisions=True,
-            min_collision_dist=0.001,
+            min_collision_dist=distance_padding,
             collision_influence_dist=0.05,
             collision_link_list=[
                 "obstacle_box_1",
