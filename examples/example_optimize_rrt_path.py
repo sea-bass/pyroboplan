@@ -36,11 +36,11 @@ if __name__ == "__main__":
     viz.initViewer(open=True)
     viz.loadViewerModel()
 
-    distance_padding = 0.0025
+    distance_padding = 0.001
 
     def random_valid_state():
         return get_random_collision_free_state(
-            model, collision_model, distance_padding=distance_padding
+            model, collision_model, distance_padding=0.01
         )
 
     while True:
@@ -95,6 +95,7 @@ if __name__ == "__main__":
             check_collisions=True,
             min_collision_dist=distance_padding,
             collision_influence_dist=0.05,
+            collision_avoidance_cost_weight=0.1,
             collision_link_list=[
                 "obstacle_box_1",
                 "obstacle_box_2",

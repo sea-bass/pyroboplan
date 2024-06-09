@@ -42,6 +42,7 @@ class CubicTrajectoryOptimizationOptions:
         collision_link_list=[],
         min_collision_dist=0.0,
         collision_influence_dist=0.1,
+        collision_avoidance_cost_weight=0.0,
     ):
         """
         Initializes a set of options for cubic polynomial trajectory optimization.
@@ -86,6 +87,9 @@ class CubicTrajectoryOptimizationOptions:
                 The minimum allowable collision distance, in meters.
             collision_influence_dist : float
                 The distance for collision/distance checks, in meters, above which to ignore results.
+            collision_avoidance_cost_weight : float
+                Weight for a cost function that penalizes the minimum distance from collision.
+                If this is set to zero, the cost function is not added to the mathematical program.
         """
         if num_waypoints < 2:
             raise ValueError(
@@ -112,6 +116,7 @@ class CubicTrajectoryOptimizationOptions:
         self.collision_link_list = collision_link_list
         self.min_collision_dist = min_collision_dist
         self.collision_influence_dist = collision_influence_dist
+        self.collision_avoidance_cost_weight = collision_avoidance_cost_weight
 
 
 class CubicTrajectoryOptimization:
@@ -589,6 +594,20 @@ class CubicTrajectoryOptimization:
             prog.AddConstraint(
                 collision_expr_coll, min_dist_val_coll, max_dist_val_coll, xc.flatten()
             )
+
+            # Optionally add a cost for collision avoidance.
+            # Since the smoothed minimum distance is 1.0 at the constraint limit and
+            # increases further into collision, we want to minimize this value.
+            coll_cost_weight = self.options.collision_avoidance_cost_weight
+            if coll_cost_weight > 0.0:
+                prog.AddCost(
+                    lambda var: -coll_cost_weight * max(collision_expr(var))[0],
+                    x.flatten(),
+                )
+                prog.AddCost(
+                    lambda var: -coll_cost_weight * max(collision_expr_coll(var))[0],
+                    xc.flatten(),
+                )
 
         # Set initial conditions to help search.
         if init_path or fully_specified_path:
