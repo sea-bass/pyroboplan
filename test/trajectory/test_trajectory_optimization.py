@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from pyroboplan.models.panda import load_models
+from pyroboplan.models.panda import load_models, add_self_collisions
 from pyroboplan.trajectory.trajectory_optimization import (
     CubicTrajectoryOptimization,
     CubicTrajectoryOptimizationOptions,
@@ -198,14 +198,18 @@ def test_traj_opt_bad_num_waypoints():
 
 def test_traj_opt_collision_avoidance():
     model, collision_model, _ = load_models()
+    add_self_collisions(model, collision_model)
 
-    # Define the start and goal configurations
-    q_start = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
-    q_goal = np.array([0.785, 1.57, 0.0, 0.0, 1.57, 1.57, 0.0, 0.0, 0.0])
+    # Define a multi-configuration path
+    q_path = [
+        np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
+        np.array([0.00, 1.57, 0.0, 0.0, 1.57, 1.57, 0.0, 0.0, 0.0]),
+        np.array([0.785, 1.57, 0.0, 0.0, 1.57, 1.57, 0.0, 0.0, 0.0]),
+    ]
 
     # Perform trajectory optimization
     options = CubicTrajectoryOptimizationOptions(
-        num_waypoints=3,
+        num_waypoints=len(q_path),
         samples_per_segment=11,
         min_segment_time=0.01,
         max_segment_time=10.0,
@@ -216,8 +220,19 @@ def test_traj_opt_collision_avoidance():
         min_jerk=-1.0,
         max_jerk=1.0,
         check_collisions=True,
-        min_collision_dist=0.0,
+        min_collision_dist=0.001,
+        collision_influence_dist=0.05,
+        collision_avoidance_cost_weight=0.1,
         collision_link_list=[
+            "panda_link0",
+            "panda_link1",
+            "panda_link2",
+            "panda_link3",
+            "panda_link4",
+            "panda_link5",
+            "panda_link6",
+            "panda_link7",
+            "panda_link8",
             "panda_hand",
             "panda_leftfinger",
             "panda_rightfinger",
@@ -225,6 +240,6 @@ def test_traj_opt_collision_avoidance():
     )
     planner = CubicTrajectoryOptimization(model, collision_model, options)
     with pytest.warns(RuntimeWarning):  # There are some invalid multiply values
-        traj = planner.plan([q_start, q_goal])
+        traj = planner.plan([q_path[0], q_path[-1]], init_path=q_path)
 
     assert traj is not None
