@@ -24,10 +24,18 @@ from pyroboplan.visualization.meshcat_utils import visualize_frames
 
 
 if __name__ == "__main__":
+    # Set this to True to add collisions to the world and try avoid them.
+    # If you enable collision avoidance, expect that optimization will fail frequently
+    # since many straight-line paths will be subject to local minima.
+    # This can be addressed by using a motion planner to seed the optimization problem,
+    # which is demonstrated in the `example_optimize_rrt_path.py` file.
+    avoid_collisions = False
+
     # Create models and data.
     model, collision_model, visual_model = load_models()
     add_self_collisions(model, collision_model)
-    add_object_collisions(model, collision_model, visual_model)
+    if avoid_collisions:
+        add_object_collisions(model, collision_model, visual_model)
     data = model.createData()
 
     # Initialize visualizer.
@@ -50,7 +58,7 @@ if __name__ == "__main__":
         min_jerk=-1.0,
         max_jerk=1.0,
         max_planning_time=30.0,
-        check_collisions=False,
+        check_collisions=avoid_collisions,
         min_collision_dist=0.001,
         collision_influence_dist=0.05,
         collision_avoidance_cost_weight=0.0,
