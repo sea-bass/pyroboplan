@@ -84,7 +84,6 @@ if __name__ == "__main__":
             samples_per_segment=11,
             min_segment_time=0.5,
             max_segment_time=10.0,
-            max_total_time=24.0,
             min_vel=-1.5,
             max_vel=1.5,
             min_accel=-0.75,

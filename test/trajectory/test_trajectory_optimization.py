@@ -194,3 +194,37 @@ def test_traj_opt_bad_num_waypoints():
     planner = CubicTrajectoryOptimization(model, collision_model, options)
     with pytest.raises(ValueError):
         planner.plan(q_path)
+
+
+def test_traj_opt_collision_avoidance():
+    model, collision_model, _ = load_models()
+
+    # Define the start and goal configurations
+    q_start = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+    q_goal = np.array([0.785, 1.57, 0.0, 0.0, 1.57, 1.57, 0.0, 0.0, 0.0])
+
+    # Perform trajectory optimization
+    options = CubicTrajectoryOptimizationOptions(
+        num_waypoints=3,
+        samples_per_segment=11,
+        min_segment_time=0.01,
+        max_segment_time=10.0,
+        min_vel=-1.5,
+        max_vel=1.5,
+        min_accel=-0.75,
+        max_accel=0.75,
+        min_jerk=-1.0,
+        max_jerk=1.0,
+        check_collisions=True,
+        min_collision_dist=0.0,
+        collision_link_list=[
+            "panda_hand",
+            "panda_leftfinger",
+            "panda_rightfinger",
+        ],
+    )
+    planner = CubicTrajectoryOptimization(model, collision_model, options)
+    with pytest.warns(RuntimeWarning):  # There are some invalid multiply values
+        traj = planner.plan([q_start, q_goal])
+
+    assert traj is not None

@@ -30,7 +30,6 @@ class CubicTrajectoryOptimizationOptions:
         samples_per_segment=11,
         min_segment_time=0.01,
         max_segment_time=10.0,
-        max_total_time=100.0,
         min_vel=-np.inf,
         max_vel=np.inf,
         min_accel=-np.inf,
@@ -57,8 +56,6 @@ class CubicTrajectoryOptimizationOptions:
                 The minimum duration of a trajectory segment, in seconds.
             max_segment_time : float
                 The maximum duration of a trajectory segment, in seconds.
-            max_total_time : float
-                The maximum total duration of the trajectory, in seconds.
             min_vel : float, or array-like
                 The minimum velocity along the trajectory.
                 If scalar, applies to all degrees of freedom; otherwise allows for different limits per degree of freedom.
@@ -102,7 +99,6 @@ class CubicTrajectoryOptimizationOptions:
         self.samples_per_segment = samples_per_segment
         self.min_segment_time = min_segment_time
         self.max_segment_time = max_segment_time
-        self.max_total_time = max_total_time
         self.min_vel = min_vel
         self.max_vel = max_vel
         self.min_accel = min_accel
@@ -315,6 +311,27 @@ class CubicTrajectoryOptimization:
                 The jerk along the specified segment evaluated at the specified step.
         """
         return 8.0 * (x_d[k, n] - 2.0 * xc_d[k, n] + x_d[k + 1, n]) / h[k] ** 2
+
+    def _total_time_cost(self, h, weight=1.0):
+        """
+        Helper function that sets a quadratic cost on the total trajectory time.
+
+        Parameters
+        ----------
+            h : pydrake.autodiffutils.AutoDiffXd
+                The time segment durations.
+            weight : float, optional
+                A weight to scale the cost function.
+
+        Return
+        ------
+            pydrake.autodiffutils.AutoDiffXd
+                Quadratic cost on the total trajectory time.
+        """
+        total_time = 0.0
+        for step in h:
+            total_time += step
+        return weight * total_time**2
 
     def _collision_constraint(
         self,
@@ -540,19 +557,7 @@ class CubicTrajectoryOptimization:
         prog.AddBoundingBoxConstraint(
             self.options.min_segment_time, self.options.max_segment_time, h
         )
-
-        def total_traj_time(time_steps):
-            """Helper function that calculates the maximum trajectory time."""
-            total_time = 0.0
-            for step in time_steps:
-                total_time += step
-            return total_time
-
-        total_time_cost = lambda h_val: 1.0 * total_traj_time(h_val) ** 2
-        prog.AddCost(total_time_cost, h)
-        prog.AddConstraint(
-            total_traj_time(h), np.array([0.0]), np.array([self.options.max_total_time])
-        )
+        prog.AddCost(self._total_time_cost, h)
 
         # Collision checking at the waypoints and collocation points.
         # TODO: This could instead be done by sampling points along the entire trajectory.
