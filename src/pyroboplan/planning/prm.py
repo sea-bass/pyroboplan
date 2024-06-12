@@ -31,6 +31,7 @@ class PRMPlannerOptions:
         max_neighbor_connections=15,
         max_construction_nodes=5000,
         construction_timeout=10.0,
+        rng_seed=None,
         prm_star=False,
         prm_file=None,
     ):
@@ -49,6 +50,8 @@ class PRMPlannerOptions:
                 The maximum number of samples to generate in the configuration space when growing the graph.
             construction_timeout : float
                 Maximum time allotted to sample the configuration space per call.
+            rng_seed : int, optional
+                Sets the seed for random number generation. Use to generate deterministic results.
             prm_star : str
                 If True, use the PRM* approach to dynamically select the radius and max number of neighbors
                 during construction of the roadmap.
@@ -59,6 +62,7 @@ class PRMPlannerOptions:
         self.max_step_size = max_step_size
         self.max_neighbor_radius = max_neighbor_radius
         self.max_neighbor_connections = max_neighbor_connections
+        self.rng_seed = rng_seed
         self.construction_timeout = construction_timeout
         self.max_construction_nodes = max_construction_nodes
         self.prm_star = prm_star
@@ -120,6 +124,7 @@ class PRMPlanner:
                 Defaults to randomly sampling the robot's configuration space.
         """
         # Default to randomly sampling the model if no sample function is provided.
+        np.random.seed(self.options.rng_seed)
         if not sample_generator:
             sample_generator = random_model_state_generator(self.model)
 

@@ -50,6 +50,7 @@ if __name__ == "__main__":
         rrt_star=False,
         max_rewire_dist=3.0,
         max_planning_time=10.0,
+        rng_seed=None,
         fast_return=True,
         goal_biasing_probability=0.15,
     )

@@ -112,6 +112,7 @@ if __name__ == "__main__":
         max_neighbor_connections=10,
         max_construction_nodes=2500,
         construction_timeout=20.0,
+        rng_seed=None,
         prm_star=False,
         prm_file=prm_file if load_prm else None,
     )

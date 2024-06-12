@@ -33,6 +33,7 @@ class RRTPlannerOptions:
         rrt_star=False,
         max_rewire_dist=np.inf,
         max_planning_time=10.0,
+        rng_seed=None,
         fast_return=True,
         goal_biasing_probability=0.0,
     ):
@@ -59,6 +60,8 @@ class RRTPlannerOptions:
                 If set to `np.inf`, all nodes in the trees will be considered for rewiring.
             max_planning_time : float
                 Maximum planning time, in seconds.
+            rng_seed : int, optional
+                Sets the seed for random number generation. Use to generate deterministic results.
             fast_return : bool
                 If True, return as soon as a solution is found. Otherwise continuing building the tree
                 until max_planning_time is reached.
@@ -72,6 +75,7 @@ class RRTPlannerOptions:
         self.rrt_star = rrt_star
         self.max_rewire_dist = max_rewire_dist
         self.max_planning_time = max_planning_time
+        self.rng_seed = rng_seed
         self.fast_return = fast_return
         self.goal_biasing_probability = goal_biasing_probability
 
@@ -112,6 +116,7 @@ class RRTPlanner:
         self.latest_path = None
         self.start_tree = Graph()
         self.goal_tree = Graph()
+        np.random.seed(self.options.rng_seed)
 
     def plan(self, q_start, q_goal):
         """

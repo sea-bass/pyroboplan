@@ -29,6 +29,7 @@ class DifferentialIkOptions:
         min_step_size=0.1,
         max_step_size=0.5,
         ignore_joint_indices=[],
+        rng_seed=None,
     ):
         """
         Initializes a set of differential IK options.
@@ -56,6 +57,8 @@ class DifferentialIkOptions:
             ignore_joint_indices : list[int], optional
                 A list of joints to ignore changing when solving IK.
                 TODO: This should eventually be done through a concept of joint groups.
+            rng_seed : int, optional
+                Sets the seed for random number generation. Use to generate deterministic results.
         """
         self.max_iters = max_iters
         self.max_retries = max_retries
@@ -65,10 +68,12 @@ class DifferentialIkOptions:
         self.min_step_size = min_step_size
         self.max_step_size = max_step_size
         self.ignore_joint_indices = ignore_joint_indices
+        self.rng_seed = rng_seed
 
 
 class DifferentialIk:
-    """Differential IK solver.
+    """
+    Differential IK solver.
 
     This is a numerical IK solver that uses the manipulator's Jacobian to take first-order steps towards a solution.
     It contains several of the common options such as damped least squares (Levenberg-Marquardt), random restarts, and nullspace projection.
@@ -149,6 +154,7 @@ class DifferentialIk:
             array-like or None
                 A list of joint configuration values with the solution, if one was found. Otherwise, returns None.
         """
+        np.random.seed(self.options.rng_seed)
         target_frame_id = self.model.getFrameId(target_frame)
 
         # Create a random initial state, if not specified
