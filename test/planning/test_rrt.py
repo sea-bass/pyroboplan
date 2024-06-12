@@ -9,10 +9,6 @@ from pyroboplan.models.panda import (
 from pyroboplan.planning.rrt import RRTPlanner, RRTPlannerOptions
 
 
-# Use a fixed seed for random number generation in tests.
-np.random.seed(1234)
-
-
 def test_plan_trivial_rrt():
     model, collision_model, _ = load_models()
 
@@ -67,6 +63,7 @@ def test_plan_rrt_connect():
     options = RRTPlannerOptions(
         rrt_connect=True,
         bidirectional_rrt=True,
+        rng_seed=1234,
     )
     planner = RRTPlanner(model, collision_model, options=options)
     path = planner.plan(q_start, q_goal)
@@ -93,7 +90,8 @@ def test_plan_rrt_star():
     q_goal = np.array([1.57, 1.57, 0.0, 0.0, 1.57, 1.57, 0.0, 0.0, 0.0])
 
     # First, plan with regular RRT.
-    options = RRTPlannerOptions()
+    np.random.seed(1234)
+    options = RRTPlannerOptions(rng_seed=1234)
     options.rrt_star = False
     options.bidirectional_rrt = True
     planner = RRTPlanner(model, collision_model, options=options)
@@ -101,7 +99,6 @@ def test_plan_rrt_star():
 
     # Then, plan with RRT* enabled (use maximum rewire distance for effect).
     # Note we need to reset the seed so the nominal plans are equivalent.
-    np.random.seed(1234)
     options.rrt_star = True
     options.max_rewire_dist = np.inf
     planner = RRTPlanner(model, collision_model, options=options)

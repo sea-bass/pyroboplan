@@ -50,6 +50,7 @@ if __name__ == "__main__":
         min_step_size=0.025,
         max_step_size=0.1,
         ignore_joint_indices=ignore_joint_indices,
+        rng_seed=None,
     )
     ik = DifferentialIk(
         model,
