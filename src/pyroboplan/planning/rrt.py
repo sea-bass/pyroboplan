@@ -27,7 +27,7 @@ class RRTPlannerOptions:
     def __init__(
         self,
         max_step_size=0.05,
-        max_connection_dist=0.25,
+        max_connection_dist=np.inf,
         rrt_connect=False,
         bidirectional_rrt=False,
         rrt_star=False,
@@ -168,19 +168,18 @@ class RRTPlanner:
             return None
 
         # Check direct connection to goal.
-        path_to_goal = discretize_joint_space_path(
-            [q_start, q_goal], self.options.max_step_size
-        )
-        if configuration_distance(
-            q_start, q_goal
-        ) <= self.options.max_connection_dist and not check_collisions_along_path(
-            self.model,
-            self.collision_model,
-            path_to_goal,
-            distance_padding=self.options.collision_distance_padding,
-        ):
-            print("Start and goal can be directly connected!")
-            goal_found = True
+        if configuration_distance(q_start, q_goal) <= self.options.max_connection_dist:
+            path_to_goal = discretize_joint_space_path(
+                [q_start, q_goal], self.options.max_step_size
+            )
+            if not check_collisions_along_path(
+                self.model,
+                self.collision_model,
+                path_to_goal,
+                distance_padding=self.options.collision_distance_padding,
+            ):
+                print("Start and goal can be directly connected!")
+                goal_found = True
 
         start_tree_phase = True
         while True:
