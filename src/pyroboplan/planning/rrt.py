@@ -27,7 +27,7 @@ class RRTPlannerOptions:
     def __init__(
         self,
         max_step_size=0.05,
-        max_connection_dist=0.2,
+        max_connection_dist=0.25,
         rrt_connect=False,
         bidirectional_rrt=False,
         rrt_star=False,
@@ -171,7 +171,9 @@ class RRTPlanner:
         path_to_goal = discretize_joint_space_path(
             [q_start, q_goal], self.options.max_step_size
         )
-        if not check_collisions_along_path(
+        if configuration_distance(
+            q_start, q_goal
+        ) <= self.options.max_connection_dist and not check_collisions_along_path(
             self.model,
             self.collision_model,
             path_to_goal,
@@ -219,26 +221,30 @@ class RRTPlanner:
                 # Check if latest node connects directly to the other tree.
                 # If so, add it to the tree and mark planning as complete.
                 nearest_node_in_other_tree = other_tree.get_nearest_node(new_node.q)
-                path_to_other_tree = discretize_joint_space_path(
-                    [new_node.q, nearest_node_in_other_tree.q],
-                    self.options.max_step_size,
-                )
-                if not check_collisions_along_path(
-                    self.model,
-                    self.collision_model,
-                    path_to_other_tree,
-                    distance_padding=self.options.collision_distance_padding,
+                if (
+                    configuration_distance(new_node.q, nearest_node_in_other_tree.q)
+                    <= self.options.max_connection_dist
                 ):
-                    new_node = self.add_node_to_tree(
-                        tree, nearest_node_in_other_tree.q, new_node
+                    path_to_other_tree = discretize_joint_space_path(
+                        [new_node.q, nearest_node_in_other_tree.q],
+                        self.options.max_step_size,
                     )
-                    if start_tree_phase:
-                        latest_start_tree_node = new_node
-                        latest_goal_tree_node = nearest_node_in_other_tree
-                    else:
-                        latest_start_tree_node = nearest_node_in_other_tree
-                        latest_goal_tree_node = new_node
-                    goal_found = True
+                    if not check_collisions_along_path(
+                        self.model,
+                        self.collision_model,
+                        path_to_other_tree,
+                        distance_padding=self.options.collision_distance_padding,
+                    ):
+                        new_node = self.add_node_to_tree(
+                            tree, nearest_node_in_other_tree.q, new_node
+                        )
+                        if start_tree_phase:
+                            latest_start_tree_node = new_node
+                            latest_goal_tree_node = nearest_node_in_other_tree
+                        else:
+                            latest_start_tree_node = nearest_node_in_other_tree
+                            latest_goal_tree_node = new_node
+                        goal_found = True
 
                 # Switch to the other tree next iteration, if bidirectional mode is enabled.
                 if self.options.bidirectional_rrt:

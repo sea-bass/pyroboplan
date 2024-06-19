@@ -28,7 +28,7 @@ if __name__ == "__main__":
     # If you enable collision avoidance, expect that optimization will fail frequently
     # since many straight-line paths will be subject to local minima.
     # This can be addressed by using a motion planner to seed the optimization problem,
-    # which is demonstrated in the `example_optimize_rrt_path.py` file.
+    # which is demonstrated in the `optimize_rrt_path.py` example.
     avoid_collisions = False
 
     # Create models and data.
@@ -80,7 +80,7 @@ if __name__ == "__main__":
         q_start = random_valid_state()
         viz.display(q_start)
         viz.viewer["waypoints"].delete()
-        time.sleep(1.0)
+        time.sleep(0.5)
 
         # Perform trajectory optimization.
         multi_point = False

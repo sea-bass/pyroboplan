@@ -70,7 +70,7 @@ if __name__ == "__main__":
     tforms = extract_cartesian_poses(model, "panda_hand", [q_start, q_mid, q_end])
     viz.display(q_start)
     visualize_frames(viz, "waypoints", tforms)
-    time.sleep(1.0)
+    time.sleep(0.5)
 
     # Animate the generated trajectory
     input("Press 'Enter' to animate the path.")

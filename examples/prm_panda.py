@@ -1,8 +1,6 @@
 """
 This example shows PyRoboPlan capabilities for path planning using a
-Probabilistic Roadmap (PRM) algorithm. We rely on a 2-DOF manipulator
-to shrink the configuration space so that we can construct a covering
-roadmap in reasonable time.
+Probabilistic Roadmap (PRM) algorithm, on a 7-DOF Panda robot.
 """
 
 import os
@@ -14,39 +12,15 @@ from pyroboplan.core.utils import (
     extract_cartesian_poses,
     get_random_collision_free_state,
 )
+from pyroboplan.models.panda import (
+    load_models,
+    add_self_collisions,
+    add_object_collisions,
+)
 from pyroboplan.planning.path_shortcutting import shortcut_path
 from pyroboplan.planning.prm import PRMPlanner, PRMPlannerOptions
-from pyroboplan.planning.utils import (
-    discretized_joint_space_generator,
-    discretize_joint_space_path,
-)
+from pyroboplan.planning.utils import discretize_joint_space_path
 from pyroboplan.visualization.meshcat_utils import visualize_frames
-
-
-def load_2dof_model():
-
-    from pyroboplan.models.two_dof import (
-        load_models,
-    )
-
-    model, collision_model, visual_model = load_models()
-
-    return model, collision_model, visual_model, "ee"
-
-
-def load_panda_model():
-
-    from pyroboplan.models.panda import (
-        load_models,
-        add_self_collisions,
-        add_object_collisions,
-    )
-
-    model, collision_model, visual_model = load_models()
-    add_self_collisions(model, collision_model)
-    add_object_collisions(model, collision_model, visual_model)
-
-    return model, collision_model, visual_model, "panda_hand"
 
 
 def run_prm_search(q_start, q_end, planner, options, ee_name, max_retries=5):
@@ -72,9 +46,7 @@ def run_prm_search(q_start, q_end, planner, options, ee_name, max_retries=5):
         discretized_path = discretize_joint_space_path(path, options.max_step_size)
 
         if do_shortcutting:
-            target_tforms = extract_cartesian_poses(
-                model, "panda_hand", discretized_path
-            )
+            target_tforms = extract_cartesian_poses(model, ee_name, discretized_path)
             visualize_frames(
                 viz, "shortened_path", target_tforms, line_length=0.05, line_width=1.5
             )
@@ -88,10 +60,10 @@ def run_prm_search(q_start, q_end, planner, options, ee_name, max_retries=5):
 
 if __name__ == "__main__":
     # We are going to construct a roadmap using the Panda model as an example.
-    # It can be helpful to switch to the 2-DOF manipulator when developing
-    # or testing extensions to the PRM algorithm, as the configuration space
-    # is significantly smaller.
-    model, collision_model, visual_model, ee_name = load_panda_model()
+    model, collision_model, visual_model = load_models()
+    add_self_collisions(model, collision_model)
+    add_object_collisions(model, collision_model, visual_model)
+    ee_name = "panda_hand"
     data = model.createData()
     collision_data = collision_model.createData()
 
@@ -118,19 +90,11 @@ if __name__ == "__main__":
     )
     planner = PRMPlanner(model, collision_model, options=options)
 
-    # We could optionally "prime" construction of the PRM by adding nodes
-    # from the discretized joint state to start. However, this is not effective
-    # for high dof manipulators such as the Panda. If using the 2-DOF example,
-    # it serves as a nice demonstration of parameterizing the sampling strategy
-    # when constructing PRMs.
-    generator = discretized_joint_space_generator(
-        model, step_size=0.2, generate_random=True
-    )
     if not load_prm:
         print(
             f"Initializing the PRM, this will take up to {options.construction_timeout} seconds..."
         )
-        planner.construct_roadmap(sample_generator=None)
+        planner.construct_roadmap()
 
         # We can save the graph to file for use in future PRMs.
         if prm_file:
@@ -147,8 +111,8 @@ if __name__ == "__main__":
     q_end = get_random_collision_free_state(model, collision_model)
     viz.display(q_start)
 
-    # Uncomment to optionally visualize the resulting PRM, this is messy when the graph
-    # has many nodes.
+    # Uncomment to optionally visualize the resulting PRM.
+    # This can look messy when the graph has many nodes.
     # print("Visualizing the PRM...")
     # planner.visualize(viz, ee_name, show_path=False, show_graph=True)
 
@@ -157,7 +121,7 @@ if __name__ == "__main__":
 
         # Reusing planners for repeated queries in static environments is one of the
         # key advantages of PRMs.
-        input("Press 'Enter' to plan another trajectory, or ctrl-c to quit.")
+        input("Press 'Enter' to plan another path, or ctrl-c to quit.")
         print()
         planner.reset()
         q_start = q_end

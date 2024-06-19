@@ -74,7 +74,7 @@ success, t_vec, q_vec = planner.generate(q_start, dt)
 tforms_to_show = planner.generated_tforms[::5]
 viz.display(q_start)
 visualize_frames(viz, "cartesian_plan", tforms_to_show, line_length=0.05, line_width=1)
-time.sleep(1.0)
+time.sleep(0.5)
 
 plt.ion()
 plt.figure()
