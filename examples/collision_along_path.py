@@ -80,7 +80,8 @@ if __name__ == "__main__":
     target_tforms = extract_cartesian_poses(model, "panda_hand", q_path)
     visualize_frames(viz, "path", target_tforms, line_length=0.05, line_width=1)
     viz.display(q_start)
-    time.sleep(1.0)
+    time.sleep(0.5)
+    input("Press 'Enter' to animate the path")
 
     # Collision check along the path
     for q in q_path:

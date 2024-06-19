@@ -1,6 +1,6 @@
 """
 This example shows PyRoboPlan capabilities for path planning using
-Rapidly-Exploring Random Tree (RRT) algorithm.
+Rapidly-Exploring Random Tree (RRT) algorithm on a 7-DOF Panda robot.
 """
 
 from pinocchio.visualize import MeshcatVisualizer
@@ -38,13 +38,11 @@ if __name__ == "__main__":
     # Define the start and end configurations
     q_start = get_random_collision_free_state(model, collision_model)
     q_end = get_random_collision_free_state(model, collision_model)
-    viz.display(q_start)
-    time.sleep(1.0)
 
-    # Search for a path
+    # Configure the RRT planner
     options = RRTPlannerOptions(
         max_step_size=0.05,
-        max_connection_dist=0.25,
+        max_connection_dist=0.5,
         rrt_connect=False,
         bidirectional_rrt=False,
         rrt_star=False,
@@ -56,28 +54,41 @@ if __name__ == "__main__":
         collision_distance_padding=0.0,
     )
 
-    planner = RRTPlanner(model, collision_model, options=options)
-    path = planner.plan(q_start, q_end)
-    planner.visualize(viz, "panda_hand", show_tree=True)
+    while True:
+        viz.display(q_start)
+        time.sleep(0.5)
 
-    # Animate the path
-    if path:
-        # Optionally shortcut the path
-        do_shortcutting = False
-        if do_shortcutting:
-            path = shortcut_path(model, collision_model, path)
+        # Search for a path
+        planner = RRTPlanner(model, collision_model, options=options)
+        path = planner.plan(q_start, q_end)
+        planner.visualize(viz, "panda_hand", show_tree=True)
 
-        discretized_path = discretize_joint_space_path(path, options.max_step_size)
+        if path:
+            # Optionally shortcut the path
+            do_shortcutting = False
+            if do_shortcutting:
+                path = shortcut_path(model, collision_model, path)
 
-        if do_shortcutting:
-            target_tforms = extract_cartesian_poses(
-                model, "panda_hand", discretized_path
-            )
-            visualize_frames(
-                viz, "shortened_path", target_tforms, line_length=0.05, line_width=1.5
-            )
+            discretized_path = discretize_joint_space_path(path, options.max_step_size)
 
-        input("Press 'Enter' to animate the path.")
-        for q in discretized_path:
-            viz.display(q)
-            time.sleep(0.05)
+            if do_shortcutting:
+                target_tforms = extract_cartesian_poses(
+                    model, "panda_hand", discretized_path
+                )
+                visualize_frames(
+                    viz,
+                    "shortened_path",
+                    target_tforms,
+                    line_length=0.05,
+                    line_width=1.5,
+                )
+
+            input("Press 'Enter' to animate the path.")
+            for q in discretized_path:
+                viz.display(q)
+                time.sleep(0.05)
+
+            input("Press 'Enter' to plan another path, or ctrl-c to quit.")
+            print()
+            q_start = q_end
+            q_end = get_random_collision_free_state(model, collision_model)

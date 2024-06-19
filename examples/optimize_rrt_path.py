@@ -51,20 +51,20 @@ if __name__ == "__main__":
         viz.viewer["planned_path"].delete()
         viz.viewer["optimized_trajectory"].delete()
         viz.display(q_start)
-        time.sleep(1.0)
+        time.sleep(0.5)
 
         # Search for a path
         options = RRTPlannerOptions(
             max_step_size=0.05,
-            max_connection_dist=0.25,
+            max_connection_dist=10.0,
             rrt_connect=False,
             bidirectional_rrt=True,
             rrt_star=True,
-            max_rewire_dist=3.0,
+            max_rewire_dist=10.0,
             max_planning_time=10.0,
             fast_return=True,
             goal_biasing_probability=0.15,
-            collision_distance_padding=distance_padding,
+            collision_distance_padding=0.01,
         )
         print("")
         print(f"Planning a path...")
@@ -82,7 +82,7 @@ if __name__ == "__main__":
         options = CubicTrajectoryOptimizationOptions(
             num_waypoints=len(q_path),
             samples_per_segment=11,
-            min_segment_time=0.5,
+            min_segment_time=1.0,
             max_segment_time=10.0,
             min_vel=-1.5,
             max_vel=1.5,
