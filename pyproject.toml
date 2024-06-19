@@ -4,15 +4,15 @@ build-backend = "hatchling.build"
 
 [project]
 name = "pyroboplan"
-version = "1.0.0"
+version = "1.1.0"
 dependencies = [
-  "drake == 1.29.0",
+  "drake == 1.30.0",
   "pin == 2.7.0",
   "matplotlib == 3.9.0",
   "meshcat == 0.3.2",
   "scipy == 1.13.1",
 ]
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 authors = [
   {name = "Sebastian Castro", email = "sebas.a.castro@gmail.com"},
 ]
