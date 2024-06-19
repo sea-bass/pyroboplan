@@ -86,7 +86,7 @@ def test_get_random_collision_free_state():
     assert np.all(state <= model.upperPositionLimit)
 
 
-def test_get_random_collision_free_ransform():
+def test_get_random_collision_free_transform():
     model, collision_model, visual_model = load_models()
     add_self_collisions(model, collision_model)
     add_object_collisions(model, collision_model, visual_model)

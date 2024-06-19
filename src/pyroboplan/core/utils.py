@@ -6,7 +6,12 @@ import pinocchio
 
 
 def check_collisions_at_state(
-    model, collision_model, q, data=None, collision_data=None
+    model,
+    collision_model,
+    q,
+    data=None,
+    collision_data=None,
+    distance_padding=0.0,
 ):
     """
     Checks whether a specified joint configuration is collision-free.
@@ -14,9 +19,50 @@ def check_collisions_at_state(
     Parameters
     ----------
         model : `pinocchio.Model`
-            The model from which to generate a random state.
-        collision_model : `pinocchio.Model`
             The model to use for collision checking.
+        collision_model : `pinocchio.Model`
+            The collision model to use for collision checking.
+        q : array-like
+            The joint configuration of the model.
+        data : `pinocchio.Data`, optional
+            The model data to use for collision checking. If None, data is created automatically.
+        collision_data : `pinocchio.GeometryData`, optional
+            The collision_model data to use for collision checking. If None, data is created automatically.
+        distance_padding : float, optional
+            The padding, in meters, to use for distance to nearest collision.
+
+    Returns
+    -------
+        bool
+            True if there are any collisions or minimum distance violations, otherwise False.
+    """
+    if not data:
+        data = model.createData()
+    if not collision_data:
+        collision_data = collision_model.createData()
+    stop_at_first_collision = True  # For faster computation
+
+    for elem in collision_data.collisionRequests:
+        elem.security_margin = distance_padding
+
+    pinocchio.computeCollisions(
+        model, data, collision_model, collision_data, q, stop_at_first_collision
+    )
+    return np.any([cr.isCollision() for cr in collision_data.collisionResults])
+
+
+def get_minimum_distance_at_state(
+    model, collision_model, q, data=None, collision_data=None
+):
+    """
+    Gets the minimum distance to collision at a specified state.
+
+    Parameters
+    ----------
+        model : `pinocchio.Model`
+            The model to use for collision checking.
+        collision_model : `pinocchio.Model`
+            The collision model to use for collision checking.
         q : array-like
             The joint configuration of the model.
         data : `pinocchio.Data`, optional
@@ -26,23 +72,23 @@ def check_collisions_at_state(
 
     Returns
     -------
-        bool
-            True is there are any collisions, otherwise False.
+        float
+            The minimum distance to collision, in meters.
     """
+    if len(collision_model.collisionPairs) == 0:
+        return np.inf
+
     if not data:
         data = model.createData()
     if not collision_data:
         collision_data = collision_model.createData()
-    stop_at_first_collision = True  # For faster computation
 
-    pinocchio.computeCollisions(
-        model, data, collision_model, collision_data, q, stop_at_first_collision
-    )
-    return np.any([cr.isCollision() for cr in collision_data.collisionResults])
+    pinocchio.computeDistances(model, data, collision_model, collision_data, q)
+    return np.min([dr.min_distance for dr in collision_data.distanceResults])
 
 
 def check_collisions_along_path(
-    model, collision_model, q_path, data=None, collision_data=None
+    model, collision_model, q_path, data=None, collision_data=None, distance_padding=0.0
 ):
     """
     Checks whether a path consisting of multiple joint configurations is collision-free.
@@ -59,17 +105,22 @@ def check_collisions_along_path(
             The model data to use for collision checking. If None, data is created automatically.
         collision_data : `pinocchio.GeometryData`, optional
             The collision_model data to use for collision checking. If None, data is created automatically.
+        distance_padding : float, optional
+            The padding, in meters, to use for distance to nearest collision.
 
     Returns
     -------
         bool
-            True is there are any collisions, otherwise False.
+            True if there are any collisions or minimum distance violations, otherwise False.
     """
     if not data:
         data = model.createData()
     if not collision_data:
         collision_data = collision_model.createData()
     stop_at_first_collision = True  # For faster computation
+
+    for elem in collision_data.collisionRequests:
+        elem.security_margin = distance_padding
 
     for q in q_path:
         pinocchio.computeCollisions(
@@ -141,7 +192,9 @@ def get_random_state(model, padding=0.0):
     )
 
 
-def get_random_collision_free_state(model, collision_model, padding=0.0, max_tries=100):
+def get_random_collision_free_state(
+    model, collision_model, joint_padding=0.0, distance_padding=0.0, max_tries=100
+):
     """
     Returns a random state that is within the model's joint limits and is collision-free according to the collision model.
 
@@ -151,8 +204,10 @@ def get_random_collision_free_state(model, collision_model, padding=0.0, max_tri
             The model from which to generate a random state.
         collision_model : `pinocchio.Model`
             The model to use for collision checking.
-        padding : float or array-like, optional
+        joint_padding : float or array-like, optional
             The padding to use around the sampled joint limits.
+        distance_padding : float, optional
+            The padding, in meters, to use for distance to nearest collision.
         max_tries : int, optional
             The maximum number of tries for sampling a collision-free state.
 
@@ -163,8 +218,10 @@ def get_random_collision_free_state(model, collision_model, padding=0.0, max_tri
     """
     num_tries = 0
     while num_tries < max_tries:
-        state = get_random_state(model, padding=padding)
-        if not check_collisions_at_state(model, collision_model, state):
+        state = get_random_state(model, padding=joint_padding)
+        if not check_collisions_at_state(
+            model, collision_model, state, distance_padding=distance_padding
+        ):
             return state
         num_tries += 1
 
@@ -198,7 +255,12 @@ def get_random_transform(model, target_frame, joint_padding=0.0):
 
 
 def get_random_collision_free_transform(
-    model, collision_model, target_frame, joint_padding=0.0, max_tries=100
+    model,
+    collision_model,
+    target_frame,
+    joint_padding=0.0,
+    distance_padding=0.0,
+    max_tries=100,
 ):
     """
     Returns a random transform for a target frame that is within the model's joint limits and is collision-free.
@@ -213,6 +275,8 @@ def get_random_collision_free_transform(
             The name of the frame for which to generate a random transform.
         joint_padding : float or array-like, optional
             The padding to use around the sampled joint limits.
+        distance_padding : float, optional
+            The padding, in meters, to use for distance to nearest collision.
         max_tries : int, optional
             The maximum number of tries for sampling a collision-free state.
 
@@ -222,7 +286,11 @@ def get_random_collision_free_transform(
             A randomly generated transform for the specified target frame.
     """
     q_target = get_random_collision_free_state(
-        model, collision_model, joint_padding, max_tries
+        model,
+        collision_model,
+        joint_padding=joint_padding,
+        distance_padding=distance_padding,
+        max_tries=max_tries,
     )
     data = model.createData()
     target_frame_id = model.getFrameId(target_frame)
@@ -343,6 +411,39 @@ def get_collision_geometry_ids(model, collision_model, body):
                     body_collision_geom_ids.append(id)
 
     return body_collision_geom_ids
+
+
+def get_collision_pair_indices_from_bodies(model, collision_model, body_list):
+    """
+    Returns a list of all the collision pair indices involving a list of objects.
+
+    Parameters
+    ----------
+        model : `pinocchio.Model`
+            The model to use for getting frame IDs.
+        collision_model : `pinocchio.Model`
+            The model to use for collision checking.
+        body_list : list[str]
+            A list containing the names of bodies.
+            These can be directly the name of a geometry in the collision model,
+            or they can be the name of the frame in the main model.
+
+    Return
+    ------
+        list[int]
+            The indices of the collision pairs list involving the bodies in the specified list.
+    """
+    collision_ids = set()
+    for obj in body_list:
+        ids = get_collision_geometry_ids(model, collision_model, obj)
+        collision_ids.update(ids)
+
+    pairs = []
+    for idx, p in enumerate(collision_model.collisionPairs):
+        if p.first in collision_ids or p.second in collision_ids:
+            pairs.append(idx)
+
+    return pairs
 
 
 def set_collisions(model, collision_model, body1, body2, enable):

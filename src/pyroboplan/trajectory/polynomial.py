@@ -156,6 +156,7 @@ class PolynomialTrajectoryBase(ABC):
             else:
                 title = f"Dimension {dim + 1}"
             plt.figure(title)
+            plt.cla()
 
             # Positions, velocities, and accelerations
             legend = []

@@ -53,6 +53,7 @@ if __name__ == "__main__":
         rng_seed=None,
         fast_return=True,
         goal_biasing_probability=0.15,
+        collision_distance_padding=0.0,
     )
 
     planner = RRTPlanner(model, collision_model, options=options)

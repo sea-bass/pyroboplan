@@ -49,7 +49,14 @@ def extend_robot_state(q_parent, q_sample, max_connection_distance):
 
 
 def has_collision_free_path(
-    q1, q2, max_step_size, model, collision_model, data=None, collision_data=None
+    q1,
+    q2,
+    max_step_size,
+    model,
+    collision_model,
+    data=None,
+    collision_data=None,
+    distance_padding=0.0,
 ):
     """
     Determines if there is a collision free path between the provided nodes and models.
@@ -70,6 +77,8 @@ def has_collision_free_path(
             The model data to use for this solver. If None, data is created automatically.
         collision_data : `pinocchio.GeometryData`, optional
             The collision_model data to use for this solver. If None, data is created automatically.
+        distance_padding : float, optional
+            The padding, in meters, to use for distance to nearest collision.
 
     Returns
     -------
@@ -77,13 +86,25 @@ def has_collision_free_path(
             True if the configurations can be connected, False otherwise.
     """
     # Ensure the destination is collision free.
-    if check_collisions_at_state(model, collision_model, q2, data, collision_data):
+    if check_collisions_at_state(
+        model,
+        collision_model,
+        q2,
+        data,
+        collision_data,
+        distance_padding=distance_padding,
+    ):
         return False
 
     # Ensure the discretized path is collision free.
     path_to_q_extend = discretize_joint_space_path([q1, q2], max_step_size)
     if check_collisions_along_path(
-        model, collision_model, path_to_q_extend, data, collision_data
+        model,
+        collision_model,
+        path_to_q_extend,
+        data,
+        collision_data,
+        distance_padding=distance_padding,
     ):
         return False
 
