@@ -32,11 +32,11 @@ def add_object_collisions(model, collision_model, visual_model):
     Parameters
     ----------
         model : `pinocchio.Model`
-            The Panda model.
+            The robot model.
         collision_model : `pinocchio.Model`
-            The Panda collision geometry model.
+            The collision geometry model.
         visual_model : `pinocchio.Model`
-            The Panda visual geometry model.
+            The visual geometry model.
     """
     obstacle_1 = pinocchio.GeometryObject(
         "obstacle_1",
