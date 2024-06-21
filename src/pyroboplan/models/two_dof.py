@@ -24,6 +24,7 @@ def load_models():
 
     return pinocchio.buildModelsFromUrdf(urdf_filename, package_dirs=models_folder)
 
+
 def add_object_collisions(model, collision_model, visual_model):
     """
     Adds obstacles and collisions to the 2-DOF manipulator collision model.
