@@ -14,7 +14,7 @@ from pyroboplan.core.utils import (
     extract_cartesian_poses,
     get_random_collision_free_state,
 )
-from pyroboplan.models.two_dof import load_models
+from pyroboplan.models.two_dof import load_models, add_object_collisions
 from pyroboplan.planning.path_shortcutting import shortcut_path
 from pyroboplan.planning.prm import PRMPlanner, PRMPlannerOptions
 from pyroboplan.planning.utils import (
@@ -62,6 +62,7 @@ def run_prm_search(q_start, q_end, planner, options, ee_name, max_retries=5):
 if __name__ == "__main__":
     # We are going to construct a roadmap a 2-DOF manipulator.
     model, collision_model, visual_model = load_models()
+    add_object_collisions(model, collision_model, visual_model)
     ee_name = "ee"
     data = model.createData()
     collision_data = collision_model.createData()
@@ -118,8 +119,12 @@ if __name__ == "__main__":
     viz.loadViewerModel()
 
     # Define the start and end configurations
-    q_start = get_random_collision_free_state(model, collision_model)
-    q_end = get_random_collision_free_state(model, collision_model)
+    q_start = get_random_collision_free_state(
+        model, collision_model, distance_padding=0.1
+    )
+    q_end = get_random_collision_free_state(
+        model, collision_model, distance_padding=0.1
+    )
     viz.display(q_start)
 
     print("Visualizing the PRM...")

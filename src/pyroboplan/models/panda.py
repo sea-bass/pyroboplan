@@ -52,7 +52,7 @@ def add_self_collisions(model, collision_model, srdf_filename=None):
 
 def add_object_collisions(model, collision_model, visual_model, inflation_radius=0.0):
     """
-    Adds link self-collisions to the Panda collision model.
+    Adds obstacles and collisions to the Panda collision model.
 
     Parameters
     ----------
