@@ -7,7 +7,7 @@ from pinocchio.visualize import MeshcatVisualizer
 import time
 
 from pyroboplan.core.utils import get_random_collision_free_state
-from pyroboplan.models.two_dof import load_models
+from pyroboplan.models.two_dof import load_models, add_object_collisions
 from pyroboplan.planning.rrt import RRTPlanner, RRTPlannerOptions
 from pyroboplan.planning.utils import discretize_joint_space_path
 
@@ -15,6 +15,7 @@ from pyroboplan.planning.utils import discretize_joint_space_path
 if __name__ == "__main__":
     # Create models and data
     model, collision_model, visual_model = load_models()
+    add_object_collisions(model, collision_model, visual_model)
     data = model.createData()
     collision_data = collision_model.createData()
 
@@ -24,8 +25,8 @@ if __name__ == "__main__":
     viz.loadViewerModel()
 
     # Define the start and end configurations
-    q_start = get_random_collision_free_state(model, collision_model)
-    q_end = get_random_collision_free_state(model, collision_model)
+    q_start = get_random_collision_free_state(model, collision_model, distance_padding=0.1)
+    q_end = get_random_collision_free_state(model, collision_model, distance_padding=0.1)
 
     # Configure the RRT planner
     options = RRTPlannerOptions(
