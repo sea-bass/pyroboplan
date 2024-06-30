@@ -2,8 +2,9 @@ Motion Planning
 ===============
 
 Motion planning is a broad area of robotics, and often consists of several components.
-In this page, we will discuss some of these components and where you can find them within the ``pyroboplan`` library.
+You can learn more from my blog post, [How Do Robot Manipulators Move?](https://roboticseabass.com/2024/06/30/how-do-robot-manipulators-move)
 
+In this page, we will discuss some of these components and where you can find them within the ``pyroboplan`` library.
 
 Robot Modeling and Kinematics
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
