@@ -76,7 +76,10 @@ if __name__ == "__main__":
     for _ in range(10):
         init_state = get_random_collision_free_state(model, collision_model)
         target_tform = get_random_collision_free_transform(
-            model, collision_model, target_frame, joint_padding=0.05,
+            model,
+            collision_model,
+            target_frame,
+            joint_padding=0.05,
         )
         q_sol = ik.solve(
             target_frame,
