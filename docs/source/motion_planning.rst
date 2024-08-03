@@ -87,7 +87,7 @@ However, for most robotics applications, we rely on **numerical methods** instea
 * Additional constraints, such as joint limits, Cartesian pose limits, or collision avoidance, are difficult to enforce analytically.
 
 The `pyroboplan.ik module <api/pyroboplan.ik.html>`_ contains implementations for IK solvers.
-You can also try running the :examples:`differential IK example <differential_ik.py>`.
+You can also try running the :examples:`fixed arm differential IK <differential_ik.py>` and :examples:`whole-body differential IK <differential_ik_whole_body.py>` examples.
 
 .. image:: _static/images/inverse_kinematics.png
     :width: 600

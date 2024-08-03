@@ -4,28 +4,29 @@ It then demonstrates basic capabilities in Pinocchio such as forward kinematics,
 Jacobian computation, collision checking, and dynamics simulation.
 """
 
-import pinocchio
-from pinocchio.visualize import MeshcatVisualizer
-
 import meshcat.geometry as mg
 import numpy as np
-from os.path import dirname, join, abspath
+import os
 import time
+
+import pinocchio
+from pinocchio.visualize import MeshcatVisualizer
+from pyroboplan.models.utils import get_example_models_folder
 
 
 def main():
     # Load the models from the URDF file.
-    pinocchio_model_dir = join(dirname(str(abspath(__file__))), "..", "..", "models")
-    urdf_filename = join(
-        pinocchio_model_dir, "ur_description", "urdf", "ur5_gripper.urdf"
+    model_dir = get_example_models_folder()
+    urdf_filename = os.path.join(
+        model_dir, "ur5_description", "urdf", "ur5_gripper.urdf"
     )
     model, collision_model, visual_model = pinocchio.buildModelsFromUrdf(
-        urdf_filename, package_dirs=pinocchio_model_dir
+        urdf_filename, package_dirs=model_dir
     )
 
     # Modify the collision model for display.
-    srdf_filename = join(
-        pinocchio_model_dir, "ur_description", "srdf", "ur5_gripper.srdf"
+    srdf_filename = os.path.join(
+        model_dir, "ur5_description", "srdf", "ur5_gripper.srdf"
     )
     collision_model.addAllCollisionPairs()
     pinocchio.removeCollisionPairs(model, collision_model, srdf_filename)
@@ -59,7 +60,7 @@ def main():
 
     # Set up initial conditions for the simulation.
     q = np.array([0.0, -np.pi / 2 + 0.01, 0.0, 0.0, 0.0, 0.0])
-    v = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+    v = np.array([1.0, 0.0, 0.0, 0.0, 0.0, 0.0])
     tau0 = np.zeros(model.nv)
 
     dt = 0.01
