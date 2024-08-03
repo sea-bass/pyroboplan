@@ -48,6 +48,7 @@ if __name__ == "__main__":
         min_step_size=0.025,
         max_step_size=0.1,
         joint_weights=[5.0, 5.0, 15.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
+        max_retries=5,
         rng_seed=None,
     )
     ik = DifferentialIk(
@@ -64,7 +65,7 @@ if __name__ == "__main__":
             collision_model,
             collision_data,
             q,
-            gain=0.5,
+            gain=0.25,
             dist_padding=0.02,
         ),
         lambda model, q: joint_limit_nullspace_component(

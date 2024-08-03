@@ -162,8 +162,15 @@ class DifferentialIk:
         np.random.seed(self.options.rng_seed)
         target_frame_id = self.model.getFrameId(target_frame)
 
-        # Create the joint weights.
+        # Get the active joint indices.
         num_active_joints = self.model.nq - len(self.options.ignore_joint_indices)
+        active_joint_indices = [
+            idx
+            for idx in range(self.model.nq)
+            if idx not in self.options.ignore_joint_indices
+        ]
+
+        # Create the joint weights.
         if self.options.joint_weights is None:
             W = np.eye(num_active_joints)
         elif len(self.options.joint_weights) != num_active_joints:
@@ -238,14 +245,14 @@ class DifferentialIk:
                             print("Solved, but outside joint limits.")
                     break
 
-                # Calculate the Jacobian
+                # Calculate the Jacobian for the active indices.
                 J = pinocchio.computeFrameJacobian(
                     self.model,
                     self.data,
                     q_cur,
                     target_frame_id,
                     pinocchio.ReferenceFrame.LOCAL,
-                )
+                )[:, active_joint_indices]
 
                 # Compute the (optionally damped amd weighted) Jacobian pseudoinverse.
                 jjt = (J @ W @ J.T) + self.options.damping**2 * np.eye(6)
@@ -263,7 +270,10 @@ class DifferentialIk:
                     q_step = alpha * J.T @ np.linalg.solve(jjt, error)
                 else:
                     nullspace_term = sum(
-                        [comp(self.model, q_cur) for comp in nullspace_components]
+                        [
+                            comp(self.model, q_cur)[active_joint_indices]
+                            for comp in nullspace_components
+                        ]
                     )
                     q_step = alpha * (
                         J.T @ (np.linalg.solve(jjt, error - J @ (nullspace_term)))
@@ -271,10 +281,9 @@ class DifferentialIk:
                     )
 
                 # Zero out the values for the ignored indices before returning.
-                for idx in self.options.ignore_joint_indices:
-                    q_step[idx] = 0.0
+                for q, idx in zip(q_step, active_joint_indices):
+                    q_cur[idx] += q
 
-                q_cur += q_step
                 n_iters += 1
 
                 # Protect against numerical instability.
