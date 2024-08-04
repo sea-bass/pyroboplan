@@ -60,7 +60,7 @@ def main():
 
     # Set up initial conditions for the simulation.
     q = np.array([0.0, -np.pi / 2 + 0.01, 0.0, 0.0, 0.0, 0.0])
-    v = np.array([1.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+    v = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
     tau0 = np.zeros(model.nv)
 
     dt = 0.01
