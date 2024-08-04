@@ -164,24 +164,24 @@ class DifferentialIk:
         target_frame_id = self.model.getFrameId(target_frame)
 
         # Get the active joint indices.
-        num_active_joints = self.model.nq - len(self.options.ignore_joint_indices)
         active_joint_indices = [
             idx
             for idx in range(self.model.nq)
             if idx not in self.options.ignore_joint_indices
         ]
+        num_active_joints = len(active_joint_indices)
 
         # Create the joint weights.
         if self.options.joint_weights is None:
+            # Use identity weights if they are not specified.
             W = np.eye(num_active_joints)
         elif len(self.options.joint_weights) != num_active_joints:
             raise ValueError(
                 f"Joint weights, if specified, must have {num_active_joints} elements."
             )
         else:
-            W = np.diag(self.options.joint_weights)
-        # Invert the original weight matrix so that higher weight means less joint motion.
-        W = np.linalg.inv(W)
+            # Invert the weights so that higher weight means less joint motion.
+            W = 1.0 / np.diag(self.options.joint_weights)
 
         # Create a random initial state, if not specified
         if init_state is None:
@@ -244,7 +244,7 @@ class DifferentialIk:
                             print("Solved, but outside joint limits.")
                     break
 
-                # Calculate the Jacobian for the active indices.
+                # Calculate the Jacobian for the active joints.
                 J = pinocchio.computeFrameJacobian(
                     self.model,
                     self.data,
@@ -253,7 +253,7 @@ class DifferentialIk:
                     pinocchio.ReferenceFrame.LOCAL,
                 )[:, active_joint_indices]
 
-                # Compute the (optionally damped amd weighted) Jacobian pseudoinverse.
+                # Compute the (optionally damped and weighted) Jacobian pseudoinverse.
                 jjt = (J @ W @ J.T) + self.options.damping**2 * np.eye(6)
 
                 # Compute the gradient descent step size.
