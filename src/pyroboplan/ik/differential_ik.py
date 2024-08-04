@@ -87,6 +87,7 @@ class DifferentialIk:
       * https://motion.cs.illinois.edu/RoboticSystems/InverseKinematics.html
       * https://homes.cs.washington.edu/~todorov/courses/cseP590/06_JacobianMethods.pdf
       * https://www.cs.cmu.edu/~15464-s13/lectures/lecture6/iksurvey.pdf
+      * http://www.diag.uniroma1.it/deluca/rob2_en/02_KinematicRedundancy_1.pdf
     """
 
     def __init__(
@@ -180,9 +181,7 @@ class DifferentialIk:
         else:
             W = np.diag(self.options.joint_weights)
         # Invert the original weight matrix so that higher weight means less joint motion.
-        # Then, normalize it to protect against numerical instabilities.
         W = np.linalg.inv(W)
-        W /= np.max(W)
 
         # Create a random initial state, if not specified
         if init_state is None:
@@ -267,7 +266,7 @@ class DifferentialIk:
 
                 # Gradient descent step
                 if not nullspace_components:
-                    q_step = alpha * J.T @ np.linalg.solve(jjt, error)
+                    q_step = alpha * W @ J.T @ np.linalg.solve(jjt, error)
                 else:
                     nullspace_term = sum(
                         [
@@ -276,7 +275,7 @@ class DifferentialIk:
                         ]
                     )
                     q_step = alpha * (
-                        J.T @ (np.linalg.solve(jjt, error - J @ (nullspace_term)))
+                        W @ J.T @ (np.linalg.solve(jjt, error - J @ (nullspace_term)))
                         + nullspace_term
                     )
 
