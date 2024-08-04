@@ -3,24 +3,24 @@
     <link name="link0">
         <visual>
             <geometry>
-                <mesh filename="package://custom_description/meshes/visual/link.dae" />
+                <mesh filename="package://robot_12dof_description/meshes/visual/link.dae" />
             </geometry>
         </visual>
         <collision>
             <geometry>
-                <mesh filename="package://custom_description/meshes/collision/link.dae" />
+                <mesh filename="package://robot_12dof_description/meshes/collision/link.dae" />
             </geometry>
         </collision>
     </link>
     <link name="link1">
         <visual>
             <geometry>
-                <mesh filename="package://custom_description/meshes/visual/link.dae" />
+                <mesh filename="package://robot_12dof_description/meshes/visual/link.dae" />
             </geometry>
         </visual>
         <collision>
             <geometry>
-                <mesh filename="package://custom_description/meshes/collision/link.dae" />
+                <mesh filename="package://robot_12dof_description/meshes/collision/link.dae" />
             </geometry>
         </collision>
     </link>
@@ -35,12 +35,12 @@
     <link name="link2">
         <visual>
             <geometry>
-                <mesh filename="package://custom_description/meshes/visual/link.dae" />
+                <mesh filename="package://robot_12dof_description/meshes/visual/link.dae" />
             </geometry>
         </visual>
         <collision>
             <geometry>
-                <mesh filename="package://custom_description/meshes/collision/link.dae" />
+                <mesh filename="package://robot_12dof_description/meshes/collision/link.dae" />
             </geometry>
         </collision>
     </link>
@@ -55,12 +55,12 @@
     <link name="link3">
         <visual>
             <geometry>
-                <mesh filename="package://custom_description/meshes/visual/link.dae" />
+                <mesh filename="package://robot_12dof_description/meshes/visual/link.dae" />
             </geometry>
         </visual>
         <collision>
             <geometry>
-                <mesh filename="package://custom_description/meshes/collision/link.dae" />
+                <mesh filename="package://robot_12dof_description/meshes/collision/link.dae" />
             </geometry>
         </collision>
     </link>
@@ -75,12 +75,12 @@
     <link name="link4">
         <visual>
             <geometry>
-                <mesh filename="package://custom_description/meshes/visual/link.dae" />
+                <mesh filename="package://robot_12dof_description/meshes/visual/link.dae" />
             </geometry>
         </visual>
         <collision>
             <geometry>
-                <mesh filename="package://custom_description/meshes/collision/link.dae" />
+                <mesh filename="package://robot_12dof_description/meshes/collision/link.dae" />
             </geometry>
         </collision>
     </link>
@@ -95,12 +95,12 @@
     <link name="link5">
         <visual>
             <geometry>
-                <mesh filename="package://custom_description/meshes/visual/link.dae" />
+                <mesh filename="package://robot_12dof_description/meshes/visual/link.dae" />
             </geometry>
         </visual>
         <collision>
             <geometry>
-                <mesh filename="package://custom_description/meshes/collision/link.dae" />
+                <mesh filename="package://robot_12dof_description/meshes/collision/link.dae" />
             </geometry>
         </collision>
     </link>
@@ -115,12 +115,12 @@
     <link name="link6">
         <visual>
             <geometry>
-                <mesh filename="package://custom_description/meshes/visual/link.dae" />
+                <mesh filename="package://robot_12dof_description/meshes/visual/link.dae" />
             </geometry>
         </visual>
         <collision>
             <geometry>
-                <mesh filename="package://custom_description/meshes/collision/link.dae" />
+                <mesh filename="package://robot_12dof_description/meshes/collision/link.dae" />
             </geometry>
         </collision>
     </link>
@@ -135,12 +135,12 @@
     <link name="link7">
         <visual>
             <geometry>
-                <mesh filename="package://custom_description/meshes/visual/link.dae" />
+                <mesh filename="package://robot_12dof_description/meshes/visual/link.dae" />
             </geometry>
         </visual>
         <collision>
             <geometry>
-                <mesh filename="package://custom_description/meshes/collision/link.dae" />
+                <mesh filename="package://robot_12dof_description/meshes/collision/link.dae" />
             </geometry>
         </collision>
     </link>
@@ -155,12 +155,12 @@
     <link name="link8">
         <visual>
             <geometry>
-                <mesh filename="package://custom_description/meshes/visual/link.dae" />
+                <mesh filename="package://robot_12dof_description/meshes/visual/link.dae" />
             </geometry>
         </visual>
         <collision>
             <geometry>
-                <mesh filename="package://custom_description/meshes/collision/link.dae" />
+                <mesh filename="package://robot_12dof_description/meshes/collision/link.dae" />
             </geometry>
         </collision>
     </link>
@@ -182,12 +182,12 @@
     <link name="link9">
         <visual>
             <geometry>
-                <mesh filename="package://custom_description/meshes/visual/link.dae" />
+                <mesh filename="package://robot_12dof_description/meshes/visual/link.dae" />
             </geometry>
         </visual>
         <collision>
             <geometry>
-                <mesh filename="package://custom_description/meshes/collision/link.dae" />
+                <mesh filename="package://robot_12dof_description/meshes/collision/link.dae" />
             </geometry>
         </collision>
     </link>
@@ -202,12 +202,12 @@
     <link name="link10">
         <visual>
             <geometry>
-                <mesh filename="package://custom_description/meshes/visual/link.dae" />
+                <mesh filename="package://robot_12dof_description/meshes/visual/link.dae" />
             </geometry>
         </visual>
         <collision>
             <geometry>
-                <mesh filename="package://custom_description/meshes/collision/link.dae" />
+                <mesh filename="package://robot_12dof_description/meshes/collision/link.dae" />
             </geometry>
         </collision>
     </link>
@@ -222,12 +222,12 @@
     <link name="link11">
         <visual>
             <geometry>
-                <mesh filename="package://custom_description/meshes/visual/link.dae" />
+                <mesh filename="package://robot_12dof_description/meshes/visual/link.dae" />
             </geometry>
         </visual>
         <collision>
             <geometry>
-                <mesh filename="package://custom_description/meshes/collision/link.dae" />
+                <mesh filename="package://robot_12dof_description/meshes/collision/link.dae" />
             </geometry>
         </collision>
     </link>
