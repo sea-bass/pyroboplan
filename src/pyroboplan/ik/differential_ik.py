@@ -181,7 +181,7 @@ class DifferentialIk:
             )
         else:
             # Invert the weights so that higher weight means less joint motion.
-            W = 1.0 / np.diag(self.options.joint_weights)
+            W = np.linalg.inv(np.diag(self.options.joint_weights))
 
         # Create a random initial state, if not specified
         if init_state is None:

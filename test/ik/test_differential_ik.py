@@ -239,7 +239,7 @@ def test_ik_solve_ik_joint_weights():
 
     # Solve IK with joint weights for the 7 arm joints.
     options = DifferentialIkOptions(
-        joint_weights=[0.1, 0.5, 0.5, 0.5, 1.0, 1.0, 1.0],
+        joint_weights=[10.0, 5.0, 5.0, 5.0, 1.0, 1.0, 1.0],
         ignore_joint_indices=ignore_joint_indices,
     )
     ik = DifferentialIk(model, data=None, options=options, visualizer=None)
