@@ -198,7 +198,7 @@ def test_ik_solve_bad_joint_weights():
         model.getJointId("panda_finger_joint2") - 1,
     ]
 
-    # Solve IK with bad joint weights.
+    # Solve IK with bad joint weight sizes.
     options = DifferentialIkOptions(
         joint_weights=[1.0, 2.0], ignore_joint_indices=ignore_joint_indices
     )
@@ -214,6 +214,22 @@ def test_ik_solve_bad_joint_weights():
     assert (
         exc_info.value.args[0] == "Joint weights, if specified, must have 7 elements."
     )
+
+    # Solve IK with non-positive joint weight values.
+    options = DifferentialIkOptions(
+        joint_weights=[0.0, -1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
+        ignore_joint_indices=ignore_joint_indices,
+    )
+    ik = DifferentialIk(model, data=None, options=options, visualizer=None)
+    with pytest.raises(ValueError) as exc_info:
+        ik.solve(
+            target_frame,
+            target_tform,
+            init_state=None,
+            nullspace_components=[],
+        )
+
+    assert exc_info.value.args[0] == "All joint weights must be strictly positive."
 
 
 def test_ik_solve_ik_joint_weights():

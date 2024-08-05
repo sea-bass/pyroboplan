@@ -42,7 +42,7 @@ if __name__ == "__main__":
 
     # Set up the IK solver.
     # The first 3 values in the weights are the base, and the other 6 are the arm.
-    # This means we are weighing base motion more than arm motion.
+    # This means we are putting a higher cost on base motion more than arm motion.
     options = DifferentialIkOptions(
         damping=0.0001,
         min_step_size=0.025,

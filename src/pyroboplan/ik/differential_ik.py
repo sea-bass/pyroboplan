@@ -57,6 +57,7 @@ class DifferentialIkOptions:
                 To use a fixed step size, set both minimum and maximum values to be equal.
             joint_weights : list[float], optional
                 A list of relative weights for different joints, used in computing the Jacobian pseudoinverse.
+                If your robot has redundant joints, assigning a higher weight to some joints will cause them to move less than lower weight joints.
                 If not specified, all joints are weighted equally with unit weight.
             ignore_joint_indices : list[int], optional
                 A list of joints to ignore changing when solving IK.
@@ -179,6 +180,8 @@ class DifferentialIk:
             raise ValueError(
                 f"Joint weights, if specified, must have {num_active_joints} elements."
             )
+        elif np.any(np.array(self.options.joint_weights) <= 0.0):
+            raise ValueError(f"All joint weights must be strictly positive.")
         else:
             # Invert the weights so that higher weight means less joint motion.
             W = np.linalg.inv(np.diag(self.options.joint_weights))
