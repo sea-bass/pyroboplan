@@ -1,5 +1,7 @@
 """
-This example shows PyRoboPlan capabilities for inverse kinematics (IK).
+This example shows PyRoboPlan capabilities for whole-body inverse kinematics (IK),
+using a 6-DOF arm on a mobile base capable of planar (3-DOF) motion.
+
 IK defines the task of finding a set of joint positions for a robot model to
 achieve a desired target pose for a specific coordinate frame.
 """
@@ -16,27 +18,21 @@ from pyroboplan.ik.nullspace_components import (
     joint_limit_nullspace_component,
     collision_avoidance_nullspace_component,
 )
-from pyroboplan.models.panda import (
-    load_models,
-    add_self_collisions,
-    add_object_collisions,
+from pyroboplan.models.ur5 import (
+    load_ur5_on_base_models,
+    add_ur5_on_base_self_collisions,
 )
 
 
 if __name__ == "__main__":
     # Create models and data
-    model, collision_model, visual_model = load_models()
-    add_self_collisions(model, collision_model)
-    add_object_collisions(model, collision_model, visual_model, inflation_radius=0.1)
+    model, collision_model, visual_model = load_ur5_on_base_models()
+    add_ur5_on_base_self_collisions(model, collision_model)
 
     data = model.createData()
     collision_data = collision_model.createData()
 
-    target_frame = "panda_hand"
-    ignore_joint_indices = [
-        model.getJointId("panda_finger_joint1") - 1,
-        model.getJointId("panda_finger_joint2") - 1,
-    ]
+    target_frame = "tool0"
 
     # Initialize visualizer
     viz = MeshcatVisualizer(model, collision_model, visual_model, data=data)
@@ -44,12 +40,15 @@ if __name__ == "__main__":
     viz.loadViewerModel()
     np.set_printoptions(precision=3)
 
-    # Set up the IK solver
+    # Set up the IK solver.
+    # The first 3 values in the weights are the base, and the other 6 are the arm.
+    # This means we are putting a higher cost on base motion more than arm motion.
     options = DifferentialIkOptions(
         damping=0.0001,
         min_step_size=0.025,
         max_step_size=0.1,
-        ignore_joint_indices=ignore_joint_indices,
+        joint_weights=[5.0, 5.0, 15.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
+        max_retries=5,
         rng_seed=None,
     )
     ik = DifferentialIk(
@@ -66,11 +65,11 @@ if __name__ == "__main__":
             collision_model,
             collision_data,
             q,
-            gain=1.0,
-            dist_padding=0.05,
+            gain=0.25,
+            dist_padding=0.02,
         ),
         lambda model, q: joint_limit_nullspace_component(
-            model, q, gain=0.1, padding=0.025
+            model, q, gain=0.1, padding=0.02
         ),
     ]
 

@@ -29,6 +29,7 @@ class DifferentialIkOptions:
         min_step_size=0.1,
         max_step_size=0.5,
         ignore_joint_indices=[],
+        joint_weights=None,
         rng_seed=None,
     ):
         """
@@ -54,6 +55,10 @@ class DifferentialIkOptions:
             max_step_size : float
                 Maximum gradient step size, between 0 and 1, based on ratio of current distance to target to initial distance to target.
                 To use a fixed step size, set both minimum and maximum values to be equal.
+            joint_weights : list[float], optional
+                A list of relative weights for different joints, used in computing the Jacobian pseudoinverse.
+                If your robot has redundant joints, assigning a higher weight to some joints will cause them to move less than lower weight joints.
+                If not specified, all joints are weighted equally with unit weight.
             ignore_joint_indices : list[int], optional
                 A list of joints to ignore changing when solving IK.
                 TODO: This should eventually be done through a concept of joint groups.
@@ -67,6 +72,7 @@ class DifferentialIkOptions:
         self.damping = damping
         self.min_step_size = min_step_size
         self.max_step_size = max_step_size
+        self.joint_weights = joint_weights
         self.ignore_joint_indices = ignore_joint_indices
         self.rng_seed = rng_seed
 
@@ -82,6 +88,7 @@ class DifferentialIk:
       * https://motion.cs.illinois.edu/RoboticSystems/InverseKinematics.html
       * https://homes.cs.washington.edu/~todorov/courses/cseP590/06_JacobianMethods.pdf
       * https://www.cs.cmu.edu/~15464-s13/lectures/lecture6/iksurvey.pdf
+      * http://www.diag.uniroma1.it/deluca/rob2_en/02_KinematicRedundancy_1.pdf
     """
 
     def __init__(
@@ -157,6 +164,28 @@ class DifferentialIk:
         np.random.seed(self.options.rng_seed)
         target_frame_id = self.model.getFrameId(target_frame)
 
+        # Get the active joint indices.
+        active_joint_indices = [
+            idx
+            for idx in range(self.model.nq)
+            if idx not in self.options.ignore_joint_indices
+        ]
+        num_active_joints = len(active_joint_indices)
+
+        # Create the joint weights.
+        if self.options.joint_weights is None:
+            # Use identity weights if they are not specified.
+            W = np.eye(num_active_joints)
+        elif len(self.options.joint_weights) != num_active_joints:
+            raise ValueError(
+                f"Joint weights, if specified, must have {num_active_joints} elements."
+            )
+        elif np.any(np.array(self.options.joint_weights) <= 0.0):
+            raise ValueError(f"All joint weights must be strictly positive.")
+        else:
+            # Invert the weights so that higher weight means less joint motion.
+            W = np.linalg.inv(np.diag(self.options.joint_weights))
+
         # Create a random initial state, if not specified
         if init_state is None:
             init_state = get_random_state(self.model)
@@ -218,20 +247,19 @@ class DifferentialIk:
                             print("Solved, but outside joint limits.")
                     break
 
-                # Calculate the Jacobian
+                # Calculate the Jacobian for the active joints.
                 J = pinocchio.computeFrameJacobian(
                     self.model,
                     self.data,
                     q_cur,
                     target_frame_id,
                     pinocchio.ReferenceFrame.LOCAL,
-                )
+                )[:, active_joint_indices]
 
-                # Solve for the gradient using damping and nullspace components,
-                # as specified
-                jjt = J.dot(J.T) + self.options.damping**2 * np.eye(6)
+                # Compute the (optionally damped and weighted) Jacobian pseudoinverse.
+                jjt = (J @ W @ J.T) + self.options.damping**2 * np.eye(6)
 
-                # Compute the gradient descent step size
+                # Compute the gradient descent step size.
                 error_norm = np.linalg.norm(error)
                 if not initial_error_norm:
                     initial_error_norm = error_norm
@@ -241,22 +269,29 @@ class DifferentialIk:
 
                 # Gradient descent step
                 if not nullspace_components:
-                    q_step = alpha * J.T @ np.linalg.solve(jjt, error)
+                    q_step = alpha * W @ J.T @ np.linalg.solve(jjt, error)
                 else:
                     nullspace_term = sum(
-                        [comp(self.model, q_cur) for comp in nullspace_components]
+                        [
+                            comp(self.model, q_cur)[active_joint_indices]
+                            for comp in nullspace_components
+                        ]
                     )
                     q_step = alpha * (
-                        J.T @ (np.linalg.solve(jjt, error - J @ (nullspace_term)))
+                        W @ J.T @ (np.linalg.solve(jjt, error - J @ (nullspace_term)))
                         + nullspace_term
                     )
 
                 # Zero out the values for the ignored indices before returning.
-                for idx in self.options.ignore_joint_indices:
-                    q_step[idx] = 0.0
+                for q, idx in zip(q_step, active_joint_indices):
+                    q_cur[idx] += q
 
-                q_cur += q_step
                 n_iters += 1
+
+                # Protect against numerical instability.
+                if np.any(np.isinf(q_cur)):
+                    print(f"Terminating due to numerical instability.")
+                    break
 
                 if self.visualizer:
                     self.visualizer.display(q_cur)
