@@ -126,7 +126,7 @@ Currently, all the planners in ``pyroboplan`` (such as RRT and Cartesian interpo
 Online planning and control is often done through optimization techniques like Model Predictive Control (MPC).
 
 The `pyroboplan.planning module <api/pyroboplan.planning.html>`_ contains implementations for a number of motion planners.
-You can also try running the :examples:`RRT example <rrt.py>`, :examples:`PRM example <prm.py>`, or :examples:`Cartesian planning example <cartesian_path.py>`.
+You can also try running the :examples:`RRT example <rrt_panda.py>`, :examples:`PRM example <prm_panda.py>`, or :examples:`Cartesian planning example <cartesian_path.py>`.
 
 .. image:: _static/images/bidirectional_rrt_star.png
     :width: 600
