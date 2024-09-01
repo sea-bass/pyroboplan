@@ -126,7 +126,8 @@ Currently, all the planners in ``pyroboplan`` (such as RRT and Cartesian interpo
 Online planning and control is often done through optimization techniques like Model Predictive Control (MPC).
 
 The `pyroboplan.planning module <api/pyroboplan.planning.html>`_ contains implementations for a number of motion planners.
-You can also try running the :examples:`RRT example <rrt.py>`, :examples:`PRM example <prm.py>`, or :examples:`Cartesian planning example <cartesian_path.py>`.
+For an introduction to sampling-based motion planning on two degree-of-freedom robot models, look at the :examples:`2-DOF RRT <rrt_2dof.py>` and :examples:`2-DOF PRM <prm_2dof.py>` examples.
+You can also try the :examples:`RRT example <rrt_panda.py>` and :examples:`PRM example <prm_panda.py>` for a full Franka robot arm.
 
 .. image:: _static/images/bidirectional_rrt_star.png
     :width: 600
@@ -135,6 +136,8 @@ You can also try running the :examples:`RRT example <rrt.py>`, :examples:`PRM ex
 .. image:: _static/images/prm_graph.png
     :width: 600
     :alt: Identifying a collision-free path using A* on a pre-constructed PRM.
+
+For motion planning along a task-space (or Cartesian) trajectory, check out the :examples:`Cartesian planning example <cartesian_path.py>`.
 
 .. image:: _static/images/cartesian_planning.png
     :width: 600
