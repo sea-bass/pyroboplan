@@ -35,22 +35,24 @@ if __name__ == "__main__":
     visualizer.display(q)
 
     while True:
+        # get user input
         user_input = input(
             "Press 'Enter' to show another random state, enter a new name to save the current state as a named joint configuration, enter a used name to visualize that saved state, type 'h' or 'help' to see the existing saved joint configurations, or ctrl-c to quit.\n"
         )
         print()
+
         if user_input:
+            # if the input isn't empty
             user_input = user_input.lower()
             if user_input == "h" or user_input == "help":
                 print("Stored states:")
                 print(named_joints_configuration)
-                print()
             if user_input in named_joints_configuration:
                 named_joints_configuration.visualize_state(visualizer, user_input)
             else:
                 named_joints_configuration[user_input] = q
         else:
-            print()
+            # if the input is empty, make a new state
             q = get_random_collision_free_state(
                 model, collision_model, distance_padding=0.1
             )

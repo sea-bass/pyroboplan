@@ -6,6 +6,8 @@ from pyroboplan.core.utils import (
 
 
 class NamedJointConfigurationsOptions:
+    """Options for named joint configurations"""
+
     def __init__(self, allow_collisions=False):
         """
         Initializes a set of named joint configuration options.
@@ -19,9 +21,30 @@ class NamedJointConfigurationsOptions:
 
 
 class NamedJointConfigurations:
+    """Named joint configurations helper
+
+    This is a simple helper to get, set, and visualize joint states for a given model.
+    Each model should have its own NamedJointConfigurations, and validation is performed to
+    ensure joint states are dimensionally valid and, optionally, within joint limits.
+
+    """
+
     def __init__(
         self, model, collision_model, options=NamedJointConfigurationsOptions()
     ):
+        """
+        Creates an instance of a named joint configurations object.
+
+        Parameters
+        ----------
+            model : `pinocchio.Model`
+                The model to use for this named joint configurations.
+            collision_model : `pinocchio.Model`
+                The model to use for collision checking.
+            options : `NamedJointConfigurationsOptions`, optional
+                The options to use for this named joint configurations object.
+                  If not specified, default options are used.
+        """
         self.model = model
         self.collision_model = collision_model
         self.data = self.model.createData()
@@ -63,7 +86,13 @@ class NamedJointConfigurations:
         return key in self.configuration_dict
 
     def __str__(self):
+        """
+        Print the states in this object
+        """
         return str([k for k in self.configuration_dict])
 
     def visualize_state(self, visualizer, name):
+        """
+        Visualize the joint state stored in key `name`
+        """
         visualizer.display(self[name])
