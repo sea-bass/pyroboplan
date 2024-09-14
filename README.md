@@ -8,7 +8,7 @@ Educational Python library for manipulator motion planning.
 
 This library extensively uses the [Pinocchio](https://github.com/stack-of-tasks/pinocchio) Python bindings for modeling robot kinematics and dynamics.
 
-For more information, refer to the [full documentation](https://pyroboplan.readthedocs.io/en/latest/) or my [blog post on motion planning](https://roboticseabass.com/2024/06/30/how-do-robot-manipulators-move).
+For more information, refer to the [full documentation](https://pyroboplan.readthedocs.io/en/latest/), this [blog post on motion planning](https://roboticseabass.com/2024/06/30/how-do-robot-manipulators-move), or this [YouTube presentation](https://youtu.be/YYRlypz9ZgE?si=_gavTnLokcEldaQX).
 
 By Sebastian Castro, 2024
 
