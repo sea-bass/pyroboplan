@@ -48,11 +48,11 @@ class RRTPlannerOptions:
             max_connection_dist : float
                 Maximum angular distance, in radians, for connecting nodes.
             rrt_connect : bool
+                If true, enables the RRTConnect algorithm, which incrementally extends the most
+                recently sampled node in the tree until an invalid state is reached.
+            bidirectional_rrt : bool
                 If true, uses bidirectional RRTs from both start and goal nodes.
                 Otherwise, only grows a tree from the start node.
-            bidirectional_rrt : bool
-                If true, enables the RRTConnect algorithm, which continues extending
-                nodes towards a random node until an invalid state is reached.
             rrt_star : bool
                 If true, enables the RRT* algorithm to shortcut node connections during planning.
                 This in turn will use the `max_rewire_dist` parameter.
