@@ -33,6 +33,12 @@ repos:
     hooks:
       - id: black
 
+  # Removes unused imports.
+  - repo: https://github.com/PyCQA/autoflake
+    rev: v2.3.1
+    hooks:
+      - id: autoflake
+
   # Finds spelling issues in code.
   - repo: https://github.com/codespell-project/codespell
     rev: v2.3.0
