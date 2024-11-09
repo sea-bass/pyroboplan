@@ -28,7 +28,7 @@ def test_construct_roadmap():
 def test_construct_roadmap_prm_star():
     # Initialize the roadmap using PRM*
     options = PRMPlannerOptions(prm_star=True, max_construction_nodes=100)
-    planner = construct_roadmap_test(options)
+    construct_roadmap_test(options)
 
 
 def test_plan_trivial_prm():

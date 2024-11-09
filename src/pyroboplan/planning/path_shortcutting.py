@@ -1,6 +1,5 @@
 """ Capabilities to shorten paths produced by motion planners. """
 
-import copy
 import numpy as np
 
 from pyroboplan.core.utils import configuration_distance, get_path_length
