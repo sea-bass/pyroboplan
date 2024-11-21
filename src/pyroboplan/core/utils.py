@@ -319,6 +319,25 @@ def check_within_limits(model, q):
     )
 
 
+def check_valid_pose(model, q):
+    """
+    Checks whether a particular joint configuration is a valid configuration for the given model.
+
+    Parameters
+    ----------
+        model : `pinocchio.Model`
+            The model for which to check the joint configuration's validity.
+        q : array-like
+            The joint configuration to check.
+
+    Returns
+    -------
+        bool
+            True if the configuration q is a possible configuration of the given model
+    """
+    return len(q) == model.nq and check_within_limits(model, q)
+
+
 def extract_cartesian_pose(model, target_frame, q, data=None):
     """
     Extracts the Cartesian pose of a specified model frame given a joint configuration.
