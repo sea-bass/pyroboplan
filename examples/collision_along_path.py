@@ -5,7 +5,7 @@ These capabilities form the basis of collision checking for validating other
 motion planning components such as inverse kinematics and path planning.
 """
 
-import hppfcl
+import coal
 import pinocchio
 from pinocchio.visualize import MeshcatVisualizer
 import meshcat.geometry as mg
@@ -29,8 +29,8 @@ def prepare_collision_scene(model, collision_model):
     obstacle_0 = pinocchio.GeometryObject(
         "obstacle_0",
         0,
-        hppfcl.Sphere(0.2),
         pinocchio.SE3(np.eye(3), np.array([0.0, 0.1, 1.1])),
+        coal.Sphere(0.2),
     )
     obstacle_0.meshColor = np.array([0.0, 1.0, 0.0, 0.2])
     collision_model.addGeometryObject(obstacle_0)
@@ -38,8 +38,8 @@ def prepare_collision_scene(model, collision_model):
     obstacle_1 = pinocchio.GeometryObject(
         "obstacle_1",
         0,
-        hppfcl.Box(0.3, 0.3, 0.3),
         pinocchio.SE3(np.eye(3), np.array([-0.5, 0.5, 0.7])),
+        coal.Box(0.3, 0.3, 0.3),
     )
     obstacle_1.meshColor = np.array([0.0, 1.0, 0.0, 0.2])
     collision_model.addGeometryObject(obstacle_1)
@@ -102,10 +102,7 @@ if __name__ == "__main__":
                 )
                 for contact in cr.getContacts():
                     contacts.extend(
-                        [
-                            contact.pos,
-                            contact.pos - contact.normal * contact.penetration_depth,
-                        ]
+                        [contact.getNearestPoint1(), contact.getNearestPoint2()]
                     )
         if len(contacts) == 0:
             print("Found no collisions!")

@@ -7,7 +7,7 @@ Jacobian computation, and collision checking.
 import pinocchio
 from pinocchio.visualize import MeshcatVisualizer
 
-import hppfcl
+import coal
 import numpy as np
 import time
 
@@ -250,8 +250,8 @@ def create_visual_model(model, alpha=0.5):
     link0 = pinocchio.GeometryObject(
         "link0",
         model.getJointId("joint0"),
-        hppfcl.Box(0.25, 0.25, 0.2),
         pinocchio.SE3(np.eye(3), np.array([0.0, 0.0, 0.1])),
+        coal.Box(0.25, 0.25, 0.2),
     )
     link0.meshColor = np.array([1.0, 0.0, 0.0, alpha])
     visual_model.addGeometryObject(link0)
@@ -259,8 +259,8 @@ def create_visual_model(model, alpha=0.5):
     link1 = pinocchio.GeometryObject(
         "link1",
         model.getJointId("joint1"),
-        hppfcl.Cylinder(0.075, 0.5),
         pinocchio.SE3(np.eye(3), np.array([0.0, 0.0, 0.25])),
+        coal.Cylinder(0.075, 0.5),
     )
     link1.meshColor = np.array([0.0, 0.0, 1.0, alpha])
     visual_model.addGeometryObject(link1)
@@ -268,8 +268,8 @@ def create_visual_model(model, alpha=0.5):
     link2 = pinocchio.GeometryObject(
         "link2",
         model.getJointId("joint2"),
-        hppfcl.Cylinder(0.075, 0.5),
         pinocchio.SE3(np.eye(3), np.array([0.0, 0.0, 0.25])),
+        coal.Cylinder(0.075, 0.5),
     )
     link2.meshColor = np.array([0.0, 1.0, 0.0, alpha])
     visual_model.addGeometryObject(link2)
@@ -277,8 +277,8 @@ def create_visual_model(model, alpha=0.5):
     link3 = pinocchio.GeometryObject(
         "link3",
         model.getJointId("joint3"),
-        hppfcl.Sphere(0.1),
         pinocchio.SE3(np.eye(3), np.array([0.0, 0.0, 0.1])),
+        coal.Sphere(0.1),
     )
     link3.meshColor = np.array([1.0, 0.0, 1.0, alpha])
     visual_model.addGeometryObject(link3)
@@ -286,8 +286,8 @@ def create_visual_model(model, alpha=0.5):
     link4 = pinocchio.GeometryObject(
         "link4",
         model.getJointId("joint4"),
-        hppfcl.Sphere(0.1),
         pinocchio.SE3(np.eye(3), np.array([0.0, 0.0, 0.1])),
+        coal.Sphere(0.1),
     )
     link4.meshColor = np.array([0.0, 1.0, 1.0, alpha])
     visual_model.addGeometryObject(link4)
@@ -295,8 +295,8 @@ def create_visual_model(model, alpha=0.5):
     link5 = pinocchio.GeometryObject(
         "link5",
         model.getJointId("joint5"),
-        hppfcl.Sphere(0.1),
         pinocchio.SE3(np.eye(3), np.array([0.0, 0.0, 0.1])),
+        coal.Sphere(0.1),
     )
     link5.meshColor = np.array([1.0, 1.0, 0.0, alpha])
     visual_model.addGeometryObject(link5)
@@ -305,8 +305,8 @@ def create_visual_model(model, alpha=0.5):
     ee_base_link = pinocchio.GeometryObject(
         "ee_base",
         model.getJointId("joint5"),
-        hppfcl.Box(0.2, 0.1, 0.05),
         pinocchio.SE3(np.eye(3), np.array([0.0, 0.0, 0.2])),
+        coal.Box(0.2, 0.1, 0.05),
     )
     ee_base_link.meshColor = np.array([0.6, 0.6, 0.6, alpha])
     visual_model.addGeometryObject(ee_base_link)
@@ -314,8 +314,8 @@ def create_visual_model(model, alpha=0.5):
     ee_left_link = pinocchio.GeometryObject(
         "ee_left",
         model.getJointId("joint5"),
-        hppfcl.Box(0.025, 0.1, 0.2),
         pinocchio.SE3(np.eye(3), np.array([0.1, 0.0, 0.275])),
+        coal.Box(0.025, 0.1, 0.2),
     )
     ee_left_link.meshColor = np.array([0.6, 0.6, 0.6, alpha])
     visual_model.addGeometryObject(ee_left_link)
@@ -323,8 +323,8 @@ def create_visual_model(model, alpha=0.5):
     ee_right_link = pinocchio.GeometryObject(
         "ee_right",
         model.getJointId("joint5"),
-        hppfcl.Box(0.025, 0.1, 0.2),
         pinocchio.SE3(np.eye(3), np.array([-0.1, 0.0, 0.275])),
+        coal.Box(0.025, 0.1, 0.2),
     )
     ee_right_link.meshColor = np.array([0.6, 0.6, 0.6, alpha])
     visual_model.addGeometryObject(ee_right_link)

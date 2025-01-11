@@ -43,8 +43,7 @@ def test_start_goal_traj_opt():
         max_jerk=1.0,
     )
     planner = CubicTrajectoryOptimization(model, collision_model, options)
-    with pytest.warns(RuntimeWarning):  # There are some invalid multiply values
-        traj = planner.plan([q_start, q_goal])
+    traj = planner.plan([q_start, q_goal])
 
     assert traj is not None
     assert traj.num_dims == 9
@@ -96,8 +95,7 @@ def test_full_path_traj_opt():
         max_jerk=1.0,
     )
     planner = CubicTrajectoryOptimization(model, collision_model, options)
-    with pytest.warns(RuntimeWarning):  # There are some invalid multiply values
-        traj = planner.plan(q_path)
+    traj = planner.plan(q_path)
 
     assert traj is not None
     assert traj.num_dims == 9
@@ -136,8 +134,7 @@ def test_traj_opt_unreachable_goal():
     # Perform trajectory optimization
     options = CubicTrajectoryOptimizationOptions(num_waypoints=3)
     planner = CubicTrajectoryOptimization(model, collision_model, options)
-    with pytest.warns(RuntimeWarning):  # There are some invalid multiply values
-        assert planner.plan([q_start, q_goal]) is None
+    assert planner.plan([q_start, q_goal]) is None
 
 
 def test_traj_opt_bad_limits():
@@ -239,7 +236,6 @@ def test_traj_opt_collision_avoidance():
         ],
     )
     planner = CubicTrajectoryOptimization(model, collision_model, options)
-    with pytest.warns(RuntimeWarning):  # There are some invalid multiply values
-        traj = planner.plan([q_path[0], q_path[-1]], init_path=q_path)
+    traj = planner.plan([q_path[0], q_path[-1]], init_path=q_path)
 
     assert traj is not None
