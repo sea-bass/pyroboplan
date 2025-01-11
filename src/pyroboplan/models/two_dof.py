@@ -1,6 +1,6 @@
 """ Utilities to load example 2-DOF manipulator. """
 
-import hppfcl
+import coal
 import numpy as np
 import os
 import pinocchio
@@ -41,8 +41,8 @@ def add_object_collisions(model, collision_model, visual_model):
     obstacle_1 = pinocchio.GeometryObject(
         "obstacle_1",
         0,
-        hppfcl.Cylinder(0.3, 0.1),
         pinocchio.SE3(np.eye(3), np.array([1.0, 1.0, 0.0])),
+        coal.Cylinder(0.3, 0.1),
     )
     obstacle_1.meshColor = np.array([0.0, 1.0, 0.0, 0.5])
     visual_model.addGeometryObject(obstacle_1)
@@ -51,8 +51,8 @@ def add_object_collisions(model, collision_model, visual_model):
     obstacle_2 = pinocchio.GeometryObject(
         "obstacle_2",
         0,
-        hppfcl.Box(0.5, 0.5, 0.1),
         pinocchio.SE3(np.eye(3), np.array([-1.0, -0.75, 0.0])),
+        coal.Box(0.5, 0.5, 0.1),
     )
     obstacle_2.meshColor = np.array([1.0, 0.0, 0.0, 0.5])
     visual_model.addGeometryObject(obstacle_2)

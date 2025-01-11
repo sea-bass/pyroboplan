@@ -512,14 +512,10 @@ def calculate_collision_vector_and_jacobians(
     cr = collision_data.collisionResults[pair_idx]
     dr = collision_data.distanceResults[pair_idx]
 
+    # According to the HPP-FCL documentation, the normal always points from object1 to object2.
     if cr.isCollision():
-        # According to the HPP-FCL documentation, the normal always points from object1 to object2.
-        # TODO: Once HPP-FCL Python bindings expose the getNearestPointN() functions, use those instead.
-        contact = cr.getContact(0)
-        coll_points = [
-            contact.pos,
-            contact.pos - contact.normal * contact.penetration_depth,
-        ]
+        contact = cr.getContacts()[0]
+        coll_points = [contact.getNearestPoint1(), contact.getNearestPoint2()]
     else:
         coll_points = [dr.getNearestPoint1(), dr.getNearestPoint2()]
 

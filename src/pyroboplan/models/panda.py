@@ -1,6 +1,6 @@
 """ Utilities to load example Franka Emika Panda model. """
 
-import hppfcl
+import coal
 import numpy as np
 import os
 import pinocchio
@@ -69,8 +69,8 @@ def add_object_collisions(model, collision_model, visual_model, inflation_radius
     ground_plane = pinocchio.GeometryObject(
         "ground_plane",
         0,
-        hppfcl.Box(2.0, 2.0, 0.3),
         pinocchio.SE3(np.eye(3), np.array([0.0, 0.0, -0.151])),
+        coal.Box(2.0, 2.0, 0.3),
     )
     ground_plane.meshColor = np.array([0.5, 0.5, 0.5, 0.5])
     visual_model.addGeometryObject(ground_plane)
@@ -79,8 +79,8 @@ def add_object_collisions(model, collision_model, visual_model, inflation_radius
     obstacle_sphere_1 = pinocchio.GeometryObject(
         "obstacle_sphere_1",
         0,
-        hppfcl.Sphere(0.2 + inflation_radius),
         pinocchio.SE3(np.eye(3), np.array([0.0, 0.1, 1.1])),
+        coal.Sphere(0.2 + inflation_radius),
     )
     obstacle_sphere_1.meshColor = np.array([0.0, 1.0, 0.0, 0.5])
     visual_model.addGeometryObject(obstacle_sphere_1)
@@ -89,8 +89,8 @@ def add_object_collisions(model, collision_model, visual_model, inflation_radius
     obstacle_sphere_2 = pinocchio.GeometryObject(
         "obstacle_sphere_2",
         0,
-        hppfcl.Sphere(0.25 + inflation_radius),
         pinocchio.SE3(np.eye(3), np.array([0.5, 0.5, 0.5])),
+        coal.Sphere(0.25 + inflation_radius),
     )
     obstacle_sphere_2.meshColor = np.array([1.0, 1.0, 0.0, 0.5])
     visual_model.addGeometryObject(obstacle_sphere_2)
@@ -99,12 +99,12 @@ def add_object_collisions(model, collision_model, visual_model, inflation_radius
     obstacle_box_1 = pinocchio.GeometryObject(
         "obstacle_box_1",
         0,
-        hppfcl.Box(
+        pinocchio.SE3(np.eye(3), np.array([-0.5, 0.5, 0.7])),
+        coal.Box(
             0.25 + 2.0 * inflation_radius,
             0.55 + 2.0 * inflation_radius,
             0.55 + 2.0 * inflation_radius,
         ),
-        pinocchio.SE3(np.eye(3), np.array([-0.5, 0.5, 0.7])),
     )
     obstacle_box_1.meshColor = np.array([1.0, 0.0, 0.0, 0.5])
     visual_model.addGeometryObject(obstacle_box_1)
@@ -113,12 +113,12 @@ def add_object_collisions(model, collision_model, visual_model, inflation_radius
     obstacle_box_2 = pinocchio.GeometryObject(
         "obstacle_box_2",
         0,
-        hppfcl.Box(
+        pinocchio.SE3(np.eye(3), np.array([-0.5, -0.5, 0.75])),
+        coal.Box(
             0.33 + 2.0 * inflation_radius,
             0.33 + 2.0 * inflation_radius,
             0.33 + 2.0 * inflation_radius,
         ),
-        pinocchio.SE3(np.eye(3), np.array([-0.5, -0.5, 0.75])),
     )
     obstacle_box_2.meshColor = np.array([0.0, 0.0, 1.0, 0.5])
     visual_model.addGeometryObject(obstacle_box_2)

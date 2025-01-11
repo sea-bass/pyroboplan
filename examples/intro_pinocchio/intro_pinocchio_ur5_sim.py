@@ -120,10 +120,7 @@ def visualize_collisions(viz, collision_model, collision_data):
             )
             for contact in cr.getContacts():
                 contacts.extend(
-                    [
-                        contact.pos,
-                        contact.pos - contact.normal * contact.penetration_depth,
-                    ]
+                    [contact.getNearestPoint1(), contact.getNearestPoint2()]
                 )
         else:
             distances.extend([dr.getNearestPoint1(), dr.getNearestPoint2()])
