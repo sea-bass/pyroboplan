@@ -33,6 +33,14 @@ pyroboplan.planning.graph\_search module
    :undoc-members:
    :show-inheritance:
 
+pyroboplan.planning.path\_shortcutting module
+---------------------------------------------
+
+.. automodule:: pyroboplan.planning.path_shortcutting
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 pyroboplan.planning.prm module
 ------------------------------
 
