@@ -16,7 +16,7 @@ def load_ur5_on_base_models():
             A 3-tuple containing the model, collision geometry model, and visual geometry model.
     """
     models_folder = get_example_models_folder()
-    package_dir = os.path.join(models_folder, "ur5_description")
+    package_dir = os.path.join(models_folder, "ur_description")
     urdf_filename = os.path.join(package_dir, "urdf", "ur5_on_base.urdf")
 
     return pinocchio.buildModelsFromUrdf(urdf_filename, package_dirs=models_folder)
@@ -40,7 +40,7 @@ def add_ur5_on_base_self_collisions(model, collision_model, srdf_filename=None):
     """
     if srdf_filename is None:
         models_folder = get_example_models_folder()
-        package_dir = os.path.join(models_folder, "ur5_description")
+        package_dir = os.path.join(models_folder, "ur_description")
         srdf_filename = os.path.join(package_dir, "srdf", "ur5_on_base.srdf")
 
     collision_model.addAllCollisionPairs()
