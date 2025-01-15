@@ -24,7 +24,7 @@ def load_ur5_on_base_models():
 
 def add_ur5_on_base_self_collisions(model, collision_model, srdf_filename=None):
     """
-    Adds link self-collisions to the Panda collision model.
+    Adds link self-collisions to the UR5 collision model.
 
     This uses an SRDF file to remove any excluded collision pairs.
 
