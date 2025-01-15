@@ -17,14 +17,6 @@ pyroboplan.trajectory.polynomial module
    :undoc-members:
    :show-inheritance:
 
-pyroboplan.trajectory.trajectory\_optimization module
------------------------------------------------------
-
-.. automodule:: pyroboplan.trajectory.trajectory_optimization
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 pyroboplan.trajectory.trapezoidal\_velocity module
 --------------------------------------------------
 

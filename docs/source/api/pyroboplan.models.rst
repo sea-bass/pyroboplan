@@ -25,14 +25,6 @@ pyroboplan.models.two\_dof module
    :undoc-members:
    :show-inheritance:
 
-pyroboplan.models.ur5 module
-----------------------------
-
-.. automodule:: pyroboplan.models.ur5
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 pyroboplan.models.utils module
 ------------------------------
 
