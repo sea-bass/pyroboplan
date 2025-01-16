@@ -31,12 +31,12 @@ def add_ur10_on_base_self_collisions(model, collision_model, srdf_filename=None)
     Parameters
     ----------
         model : `pinocchio.Model`
-            The Panda model.
+            The UR10 model.
         collision_model : `pinocchio.Model`
-            The Panda collision geometry model.
+            The UR10 collision geometry model.
         srdf_filename : str, optional
             Path to the SRDF file describing the excluded collision pairs.
-            If not specified, uses a default file included with the Panda model.
+            If not specified, uses a default file included with the UR10 model.
     """
     if srdf_filename is None:
         models_folder = get_example_models_folder()
