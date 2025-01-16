@@ -1,5 +1,5 @@
 """
-This example loads a model of a UR5 arm from a URDF file.
+This example loads a model of a UR10 arm from a URDF file.
 It then demonstrates basic capabilities in Pinocchio such as forward kinematics,
 Jacobian computation, collision checking, and dynamics simulation.
 """
@@ -18,7 +18,7 @@ def main():
     # Load the models from the URDF file.
     model_dir = get_example_models_folder()
     urdf_filename = os.path.join(
-        model_dir, "ur5_description", "urdf", "ur5_gripper.urdf"
+        model_dir, "ur_description", "urdf", "ur10_gripper.urdf"
     )
     model, collision_model, visual_model = pinocchio.buildModelsFromUrdf(
         urdf_filename, package_dirs=model_dir
@@ -26,7 +26,7 @@ def main():
 
     # Modify the collision model for display.
     srdf_filename = os.path.join(
-        model_dir, "ur5_description", "srdf", "ur5_gripper.srdf"
+        model_dir, "ur_description", "srdf", "ur10_gripper.srdf"
     )
     collision_model.addAllCollisionPairs()
     pinocchio.removeCollisionPairs(model, collision_model, srdf_filename)

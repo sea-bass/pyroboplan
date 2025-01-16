@@ -18,16 +18,16 @@ from pyroboplan.ik.nullspace_components import (
     joint_limit_nullspace_component,
     collision_avoidance_nullspace_component,
 )
-from pyroboplan.models.ur5 import (
-    load_ur5_on_base_models,
-    add_ur5_on_base_self_collisions,
-)
 
+from pyroboplan.models.ur10 import (
+    load_ur10_on_base_models,
+    add_ur10_on_base_self_collisions,
+)
 
 if __name__ == "__main__":
     # Create models and data
-    model, collision_model, visual_model = load_ur5_on_base_models()
-    add_ur5_on_base_self_collisions(model, collision_model)
+    model, collision_model, visual_model = load_ur10_on_base_models()
+    add_ur10_on_base_self_collisions(model, collision_model)
 
     data = model.createData()
     collision_data = collision_model.createData()
