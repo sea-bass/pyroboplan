@@ -61,7 +61,7 @@ if __name__ == "__main__":
         # Search for a path
         planner = RRTPlanner(model, collision_model, options=options)
         path = planner.plan(q_start, q_end)
-        planner.visualize(viz, "panda_hand", show_tree=True)
+        planner.visualize(viz, "panda_hand", show_tree=True, show_path=False)
 
         if path:
             # Optionally shortcut the path
@@ -71,17 +71,17 @@ if __name__ == "__main__":
 
             discretized_path = discretize_joint_space_path(path, options.max_step_size)
 
-            if do_shortcutting:
-                target_tforms = extract_cartesian_poses(
-                    model, "panda_hand", discretized_path
-                )
-                visualize_frames(
-                    viz,
-                    "shortened_path",
-                    target_tforms,
-                    line_length=0.05,
-                    line_width=1.5,
-                )
+            target_tforms = extract_cartesian_poses(
+                model, "panda_hand", discretized_path
+            )
+            viz.viewer["shortened_path"].delete()
+            visualize_frames(
+                viz,
+                "shortened_path",
+                target_tforms,
+                line_length=0.05,
+                line_width=1.5,
+            )
 
             input("Press 'Enter' to animate the path.")
             for q in discretized_path:
