@@ -116,17 +116,18 @@ if __name__ == "__main__":
             traj_gen = traj.generate(dt)
             q_vec = traj_gen[1]
 
-            # Display the trajectory and points along the path.
-            plt.ion()
-            traj.visualize(
-                dt=dt,
-                joint_names=model.names[1:],
-                show_position=True,
-                show_velocity=True,
-                show_acceleration=True,
-                show_jerk=True,
-            )
-            time.sleep(0.5)
+            show_trajectory_plots = False
+            if show_trajectory_plots:
+                plt.ion()
+                traj.visualize(
+                    dt=dt,
+                    joint_names=model.names[1:],
+                    show_position=True,
+                    show_velocity=True,
+                    show_acceleration=True,
+                    show_jerk=True,
+                )
+                time.sleep(0.5)
 
             tforms = extract_cartesian_poses(model, "panda_hand", q_vec.T)
             viz.display(q_start)
