@@ -1,0 +1,36 @@
+<!-- Simple point robot moving in a plane -->
+<robot name="two_dof_robot">
+    <link name="base"/>
+
+    <link name="body">
+        <visual>
+            <geometry>
+                <sphere radius="0.02" />
+            </geometry>
+            <origin rpy="0 0 0" xyz="0 0 0"/>
+            <material name="green">
+                <color rgba="0 1.0 0 1.0"/>
+            </material>
+        </visual>
+        <collision>
+            <geometry>
+                <sphere radius="0.02" />
+            </geometry>
+            <origin rpy="0 0 0" xyz="0 0 0"/>
+        </collision>
+    </link>
+
+    <link name="x_axis" />
+    <joint name="x" type="prismatic">
+        <axis rpy="0 0 0" xyz="1 0 0"/>
+        <parent link="base"/>
+        <child link="x_axis"/>
+        <limit lower="0" upper="2" velocity="1.0" effort="1000" />
+    </joint>
+    <joint name="y" type="prismatic">
+        <axis rpy="0 0 0" xyz="0 1 0"/>
+        <parent link="x_axis"/>
+        <child link="body"/>
+        <limit lower="0" upper="1" velocity="1.0" effort="1000" />
+    </joint>
+</robot>

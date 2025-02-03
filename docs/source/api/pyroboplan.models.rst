@@ -9,6 +9,14 @@ pyroboplan.models package
 Submodules
 ----------
 
+pyroboplan.models.marble module
+-------------------------------
+
+.. automodule:: pyroboplan.models.marble
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 pyroboplan.models.panda module
 ------------------------------
 
