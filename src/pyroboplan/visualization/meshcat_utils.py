@@ -1,4 +1,4 @@
-""" Utilities for visualization using MeshCat. """
+"""Utilities for visualization using MeshCat."""
 
 import meshcat.geometry as mg
 import numpy as np

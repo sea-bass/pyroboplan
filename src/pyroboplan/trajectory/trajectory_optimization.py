@@ -1,4 +1,4 @@
-""" Utilities for trajectory optimization based planning. """
+"""Utilities for trajectory optimization based planning."""
 
 from functools import partial
 import numpy as np

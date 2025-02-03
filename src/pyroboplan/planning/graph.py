@@ -1,4 +1,4 @@
-""" Generic graph class for use in robot motion planning algorithms. """
+"""Generic graph class for use in robot motion planning algorithms."""
 
 import numpy as np
 import ast

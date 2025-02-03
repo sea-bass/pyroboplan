@@ -1,4 +1,4 @@
-""" Implementations of graph search algorithms for planning applications. """
+"""Implementations of graph search algorithms for planning applications."""
 
 import numpy as np
 

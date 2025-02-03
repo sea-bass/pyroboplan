@@ -1,4 +1,4 @@
-""" Utilities to load example Franka Emika Panda model. """
+"""Utilities to load example Franka Emika Panda model."""
 
 import coal
 import numpy as np

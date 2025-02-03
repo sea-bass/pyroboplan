@@ -1,4 +1,4 @@
-""" Utilities to load example 2-DOF manipulator. """
+"""Utilities to load example 2-DOF manipulator."""
 
 import coal
 import numpy as np

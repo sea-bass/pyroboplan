@@ -1,4 +1,4 @@
-""" Utilities for manipulation-specific Probabilistic Roadmaps (PRMs). """
+"""Utilities for manipulation-specific Probabilistic Roadmaps (PRMs)."""
 
 import numpy as np
 import time

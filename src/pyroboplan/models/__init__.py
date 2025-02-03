@@ -1,1 +1,1 @@
-""" Contains example robot models. """
+"""Contains example robot models."""

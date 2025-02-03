@@ -1,4 +1,4 @@
-""" Utilities for model loading. """
+"""Utilities for model loading."""
 
 import importlib.resources
 import pyroboplan

@@ -1,1 +1,1 @@
-""" Educational Python library for manipulator motion planning. """
+"""Educational Python library for manipulator motion planning."""
