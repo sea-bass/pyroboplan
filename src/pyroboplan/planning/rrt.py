@@ -1,4 +1,4 @@
-""" Utilities for manipulation-specific Rapidly-Exploring Random Trees (RRTs). """
+"""Utilities for manipulation-specific Rapidly-Exploring Random Trees (RRTs)."""
 
 import numpy as np
 import time

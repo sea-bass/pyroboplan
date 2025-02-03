@@ -1,4 +1,4 @@
-""" Utilities for motion planning. """
+"""Utilities for motion planning."""
 
 import numpy as np
 

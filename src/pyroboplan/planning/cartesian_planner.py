@@ -1,4 +1,4 @@
-""" Utilities for Cartesian (or task space) motion planning. """
+"""Utilities for Cartesian (or task space) motion planning."""
 
 import numpy as np
 import pinocchio

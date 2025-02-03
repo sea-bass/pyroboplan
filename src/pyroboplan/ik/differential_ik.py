@@ -1,4 +1,4 @@
-""" Utilities for differential IK. """
+"""Utilities for differential IK."""
 
 import numpy as np
 import pinocchio

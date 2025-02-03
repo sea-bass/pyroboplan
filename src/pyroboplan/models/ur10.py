@@ -1,4 +1,4 @@
-""" Utilities to load example Universal Robots UR10 robot models. """
+"""Utilities to load example Universal Robots UR10 robot models."""
 
 import os
 import pinocchio

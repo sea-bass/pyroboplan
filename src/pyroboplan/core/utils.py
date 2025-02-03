@@ -1,4 +1,4 @@
-""" Core utilities for robot modeling. """
+"""Core utilities for robot modeling."""
 
 import copy
 import numpy as np

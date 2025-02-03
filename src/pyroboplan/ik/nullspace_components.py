@@ -1,4 +1,4 @@
-""" Library of common nullspace components for inverse kinematics. """
+"""Library of common nullspace components for inverse kinematics."""
 
 import numpy as np
 import pinocchio

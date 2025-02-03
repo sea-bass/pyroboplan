@@ -1,4 +1,4 @@
-""" Capabilities to shorten paths produced by motion planners. """
+"""Capabilities to shorten paths produced by motion planners."""
 
 import numpy as np
 
