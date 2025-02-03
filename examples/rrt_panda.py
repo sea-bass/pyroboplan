@@ -74,10 +74,10 @@ if __name__ == "__main__":
             target_tforms = extract_cartesian_poses(
                 model, "panda_hand", discretized_path
             )
-            viz.viewer["shortened_path"].delete()
+            viz.viewer["planned_path"].delete()
             visualize_frames(
                 viz,
-                "shortened_path",
+                "planned_path",
                 target_tforms,
                 line_length=0.05,
                 line_width=1.5,
