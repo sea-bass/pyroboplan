@@ -71,7 +71,6 @@ if __name__ == "__main__":
                 )
             path = discretize_joint_space_path(path, options.max_step_size)
             target_tforms = extract_cartesian_poses(model, "body", path)
-            viz.viewer["shortened_path"].delete()
             visualize_frames(
                 viz,
                 "shortened_path",

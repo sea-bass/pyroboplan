@@ -78,6 +78,7 @@ def visualize_frames(
         line_color : array-like, optional
             The line colors to use. If None, chooses default axes colors.
     """
+    visualizer.viewer[prefix_name].delete()
     for idx, tform in enumerate(tforms):
         visualize_frame(
             visualizer,
