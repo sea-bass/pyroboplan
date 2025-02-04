@@ -121,18 +121,19 @@ def shortcut_path(
 
             # Sample two points along the path length
             path_scalings = get_normalized_path_scaling(q_shortened)
-            while True:
-                low_point, high_point = sorted(np.random.random(2))
-                q_low, idx_low = get_configuration_from_normalized_path_scaling(
-                    q_shortened, path_scalings, low_point
-                )
-                q_high, idx_high = get_configuration_from_normalized_path_scaling(
-                    q_shortened, path_scalings, high_point
-                )
-                if idx_low < idx_high:
-                    break
 
-            # Check if the points are collision free. If they are, shortcut the path.
+            low_point, high_point = sorted(np.random.random(2))
+            q_low, idx_low = get_configuration_from_normalized_path_scaling(
+                q_shortened, path_scalings, low_point
+            )
+            q_high, idx_high = get_configuration_from_normalized_path_scaling(
+                q_shortened, path_scalings, high_point
+            )
+            # there is nothing to shorten on a linear path segment
+            if idx_low == idx_high:
+                continue
+
+            # Check if the sampled segment is collision free. If it is, shortcut the path.
             path_to_goal = discretize_joint_space_path([q_low, q_high], max_step_size)
             if not check_collisions_along_path(model, collision_model, path_to_goal):
                 q_shortened = (

@@ -61,7 +61,7 @@ if __name__ == "__main__":
         # Search for a path
         planner = RRTPlanner(model, collision_model, options=options)
         path = planner.plan(q_start, q_end)
-        planner.visualize(viz, "panda_hand", show_tree=True)
+        planner.visualize(viz, "panda_hand", show_tree=True, show_path=True)
 
         if path:
             # Optionally shortcut the path

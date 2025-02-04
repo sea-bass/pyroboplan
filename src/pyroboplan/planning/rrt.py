@@ -178,6 +178,9 @@ class RRTPlanner:
                 path_to_goal,
                 distance_padding=self.options.collision_distance_padding,
             ):
+                latest_start_tree_node = self.add_node_to_tree(
+                    self.start_tree, q_goal, start_node
+                )
                 print("Start and goal can be directly connected!")
                 goal_found = True
 
@@ -220,10 +223,10 @@ class RRTPlanner:
                 # Check if latest node connects directly to the other tree.
                 # If so, add it to the tree and mark planning as complete.
                 nearest_node_in_other_tree = other_tree.get_nearest_node(new_node.q)
-                if (
-                    configuration_distance(new_node.q, nearest_node_in_other_tree.q)
-                    <= self.options.max_connection_dist
-                ):
+                distance_to_other_tree = configuration_distance(
+                    new_node.q, nearest_node_in_other_tree.q
+                )
+                if distance_to_other_tree <= self.options.max_connection_dist:
                     path_to_other_tree = discretize_joint_space_path(
                         [new_node.q, nearest_node_in_other_tree.q],
                         self.options.max_step_size,
@@ -234,9 +237,10 @@ class RRTPlanner:
                         path_to_other_tree,
                         distance_padding=self.options.collision_distance_padding,
                     ):
-                        new_node = self.add_node_to_tree(
-                            tree, nearest_node_in_other_tree.q, new_node
-                        )
+                        if distance_to_other_tree > 0:
+                            new_node = self.add_node_to_tree(
+                                tree, nearest_node_in_other_tree.q, new_node
+                            )
                         if start_tree_phase:
                             latest_start_tree_node = new_node
                             latest_goal_tree_node = nearest_node_in_other_tree
@@ -306,7 +310,9 @@ class RRTPlanner:
 
     def extract_path_from_trees(self, start_tree_final_node, goal_tree_final_node):
         """
-        Extracts the final path from the RRT trees.
+        Extracts the final path from the RRT trees
+
+        from the start tree root to the goal tree root passing through both final nodes.
 
         Parameters
         ----------
@@ -323,9 +329,10 @@ class RRTPlanner:
         """
         path = retrace_path(start_tree_final_node)
 
-        # If using a goal tree, then the final node should be at index 0, so we must reverse.
+        # extract and reverse the goal tree path to append to the start tree path
         if goal_tree_final_node:
-            goal_tree_path = retrace_path(goal_tree_final_node)
+            # the final node itself is already in the start path
+            goal_tree_path = retrace_path(goal_tree_final_node.parent)
             goal_tree_path.reverse()
             path += goal_tree_path
 
