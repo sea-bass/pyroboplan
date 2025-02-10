@@ -75,9 +75,7 @@ def get_configuration_from_normalized_path_scaling(q_path, path_scalings, value)
         return q_path[idx - 1] + delta_scale * (q_path[idx] - q_path[idx - 1]), idx
 
 
-def shortcut_path(
-    model, collision_model, q_path, max_iters=100, num_restarts=2, max_step_size=0.05
-):
+def shortcut_path(model, collision_model, q_path, max_iters=100, max_step_size=0.05):
     """
     Performs path shortcutting by sampling two random points along the path and verifying
     whether those two points can be connected directly without collisions.
@@ -95,8 +93,6 @@ def shortcut_path(
             The list of joint configurations describing the path.
         max_iters : int
             The maximum iterations for randomly sampling shortcut points.
-        num_restarts : int
-            The number of restarts to try different random path shortcutting solutions.
         max_step_size : float
             Maximum joint configuration step size for collision checking along path segments.
 
@@ -109,41 +105,30 @@ def shortcut_path(
     if len(q_path) < 3:
         return q_path
 
-    best_path = q_path
-    best_path_length = get_path_length(best_path)
+    q_shortened = q_path
+    for _ in range(max_iters):
+        # If the path has been shortened to 2 points or less, this is already a shortest path.
+        if len(q_shortened) < 3:
+            break
 
-    for _ in range(num_restarts + 1):
-        q_shortened = q_path
-        for _ in range(max_iters):
-            # If the path has been shortened to 2 points or less, this is already a shortest path.
-            if len(q_shortened) < 3:
-                break
+        # Sample two points along the path length
+        path_scalings = get_normalized_path_scaling(q_shortened)
 
-            # Sample two points along the path length
-            path_scalings = get_normalized_path_scaling(q_shortened)
+        low_point, high_point = sorted(np.random.random(2))
+        q_low, idx_low = get_configuration_from_normalized_path_scaling(
+            q_shortened, path_scalings, low_point
+        )
+        q_high, idx_high = get_configuration_from_normalized_path_scaling(
+            q_shortened, path_scalings, high_point
+        )
+        # there is nothing to shorten on a linear path segment
+        if idx_low == idx_high:
+            continue
 
-            low_point, high_point = sorted(np.random.random(2))
-            q_low, idx_low = get_configuration_from_normalized_path_scaling(
-                q_shortened, path_scalings, low_point
+        # Check if the sampled segment is collision free. If it is, shortcut the path.
+        path_to_goal = discretize_joint_space_path([q_low, q_high], max_step_size)
+        if not check_collisions_along_path(model, collision_model, path_to_goal):
+            q_shortened = (
+                q_shortened[:idx_low] + [q_low, q_high] + q_shortened[idx_high:]
             )
-            q_high, idx_high = get_configuration_from_normalized_path_scaling(
-                q_shortened, path_scalings, high_point
-            )
-            # there is nothing to shorten on a linear path segment
-            if idx_low == idx_high:
-                continue
-
-            # Check if the sampled segment is collision free. If it is, shortcut the path.
-            path_to_goal = discretize_joint_space_path([q_low, q_high], max_step_size)
-            if not check_collisions_along_path(model, collision_model, path_to_goal):
-                q_shortened = (
-                    q_shortened[:idx_low] + [q_low, q_high] + q_shortened[idx_high:]
-                )
-
-        # Check if this is the best path so far
-        shortened_path_length = get_path_length(q_shortened)
-        if shortened_path_length < best_path_length:
-            best_path = q_shortened
-            best_path_length = shortened_path_length
-
-    return best_path
+    return q_shortened
