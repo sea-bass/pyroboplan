@@ -22,6 +22,13 @@ from pyroboplan.planning.cartesian_planner import (
 )
 from pyroboplan.visualization.meshcat_utils import visualize_frames
 
+import toppra as ta
+import toppra.constraint as constraint
+import toppra.algorithm as algo
+import numpy as np
+import matplotlib.pyplot as plt
+import time
+
 
 # Create models and data
 model, collision_model, visual_model = load_models()
@@ -70,6 +77,34 @@ options = CartesianPlannerOptions(
 dt = 0.025
 planner = CartesianPlanner(model, target_frame, tforms, ik, options=options)
 success, t_vec, q_vec = planner.generate(q_start, dt)
+
+print(f'success: {success}')
+print(f't_vec: {t_vec.shape}')
+print(f'q_vec: {q_vec.shape}')
+
+dof = 9
+vlims = np.ones(dof) * 0.1
+alims = np.ones(dof) * 0.5
+
+path = ta.SplineInterpolator(t_vec, q_vec.T)
+pc_vel = constraint.JointVelocityConstraint(vlims)
+pc_acc = constraint.JointAccelerationConstraint(alims)
+print(f'path: {path}')
+print(f'pc_vel: {pc_vel}')
+print(f'pc_acc: {pc_acc}')
+instance = algo.TOPPRA([pc_vel, pc_acc], path, parametrizer="ParametrizeConstAccel")
+jnt_traj = instance.compute_trajectory()
+
+ts_sample = np.linspace(0, jnt_traj.duration, 100)
+qs_sample = jnt_traj(ts_sample)
+qds_sample = jnt_traj(ts_sample, 1)
+qdds_sample = jnt_traj(ts_sample, 2)
+
+plt.figure()
+plt.title("TOPPRA")
+for i in range(path.dof):
+    plt.plot(ts_sample, qs_sample[:, i], c="C{:d}".format(i))
+
 
 tforms_to_show = planner.generated_tforms[::5]
 viz.display(q_start)
