@@ -93,11 +93,13 @@ path = ta.SplineInterpolator(t_vec, q_vec.T)
 pc_vel = ta.constraint.JointVelocityConstraint(vlims)
 pc_acc = ta.constraint.JointAccelerationConstraint(alims)
 
-instance = ta.algorithm.TOPPRA([pc_vel, pc_acc], path, parametrizer="ParametrizeConstAccel")
+instance = ta.algorithm.TOPPRA(
+    [pc_vel, pc_acc], path, parametrizer="ParametrizeConstAccel"
+)
 jnt_traj = instance.compute_trajectory()
 
 ts_sample = np.linspace(0, jnt_traj.duration, 100)
-toppra_dt = jnt_traj.duration/100
+toppra_dt = jnt_traj.duration / 100
 qs_sample = jnt_traj(ts_sample)
 
 # TOPP-RA trajectories plot
