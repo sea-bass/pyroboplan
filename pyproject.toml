@@ -11,7 +11,6 @@ dependencies = [
   "matplotlib == 3.9.0",
   "meshcat == 0.3.2",
   "scipy == 1.13.1",
-  "toppra",
 ]
 requires-python = ">=3.10"
 authors = [
