@@ -56,7 +56,7 @@ if __name__ == "__main__":
         # Search for a path
         options = RRTPlannerOptions(
             max_step_size=0.05,
-            max_connection_dist=10.0,
+            max_connection_dist=5.0,
             rrt_connect=False,
             bidirectional_rrt=True,
             rrt_star=True,
@@ -81,7 +81,7 @@ if __name__ == "__main__":
         dt = 0.025
         options = CubicTrajectoryOptimizationOptions(
             num_waypoints=len(q_path),
-            samples_per_segment=11,
+            samples_per_segment=9,
             min_segment_time=1.0,
             max_segment_time=10.0,
             min_vel=-1.5,

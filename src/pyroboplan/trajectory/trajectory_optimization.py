@@ -335,9 +335,10 @@ class CubicTrajectoryOptimization:
 
     def _collision_constraint(
         self,
-        q_val,
+        vars,
         num_waypoints,
         num_dofs,
+        samples_per_segment,
         collision_pairs,
         min_allowable_dist,
         influence_dist,
@@ -357,6 +358,8 @@ class CubicTrajectoryOptimization:
                 The number of waypoints.
             num_dofs : int
                 The number of degrees of freedom.
+            samples_per_segment : int
+                The number of samples per waypoint at which to evaluate collisions.
             collision_pairs : list[list[int]]
                 A nested list containing the indices of collision model pairs for each geometry to check.
             min_allowable_dist : float
@@ -372,72 +375,96 @@ class CubicTrajectoryOptimization:
                 The constraint value representing the minimum collision distance for every collision object and waypoint,
                 as well as its corresponding gradient.
         """
-        q_all = ExtractValue(q_val)
+        all_vars = ExtractValue(vars)
+        x_all = all_vars[: num_waypoints * num_dofs].reshape((num_waypoints, num_dofs))
+        x_d_all = all_vars[
+            num_waypoints * num_dofs : 2 * num_waypoints * num_dofs
+        ].reshape((num_waypoints, num_dofs))
+        xc_d_all = all_vars[
+            2
+            * num_waypoints
+            * num_dofs : (2 * num_waypoints + num_waypoints - 1)
+            * num_dofs
+        ].reshape((num_waypoints - 1, num_dofs))
+        h_all = all_vars[-(num_waypoints - 1) :]
+
         num_links = len(collision_pairs)
-        min_distance_smoothed_squared = np.zeros(num_waypoints * num_links)
-        gradient = np.zeros((num_waypoints * num_links, num_waypoints * num_dofs))
-        for wp_idx in range(num_waypoints):
-            start_idx = wp_idx * num_dofs
-            end_idx = start_idx + num_dofs
-            q = q_all[start_idx:end_idx]
+        total_num_points = (num_waypoints - 1) * samples_per_segment
 
-            # Compute collision and distance checks
-            pinocchio.framesForwardKinematics(self.model, self.data, q)
-            pinocchio.computeCollisions(
-                self.model,
-                self.data,
-                self.collision_model,
-                self.collision_data,
-                q,
-                False,
-            )
-            pinocchio.computeDistances(
-                self.model, self.data, self.collision_model, self.collision_data, q
-            )
+        min_distance_smoothed_squared = np.zeros(total_num_points * num_links)
 
-            # Get the minimum distance in the allowable range
-            for link_idx, pairs in enumerate(collision_pairs):
-                min_distance_idx = -1
-                min_distance = influence_dist
-                grad_idx = wp_idx * num_links + link_idx
-                for p in pairs:
-                    dist = self.collision_data.distanceResults[p].min_distance
-                    if dist <= influence_dist and dist < min_distance:
-                        min_distance_idx = p
-                        min_distance = dist
+        gradient = np.zeros((total_num_points * num_links, total_num_points * num_dofs))
+        point_idx = 0
+        for k in range(num_waypoints - 1):
+            for step in np.linspace(0.0, 1.0, samples_per_segment):
+                q = np.array(
+                    [
+                        self._eval_position(x_all, x_d_all, xc_d_all, h_all, k, n, step)
+                        for n in range(num_dofs)
+                    ]
+                )
 
-                # Find the collision Jacobian for the closest point pair, and calculate gradients.
-                if min_distance_idx >= 0:
-                    distance_vec, Jcoll1, Jcoll2 = (
-                        calculate_collision_vector_and_jacobians(
-                            self.model,
-                            self.collision_model,
-                            self.data,
-                            self.collision_data,
-                            min_distance_idx,
-                            q,
+                # Compute collision and distance checks
+                pinocchio.framesForwardKinematics(self.model, self.data, q)
+                pinocchio.computeCollisions(
+                    self.model,
+                    self.data,
+                    self.collision_model,
+                    self.collision_data,
+                    q,
+                    False,
+                )
+                pinocchio.computeDistances(
+                    self.model, self.data, self.collision_model, self.collision_data, q
+                )
+
+                # Get the minimum distance in the allowable range
+                for link_idx, pairs in enumerate(collision_pairs):
+                    min_distance_idx = -1
+                    min_distance = influence_dist
+                    for p in pairs:
+                        dist = self.collision_data.distanceResults[p].min_distance
+                        if dist <= influence_dist and dist < min_distance:
+                            min_distance_idx = p
+                            min_distance = dist
+
+                    # Find the collision Jacobian for the closest point pair, and calculate gradients.
+                    if min_distance_idx >= 0:
+                        distance_vec, Jcoll1, Jcoll2 = (
+                            calculate_collision_vector_and_jacobians(
+                                self.model,
+                                self.collision_model,
+                                self.data,
+                                self.collision_data,
+                                min_distance_idx,
+                                q,
+                            )
                         )
-                    )
-                    distance_vec = distance_vec / np.linalg.norm(distance_vec)
-                    grad = np.sign(min_distance) * distance_vec @ (Jcoll2 - Jcoll1)
-                else:
-                    grad = np.zeros(num_dofs)
+                        distance_vec = distance_vec / np.linalg.norm(distance_vec)
+                        grad = np.sign(min_distance) * distance_vec @ (Jcoll2 - Jcoll1)
+                    else:
+                        grad = np.zeros(num_dofs)
 
-                # Minimum distances are smoothed using a squared hinge loss to have better gradients.
-                min_distance_smoothed = np.clip(
-                    1.0
-                    + (min_distance - min_allowable_dist)
-                    / (min_allowable_dist - influence_dist),
-                    0.0,
-                    np.inf,
-                )
-                min_distance_smoothed_squared[grad_idx] = min_distance_smoothed**2
-                gradient[grad_idx, start_idx:end_idx] = (
-                    2.0
-                    * grad
-                    * min_distance_smoothed
-                    / (min_allowable_dist - influence_dist)
-                )
+                    # Minimum distances are smoothed using a squared hinge loss to have better gradients.
+                    min_distance_smoothed = np.clip(
+                        1.0
+                        + (min_distance - min_allowable_dist)
+                        / (min_allowable_dist - influence_dist),
+                        0.0,
+                        np.inf,
+                    )
+                    grad_idx = point_idx * num_links + link_idx
+                    min_distance_smoothed_squared[grad_idx] = min_distance_smoothed**2
+                    gradient[
+                        grad_idx, point_idx * num_dofs : (point_idx + 1) * num_dofs
+                    ] = (
+                        2.0
+                        * grad
+                        * min_distance_smoothed
+                        / (min_allowable_dist - influence_dist)
+                    )
+
+                point_idx += 1
 
         return InitializeAutoDiff(min_distance_smoothed_squared, gradient)
 
@@ -559,8 +586,7 @@ class CubicTrajectoryOptimization:
         )
         prog.AddCost(self._total_time_cost, h)
 
-        # Collision checking at the waypoints and collocation points.
-        # TODO: This could instead be done by sampling points along the entire trajectory.
+        # Collision checking by sampling points along the entire trajectory.
         link_list = self.options.collision_link_list
         num_links = len(link_list)
         if self.options.check_collisions and num_links > 0:
@@ -571,34 +597,22 @@ class CubicTrajectoryOptimization:
                 for link in link_list
             ]
 
-            # The minimum distance values are smoothed in the constraint such that a value of
-            # 1.0 or lower satisfies the constraint.
-
-            min_dist_val = -np.inf * np.ones(num_waypoints * num_links)
-            max_dist_val = 1.0 * np.ones(num_waypoints * num_links)
+            total_points = (num_waypoints - 1) * self.options.samples_per_segment
+            # The minimum distance values are smoothed in the constraint such that
+            # a value of 1.0 or lower satisfies the constraint.
+            min_dist_val = -np.inf * np.ones(total_points * num_links)
+            max_dist_val = 1.0 * np.ones(total_points * num_links)
             collision_expr = partial(
                 self._collision_constraint,
                 num_waypoints=num_waypoints,
                 num_dofs=num_dofs,
+                samples_per_segment=self.options.samples_per_segment,
                 collision_pairs=all_pairs,
                 min_allowable_dist=self.options.min_collision_dist,
                 influence_dist=self.options.collision_influence_dist,
             )
-            prog.AddConstraint(collision_expr, min_dist_val, max_dist_val, x.flatten())
-
-            min_dist_val_coll = -np.inf * np.ones((num_waypoints - 1) * num_links)
-            max_dist_val_coll = 1.0 * np.ones((num_waypoints - 1) * num_links)
-            collision_expr_coll = partial(
-                self._collision_constraint,
-                num_waypoints=num_waypoints - 1,
-                num_dofs=num_dofs,
-                collision_pairs=all_pairs,
-                min_allowable_dist=self.options.min_collision_dist,
-                influence_dist=self.options.collision_influence_dist,
-            )
-            prog.AddConstraint(
-                collision_expr_coll, min_dist_val_coll, max_dist_val_coll, xc.flatten()
-            )
+            vars = np.concat([x.flatten(), x_d.flatten(), xc_d.flatten(), h.flatten()])
+            prog.AddConstraint(collision_expr, min_dist_val, max_dist_val, vars)
 
             # Optionally add a cost for collision avoidance.
             # Since the smoothed minimum distance is 1.0 at the constraint limit and
@@ -607,11 +621,7 @@ class CubicTrajectoryOptimization:
             if coll_cost_weight > 0.0:
                 prog.AddCost(
                     lambda var: -coll_cost_weight * max(collision_expr(var))[0],
-                    x.flatten(),
-                )
-                prog.AddCost(
-                    lambda var: -coll_cost_weight * max(collision_expr_coll(var))[0],
-                    xc.flatten(),
+                    vars,
                 )
 
         # Set initial conditions to help search.
