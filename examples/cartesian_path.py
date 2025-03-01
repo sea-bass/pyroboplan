@@ -68,7 +68,10 @@ options = CartesianPlannerOptions(
     max_angular_acceleration=1.0,
 )
 
+TOPP_RA = False
 dt = 0.025
+curr_time = 0
+
 planner = CartesianPlanner(model, target_frame, tforms, ik, options=options)
 success, t_vec, q_vec = planner.generate(q_start, dt)
 
@@ -77,47 +80,42 @@ viz.display(q_start)
 visualize_frames(viz, "cartesian_plan", tforms_to_show, line_length=0.05, line_width=1)
 time.sleep(0.5)
 
-# Pyroboplan trajectories plot
 plt.ion()
 plt.figure()
 plt.title("Pyroboplan - Joint Position Trajectories")
+
+if TOPP_RA:
+    # replan path with TOPP-RA
+    vlims = model.velocityLimit
+    alims = 10 * np.ones_like(vlims)
+    # Define the geometric path and two constraints.
+    path = ta.SplineInterpolator(t_vec, q_vec.T)
+    pc_vel = ta.constraint.JointVelocityConstraint(vlims)
+    pc_acc = ta.constraint.JointAccelerationConstraint(alims)
+
+    instance = ta.algorithm.TOPPRA([pc_vel, pc_acc], path, parametrizer="ParametrizeConstAccel")
+    jnt_traj = instance.compute_trajectory()
+
+    # Overwrite variables with TOPP-RA data
+    t_vec = np.linspace(0, jnt_traj.duration, q_vec.shape[1])
+    dt = jnt_traj.duration / q_vec.shape[1]
+    q_vec = jnt_traj(t_vec).T
+    plt.title("TOPP-RA - Joint Position Trajectories")
+
 for idx in range(q_vec.shape[0]):
     plt.plot(t_vec, q_vec[idx, :])
-plt.legend(model.names[1:])
 
-# TOPPRA
-vlims = model.velocityLimit
-alims = 10 * np.ones_like(vlims)
-# Define the geometric path and two constraints.
-path = ta.SplineInterpolator(t_vec, q_vec.T)
-pc_vel = ta.constraint.JointVelocityConstraint(vlims)
-pc_acc = ta.constraint.JointAccelerationConstraint(alims)
-
-instance = ta.algorithm.TOPPRA([pc_vel, pc_acc], path, parametrizer="ParametrizeConstAccel")
-jnt_traj = instance.compute_trajectory()
-
-ts_sample = np.linspace(0, jnt_traj.duration, 100)
-toppra_dt = jnt_traj.duration/100
-qs_sample = jnt_traj(ts_sample)
-
-# TOPP-RA trajectories plot
-plt.figure()
-plt.title("TOPP-RA - Joint Position Trajectories")
-curr_time = 0
-for i in range(path.dof):
-    plt.plot(ts_sample, qs_sample[:, i], c="C{:d}".format(i))
 time_line = plt.axvline(x=curr_time, color="k", linestyle="--")
 plt.legend(model.names[1:])
-
 plt.show()
 
 if success:
     print("Cartesian planning successful!")
     input("Press 'Enter' to animate the path.")
-    for idx in range(qs_sample.shape[0]):
-        viz.display(qs_sample[idx, :])
-        plt.pause(toppra_dt)
-        curr_time += toppra_dt
+    for idx in range(q_vec.shape[1]):
+        viz.display(q_vec[:, idx])
+        plt.pause(dt)
+        curr_time += dt
         time_line.set_xdata([curr_time, curr_time])
 else:
     print("Cartesian planning failed.")
