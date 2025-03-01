@@ -93,7 +93,9 @@ if TOPP_RA:
     pc_vel = ta.constraint.JointVelocityConstraint(vlims)
     pc_acc = ta.constraint.JointAccelerationConstraint(alims)
 
-    instance = ta.algorithm.TOPPRA([pc_vel, pc_acc], path, parametrizer="ParametrizeConstAccel")
+    instance = ta.algorithm.TOPPRA(
+        [pc_vel, pc_acc], path, parametrizer="ParametrizeConstAccel"
+    )
     jnt_traj = instance.compute_trajectory()
 
     # Overwrite variables with TOPP-RA data
