@@ -352,8 +352,9 @@ class CubicTrajectoryOptimization:
 
         Parameters
         ----------
-            q_val : pydrake.autodiffutils.AutoDiffXd
-                The joint configuration at each waypoint.
+            vars : pydrake.autodiffutils.AutoDiffXd
+                A flattened list of joint positions, joint velocities, collocation positions,
+                and waypoint times. Needs to be in one variable to add this function as a constraint.
             num_waypoints : int
                 The number of waypoints.
             num_dofs : int
