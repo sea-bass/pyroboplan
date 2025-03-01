@@ -531,7 +531,7 @@ def calculate_collision_vector_and_jacobians(
     t_frame1_to_point1 = pinocchio.SE3(
         np.eye(3), coll_points[0] - data.oMf[parent_frame1].translation
     )
-    Jcoll1 = t_frame1_to_point1.toActionMatrix()[:3, :] @ Jframe1
+    Jcoll1 = t_frame1_to_point1.toActionMatrixInverse()[:3, :] @ Jframe1
 
     parent_frame2 = collision_model.geometryObjects[cp.second].parentFrame
     if parent_frame2 >= model.nframes:
@@ -542,6 +542,6 @@ def calculate_collision_vector_and_jacobians(
     t_frame2_to_point2 = pinocchio.SE3(
         np.eye(3), coll_points[1] - data.oMf[parent_frame2].translation
     )
-    Jcoll2 = t_frame2_to_point2.toActionMatrix()[:3, :] @ Jframe2
+    Jcoll2 = t_frame2_to_point2.toActionMatrixInverse()[:3, :] @ Jframe2
 
     return distance_vec, Jcoll1, Jcoll2
