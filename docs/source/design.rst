@@ -34,7 +34,7 @@ The goal of this library is **learning and education**, and as such its design p
 * Motion planning components (inverse kinematics, motion planning, trajectory generation, etc.) must be easy to mix and match.
 * There is no need for unnecessarily "fancy" software techniques like factories or excessive inheritance. It's OK for different implementations to have slightly different interfaces if it makes sense.
 * The math must always be explained, and resources to relevant papers, lectures, tutorials, etc. should be cited wherever possible.
-* Visualization, debugging, and clarity of code is key and should be prioritized in factor of efficiency/performance.
+* Visualization, debugging, and clarity of code is key and should be prioritized in favor of efficiency/performance.
 
 Of course, motion planning is a vast field and this library will never have all the implementations available.
 This is where we hope that you will be inspired by this project to do some learning yourself, implement new capabilities, and share your contributions with the community.
