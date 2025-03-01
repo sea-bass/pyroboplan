@@ -8,7 +8,6 @@ import numpy as np
 import pinocchio
 from pinocchio.visualize import MeshcatVisualizer
 from scipy.spatial.transform import Rotation
-import toppra as ta
 import time
 
 from pyroboplan.core.utils import extract_cartesian_pose
@@ -85,6 +84,7 @@ plt.figure()
 plt.title("Pyroboplan - Joint Position Trajectories")
 
 if TOPP_RA:
+    import toppra as ta
     # replan path with TOPP-RA
     vlims = model.velocityLimit
     alims = 10 * np.ones_like(vlims)
@@ -93,7 +93,9 @@ if TOPP_RA:
     pc_vel = ta.constraint.JointVelocityConstraint(vlims)
     pc_acc = ta.constraint.JointAccelerationConstraint(alims)
 
-    instance = ta.algorithm.TOPPRA([pc_vel, pc_acc], path, parametrizer="ParametrizeConstAccel")
+    instance = ta.algorithm.TOPPRA(
+        [pc_vel, pc_acc], path, parametrizer="ParametrizeConstAccel"
+    )
     jnt_traj = instance.compute_trajectory()
 
     # Overwrite variables with TOPP-RA data
