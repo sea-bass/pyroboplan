@@ -85,6 +85,7 @@ plt.title("Pyroboplan - Joint Position Trajectories")
 
 if TOPP_RA:
     import toppra as ta
+
     # replan path with TOPP-RA
     vlims = model.velocityLimit
     alims = 10 * np.ones_like(vlims)
