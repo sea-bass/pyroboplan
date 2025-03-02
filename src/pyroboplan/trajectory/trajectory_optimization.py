@@ -443,8 +443,8 @@ class CubicTrajectoryOptimization:
                         )
                         grad = (
                             np.sign(min_distance)
-                            * distance_vec[2]
-                            * (Jcoll1[2, :] - Jcoll2[2, :])
+                            * min_distance
+                            * (Jcoll2[2, :] - Jcoll1[2, :])
                         )
                     else:
                         grad = np.zeros(num_dofs)

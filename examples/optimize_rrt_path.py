@@ -26,7 +26,8 @@ from pyroboplan.visualization.meshcat_utils import visualize_frames
 
 if __name__ == "__main__":
     # Create models and data.
-    model, collision_model, visual_model = load_models()
+    # NOTE: We are using sphere collisions since they behave better with optimization.
+    model, collision_model, visual_model = load_models(use_sphere_collisions=True)
     add_self_collisions(model, collision_model)
     add_object_collisions(model, collision_model, visual_model)
     data = model.createData()
@@ -35,6 +36,7 @@ if __name__ == "__main__":
     viz = MeshcatVisualizer(model, collision_model, visual_model, data=data)
     viz.initViewer(open=True)
     viz.loadViewerModel()
+    viz.displayCollisions(True)
 
     distance_padding = 0.001
 
@@ -60,7 +62,7 @@ if __name__ == "__main__":
             rrt_connect=False,
             bidirectional_rrt=True,
             rrt_star=True,
-            max_rewire_dist=10.0,
+            max_rewire_dist=5.0,
             max_planning_time=10.0,
             fast_return=True,
             goal_biasing_probability=0.15,

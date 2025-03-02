@@ -578,7 +578,9 @@ def calculate_collision_vector_and_jacobians(
     else:
         coll_points = [dr.getNearestPoint1(), dr.getNearestPoint2()]
 
-    target_z_vec = np.array([0.0, 0.0, 1.0])
+    target_z_vec = (
+        np.array([0.0, 0.0, -1.0]) if cr.isCollision() else np.array([0.0, 0.0, 1.0])
+    )
     distance_vec = coll_points[1] - coll_points[0]
     # NOTE: This is to get around a Coal bug with mesh/cube collisions.
     # For more details, see https://github.com/coal-library/coal/issues/636
