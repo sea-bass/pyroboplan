@@ -67,7 +67,10 @@ options = CartesianPlannerOptions(
     max_angular_acceleration=1.0,
 )
 
+use_toppra = False
 dt = 0.025
+curr_time = 0
+
 planner = CartesianPlanner(model, target_frame, tforms, ik, options=options)
 success, t_vec, q_vec = planner.generate(q_start, dt)
 
@@ -78,13 +81,35 @@ time.sleep(0.5)
 
 plt.ion()
 plt.figure()
-plt.title("Joint Position Trajectories")
+plt.title("Pyroboplan - Joint Position Trajectories")
+
+if use_toppra:
+    import toppra as ta
+
+    # replan path with TOPP-RA
+    vlims = model.velocityLimit
+    # URDF does not support acceleration limits, you must specify this value yourself or use this temporary one
+    alims = 3 * np.ones_like(vlims)
+    # Define the geometric path and two constraints.
+    path = ta.SplineInterpolator(t_vec, q_vec.T)
+    pc_vel = ta.constraint.JointVelocityConstraint(vlims)
+    pc_acc = ta.constraint.JointAccelerationConstraint(alims)
+
+    instance = ta.algorithm.TOPPRA(
+        [pc_vel, pc_acc], path, parametrizer="ParametrizeConstAccel"
+    )
+    jnt_traj = instance.compute_trajectory()
+
+    # Overwrite variables with TOPP-RA data
+    t_vec = np.linspace(0, jnt_traj.duration, q_vec.shape[1])
+    dt = jnt_traj.duration / q_vec.shape[1]
+    q_vec = jnt_traj(t_vec).T
+    plt.title("TOPP-RA - Joint Position Trajectories")
+
 for idx in range(q_vec.shape[0]):
     plt.plot(t_vec, q_vec[idx, :])
 
-curr_time = 0
 time_line = plt.axvline(x=curr_time, color="k", linestyle="--")
-
 plt.legend(model.names[1:])
 plt.show()
 
