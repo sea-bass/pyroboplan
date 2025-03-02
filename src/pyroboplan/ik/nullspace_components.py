@@ -145,7 +145,9 @@ def collision_avoidance_nullspace_component(
         if dist_norm > min_distance_norm:
             distance_vec /= dist_norm
             distance_vec *= np.clip((dist_padding - dist) / dist_padding, 0.0, 1.0)
-            coll_component -= np.sign(dist) * distance_vec @ (Jcoll2 - Jcoll1)
+            coll_component -= (
+                np.sign(dist) * distance_vec[2] * (Jcoll2[2, :] - Jcoll1[2, :])
+            )
 
     coll_component = gain * coll_component
 

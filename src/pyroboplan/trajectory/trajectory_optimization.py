@@ -441,7 +441,11 @@ class CubicTrajectoryOptimization:
                                 q,
                             )
                         )
-                        grad = np.sign(min_distance) * distance_vec @ (Jcoll1 - Jcoll2)
+                        grad = (
+                            np.sign(min_distance)
+                            * distance_vec[2]
+                            * (Jcoll1[2, :] - Jcoll2[2, :])
+                        )
                     else:
                         grad = np.zeros(num_dofs)
 
