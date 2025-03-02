@@ -48,7 +48,7 @@ pip3 install -e .
 #### TOPP-RA (optional)
 If you want to use the [TOPP-RA](https://github.com/CoMMALab/toppra/tree/develop) repository for path optimization (implemented in `examples/cartesian_path.py`).
 ```bash
-git submodule init 
+git submodule init
 git submodule update
 cd toppra
 pip3 install -e .
