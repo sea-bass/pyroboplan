@@ -464,24 +464,26 @@ class CubicTrajectoryOptimization:
                     )
 
                     # Assign the gradients for x, x_d, xc_d, and h at this index.
-                    start = k*num_dofs
+                    start = k * num_dofs
                     end = start + num_dofs
                     gradient[grad_idx, start:end] += grad
 
-                    start = (num_waypoints *num_dofs) + k*num_dofs
+                    start = (num_waypoints * num_dofs) + k * num_dofs
                     end = start + num_dofs
                     gradient[grad_idx, start:end] += grad
 
-                    start = (num_waypoints * 2 * num_dofs) + k*num_dofs
+                    start = (num_waypoints * 2 * num_dofs) + k * num_dofs
                     end = start + num_dofs
                     gradient[grad_idx, start:end] += grad
 
-                    h_idx = ((num_waypoints * 2 + num_waypoints - 1)*num_dofs) + k
+                    h_idx = ((num_waypoints * 2 + num_waypoints - 1) * num_dofs) + k
                     gradient[grad_idx, h_idx] += np.sum(grad)
 
                 point_idx += 1
 
-        return InitializeAutoDiff(min_distance_smoothed_squared, gradient @ all_gradients)
+        return InitializeAutoDiff(
+            min_distance_smoothed_squared, gradient @ all_gradients
+        )
 
     def plan(self, q_path, init_path=None):
         """
