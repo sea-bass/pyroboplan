@@ -5,7 +5,7 @@ import numpy as np
 import warnings
 
 import pinocchio
-from pydrake.autodiffutils import InitializeAutoDiff, ExtractValue
+from pydrake.autodiffutils import InitializeAutoDiff, ExtractGradient, ExtractValue
 from pydrake.solvers import (
     MathematicalProgram,
     QuadraticConstraint,
@@ -377,6 +377,7 @@ class CubicTrajectoryOptimization:
                 as well as its corresponding gradient.
         """
         all_vars = ExtractValue(vars)
+        all_gradients = ExtractGradient(vars)
         x_all = all_vars[: num_waypoints * num_dofs].reshape((num_waypoints, num_dofs))
         x_d_all = all_vars[
             num_waypoints * num_dofs : 2 * num_waypoints * num_dofs
@@ -394,7 +395,7 @@ class CubicTrajectoryOptimization:
 
         min_distance_smoothed_squared = np.zeros(total_num_points * num_links)
 
-        gradient = np.zeros((total_num_points * num_links, total_num_points * num_dofs))
+        gradient = np.zeros((total_num_points * num_links, all_gradients.shape[0]))
         point_idx = 0
         for k in range(num_waypoints - 1):
             for step in np.linspace(0.0, 1.0, samples_per_segment):
@@ -455,18 +456,32 @@ class CubicTrajectoryOptimization:
                     )
                     grad_idx = point_idx * num_links + link_idx
                     min_distance_smoothed_squared[grad_idx] = min_distance_smoothed**2
-                    gradient[
-                        grad_idx, point_idx * num_dofs : (point_idx + 1) * num_dofs
-                    ] = (
+                    grad = (
                         2.0
                         * grad
                         * min_distance_smoothed
                         / (min_allowable_dist - influence_dist)
                     )
 
+                    # Assign the gradients for x, x_d, xc_d, and h at this index.
+                    start = k*num_dofs
+                    end = start + num_dofs
+                    gradient[grad_idx, start:end] += grad
+
+                    start = (num_waypoints *num_dofs) + k*num_dofs
+                    end = start + num_dofs
+                    gradient[grad_idx, start:end] += grad
+
+                    start = (num_waypoints * 2 * num_dofs) + k*num_dofs
+                    end = start + num_dofs
+                    gradient[grad_idx, start:end] += grad
+
+                    h_idx = ((num_waypoints * 2 + num_waypoints - 1)*num_dofs) + k
+                    gradient[grad_idx, h_idx] += np.sum(grad)
+
                 point_idx += 1
 
-        return InitializeAutoDiff(min_distance_smoothed_squared, gradient)
+        return InitializeAutoDiff(min_distance_smoothed_squared, gradient @ all_gradients)
 
     def plan(self, q_path, init_path=None):
         """
