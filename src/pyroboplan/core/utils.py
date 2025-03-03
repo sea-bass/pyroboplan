@@ -512,26 +512,37 @@ def calculate_collision_vector_and_jacobians(
     cr = collision_data.collisionResults[pair_idx]
     dr = collision_data.distanceResults[pair_idx]
 
-    # According to the HPP-FCL documentation, the normal always points from object1 to object2.
+    # According to the coal documentation, the normal always points from object1 to object2.
     if cr.isCollision():
-        contact = cr.getContacts()[0]
+        contact = cr.getContact(0)
         coll_points = [contact.getNearestPoint1(), contact.getNearestPoint2()]
     else:
         coll_points = [dr.getNearestPoint1(), dr.getNearestPoint2()]
 
     distance_vec = coll_points[1] - coll_points[0]
+    # NOTE: This is to get around a Coal bug with mesh/cube collisions.
+    # For more details, see https://github.com/coal-library/coal/issues/636
+    if np.any(np.isnan(distance_vec)):
+        coll_points = [dr.getNearestPoint1(), dr.getNearestPoint2()]
+        distance_vec = dr.getNearestPoint2() - dr.getNearestPoint1()
+
+    if np.linalg.norm(distance_vec) > 1e-6:
+        distance_vec = distance_vec / np.linalg.norm(distance_vec)
 
     # Calculate the Jacobians at the parent frames of both collision points.
+    # This borrows from code from the Pink IK solver by Stephane Caron:
+    # https://github.com/stephane-caron/pink/blob/b8c93303e160c976776522e004510fe9f9a152f9/pink/barriers/self_collision_barrier.py#L131
     parent_frame1 = collision_model.geometryObjects[cp.first].parentFrame
     if parent_frame1 >= model.nframes:
         parent_frame1 = 0
     Jframe1 = pinocchio.computeFrameJacobian(
         model, data, q, parent_frame1, pinocchio.ReferenceFrame.LOCAL_WORLD_ALIGNED
     )
-    t_frame1_to_point1 = pinocchio.SE3(
-        np.eye(3), coll_points[0] - data.oMf[parent_frame1].translation
+    r1 = coll_points[0] - data.oMf[parent_frame1].translation
+    Jcoll1 = (
+        distance_vec.T @ Jframe1[:3, :]
+        + (pinocchio.skew(r1) @ distance_vec).T @ Jframe1[3:, :]
     )
-    Jcoll1 = t_frame1_to_point1.toActionMatrix()[3:, :] @ Jframe1
 
     parent_frame2 = collision_model.geometryObjects[cp.second].parentFrame
     if parent_frame2 >= model.nframes:
@@ -539,9 +550,10 @@ def calculate_collision_vector_and_jacobians(
     Jframe2 = pinocchio.computeFrameJacobian(
         model, data, q, parent_frame2, pinocchio.ReferenceFrame.LOCAL_WORLD_ALIGNED
     )
-    t_frame2_to_point2 = pinocchio.SE3(
-        np.eye(3), coll_points[1] - data.oMf[parent_frame2].translation
+    r2 = coll_points[1] - data.oMf[parent_frame2].translation
+    Jcoll2 = (
+        distance_vec.T @ Jframe2[:3, :]
+        + (pinocchio.skew(r2) @ distance_vec).T @ Jframe2[3:, :]
     )
-    Jcoll2 = t_frame2_to_point2.toActionMatrix()[3:, :] @ Jframe2
 
     return distance_vec, Jcoll1, Jcoll2

@@ -14,7 +14,7 @@ This model must describe:
 
 One software package that has all these capabilities is `Pinocchio <https://github.com/stack-of-tasks/pinocchio>`_.
 It is actively maintained and therefore open to contributions, and is performant because it is written in C++ with first-class Python bindings.
-This applies to both Pinocchio itself, and the `HPP-FCL <https://github.com/humanoid-path-planner/hpp-fcl>`_ library used internally for collision checking.
+This applies to both Pinocchio itself, and the `Coal <https://github.com/coal-library/coal>`_ library used internally for collision checking.
 
 For completeness, other good alternatives for robot modeling would be `Drake <https://drake.mit.edu/>`_, `MuJoCo <https://mujoco.readthedocs.io/>`_, and `Robotics Toolbox for Python <https://petercorke.github.io/robotics-toolbox-python/>`_.
 

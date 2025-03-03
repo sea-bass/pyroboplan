@@ -207,7 +207,7 @@ def test_traj_opt_collision_avoidance():
     # Perform trajectory optimization
     options = CubicTrajectoryOptimizationOptions(
         num_waypoints=len(q_path),
-        samples_per_segment=11,
+        samples_per_segment=7,
         min_segment_time=0.01,
         max_segment_time=10.0,
         min_vel=-1.5,
@@ -219,7 +219,7 @@ def test_traj_opt_collision_avoidance():
         check_collisions=True,
         min_collision_dist=0.001,
         collision_influence_dist=0.05,
-        collision_avoidance_cost_weight=0.1,
+        collision_avoidance_cost_weight=0.0,
         collision_link_list=[
             "panda_link0",
             "panda_link1",

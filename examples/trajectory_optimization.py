@@ -32,7 +32,10 @@ if __name__ == "__main__":
     avoid_collisions = False
 
     # Create models and data.
-    model, collision_model, visual_model = load_models()
+    # NOTE: If collision avoidance is enabled, we usesphere collisions since they behave better with optimization.
+    model, collision_model, visual_model = load_models(
+        use_sphere_collisions=not avoid_collisions
+    )
     add_self_collisions(model, collision_model)
     if avoid_collisions:
         add_object_collisions(model, collision_model, visual_model)
