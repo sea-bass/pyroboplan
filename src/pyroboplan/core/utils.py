@@ -530,28 +530,30 @@ def calculate_collision_vector_and_jacobians(
         distance_vec = distance_vec / np.linalg.norm(distance_vec)
 
     # Calculate the Jacobians at the parent frames of both collision points.
-    # This uses code from the Pink IK solver by Stephane Caron:
-    # https://github.com/stephane-caron/pink/blob/main/pink/barriers/self_collision_barrier.py#L19
-    parent_joint1 = collision_model.geometryObjects[cp.first].parentJoint
-    if parent_joint1 >= model.njoints:
-        parent_joint1 = 0
-    J1 = pinocchio.getJointJacobian(
-        model, data, parent_joint1, pinocchio.ReferenceFrame.LOCAL_WORLD_ALIGNED
+    # This borrows from code from the Pink IK solver by Stephane Caron:
+    # https://github.com/stephane-caron/pink/blob/b8c93303e160c976776522e004510fe9f9a152f9/pink/barriers/self_collision_barrier.py#L131
+    parent_frame1 = collision_model.geometryObjects[cp.first].parentFrame
+    if parent_frame1 >= model.nframes:
+        parent_frame1 = 0
+    Jframe1 = pinocchio.computeFrameJacobian(
+        model, data, q, parent_frame1, pinocchio.ReferenceFrame.LOCAL_WORLD_ALIGNED
     )
-    r1 = coll_points[0] - data.oMi[parent_joint1].translation
+    r1 = coll_points[0] - data.oMf[parent_frame1].translation
     Jcoll1 = (
-        distance_vec.T @ J1[:3, :] + (pinocchio.skew(r1) @ distance_vec).T @ J1[3:, :]
+        distance_vec.T @ Jframe1[:3, :]
+        + (pinocchio.skew(r1) @ distance_vec).T @ Jframe1[3:, :]
     )
 
-    parent_joint2 = collision_model.geometryObjects[cp.second].parentJoint
-    if parent_joint2 >= model.njoints:
-        parent_joint2 = 0
-    J2 = pinocchio.getJointJacobian(
-        model, data, parent_joint2, pinocchio.ReferenceFrame.LOCAL_WORLD_ALIGNED
+    parent_frame2 = collision_model.geometryObjects[cp.second].parentFrame
+    if parent_frame2 >= model.nframes:
+        parent_frame2 = 0
+    Jframe2 = pinocchio.computeFrameJacobian(
+        model, data, q, parent_frame2, pinocchio.ReferenceFrame.LOCAL_WORLD_ALIGNED
     )
-    r2 = coll_points[1] - data.oMi[parent_joint2].translation
+    r2 = coll_points[1] - data.oMf[parent_frame2].translation
     Jcoll2 = (
-        -distance_vec.T @ J2[:3, :] - (pinocchio.skew(r2) @ distance_vec).T @ J2[3:, :]
+        distance_vec.T @ Jframe2[:3, :]
+        + (pinocchio.skew(r2) @ distance_vec).T @ Jframe2[3:, :]
     )
 
     return distance_vec, Jcoll1, Jcoll2
