@@ -36,7 +36,7 @@ if __name__ == "__main__":
     viz = MeshcatVisualizer(model, collision_model, visual_model, data=data)
     viz.initViewer(open=True)
     viz.loadViewerModel()
-    viz.displayCollisions(True)
+    viz.displayCollisions(False)  # Enable to show collision spheres
 
     distance_padding = 0.001
 
@@ -83,8 +83,8 @@ if __name__ == "__main__":
         dt = 0.025
         options = CubicTrajectoryOptimizationOptions(
             num_waypoints=len(q_path),
-            samples_per_segment=9,
-            min_segment_time=1.0,
+            samples_per_segment=7,
+            min_segment_time=0.5,
             max_segment_time=10.0,
             min_vel=-1.5,
             max_vel=1.5,
