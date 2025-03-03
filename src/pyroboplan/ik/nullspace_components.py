@@ -135,7 +135,7 @@ def collision_avoidance_nullspace_component(
         distance_vec, Jcoll1, Jcoll2 = calculate_collision_vector_and_jacobians(
             model, collision_model, data, collision_data, idx, q
         )
-        coll_component += np.sign(dist) * dist * (Jcoll2 - Jcoll1)
+        coll_component -= (dist - dist_padding) * (Jcoll2 - Jcoll1)
 
     coll_component = gain * coll_component
 

@@ -4,6 +4,7 @@ motion plan using trajectory optimization.
 """
 
 import matplotlib.pyplot as plt
+import numpy as np
 from pinocchio.visualize import MeshcatVisualizer
 import time
 
@@ -32,11 +33,16 @@ if __name__ == "__main__":
     add_object_collisions(model, collision_model, visual_model)
     data = model.createData()
 
+    # Color the collision spheres to see them more easily.
+    for cobj in collision_model.geometryObjects:
+        if "panda" in cobj.name:
+            cobj.meshColor = np.array([0.7, 0.0, 0.5, 0.3])
+
     # Initialize visualizer.
     viz = MeshcatVisualizer(model, collision_model, visual_model, data=data)
     viz.initViewer(open=True)
     viz.loadViewerModel()
-    viz.displayCollisions(False)  # Enable to show collision spheres
+    viz.displayCollisions(True)  # Enable to show collision spheres
 
     distance_padding = 0.001
 
