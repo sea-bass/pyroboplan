@@ -9,7 +9,7 @@ from ..core.utils import set_collisions
 from .utils import get_example_models_folder
 
 
-def load_models():
+def load_models(use_sphere_collisions=False):
     """
     Gets the example Panda models.
 
@@ -20,9 +20,10 @@ def load_models():
     """
     models_folder = get_example_models_folder()
     package_dir = os.path.join(models_folder, "panda_description")
-    urdf_filename = os.path.join(package_dir, "urdf", "panda.urdf")
+    urdf_filename = "panda_spheres.urdf" if use_sphere_collisions else "panda.urdf"
+    urdf_filepath = os.path.join(package_dir, "urdf", urdf_filename)
 
-    return pinocchio.buildModelsFromUrdf(urdf_filename, package_dirs=models_folder)
+    return pinocchio.buildModelsFromUrdf(urdf_filepath, package_dirs=models_folder)
 
 
 def add_self_collisions(model, collision_model, srdf_filename=None):

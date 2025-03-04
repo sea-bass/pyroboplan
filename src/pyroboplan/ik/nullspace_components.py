@@ -87,7 +87,6 @@ def collision_avoidance_nullspace_component(
     q,
     dist_padding=0.05,
     gain=1.0,
-    min_distance_norm=1e-16,
 ):
     """
     Returns a collision avoidance nullspace component.
@@ -113,9 +112,6 @@ def collision_avoidance_nullspace_component(
             For example, a distance padding of 0.1 means collisions have an influence 10 cm away from actual collision..
         gain : float, optional
             A gain to modify the relative weight of this term.
-        min_distance_norm : float, optional
-            The minimum value of the distance vector norm to consider applying a collision avoidance component.
-            This is mostly to prevent divisions by zero.
 
     Returns
     -------
@@ -139,13 +135,7 @@ def collision_avoidance_nullspace_component(
         distance_vec, Jcoll1, Jcoll2 = calculate_collision_vector_and_jacobians(
             model, collision_model, data, collision_data, idx, q
         )
-
-        # Normalize the distance vector and add this collision pair to the nullspace component.
-        dist_norm = np.linalg.norm(distance_vec)
-        if dist_norm > min_distance_norm:
-            distance_vec /= dist_norm
-            distance_vec *= np.clip((dist_padding - dist) / dist_padding, 0.0, 1.0)
-            coll_component -= np.sign(dist) * distance_vec @ (Jcoll2 - Jcoll1)
+        coll_component -= (dist - dist_padding) * (Jcoll2 - Jcoll1)
 
     coll_component = gain * coll_component
 

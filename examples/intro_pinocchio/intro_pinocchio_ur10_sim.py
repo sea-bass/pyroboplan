@@ -89,7 +89,7 @@ def main():
         )
         print(f"Frame Jacobian:\n{J}")
 
-        # Compute self-collisions and collision distances using HPP-FCL.
+        # Compute self-collisions and collision distances using Coal.
         pinocchio.computeCollisions(
             model, data, collision_model, collision_data, qnext, False
         )

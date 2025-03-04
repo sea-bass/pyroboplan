@@ -38,7 +38,7 @@ These include **forward kinematics** (computing transforms from joint positions)
     )
 
 You can also use the collision model to perform collision checking at specific states.
-This uses the `HPP-FCL <https://github.com/humanoid-path-planner/hpp-fcl>`_ library internally, as well as a list of the active collision pairs in the model.
+This uses the `Coal <https://github.com/coal-library/coal>`_ library internally, as well as a list of the active collision pairs in the model.
 
 .. code-block:: python
 
@@ -68,7 +68,7 @@ One example can be found :examples:`here <collision_along_path.py>`.
 
 .. image:: _static/images/collision_checking.png
     :width: 600
-    :alt: Collision checking with Pinocchio and HPP-FCL.
+    :alt: Collision checking with Pinocchio and Coal.
 
 
 Inverse Kinematics
