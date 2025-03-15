@@ -210,11 +210,10 @@ class RRTPlanner:
 
             # Run the extend or connect operation to connect the tree to the new node.
             nearest_node = tree.get_nearest_node(q_sample)
-            q_new = self.extend_or_connect(nearest_node, q_sample)
+            new_node = self.extend_or_connect(tree, nearest_node, q_sample)
 
             # Only if extend/connect succeeded, add the new node to the tree.
-            if q_new is not None:
-                new_node = self.add_node_to_tree(tree, q_new, nearest_node)
+            if new_node is not None:
                 if start_tree_phase:
                     latest_start_tree_node = new_node
                 else:
@@ -261,52 +260,62 @@ class RRTPlanner:
             )
         return self.latest_path
 
-    def extend_or_connect(self, parent_node, q_sample):
+    def extend_or_connect(self, tree, parent_node, q_sample):
         """
         Extends a tree towards a sampled node with steps no larger than the maximum connection distance.
 
         Parameters
         ----------
+            tree : `pyroboplan.planning.graph.Graph`
+                The tree to use when performing this operation.
             parent_node : `pyroboplan.planning.graph.Node`
                 The node from which to start extending or connecting towards the sample.
             q_sample : array-like
                 The robot configuration sample to extend or connect towards.
+
+        Return
+        ------
+            `pyroboplan.planning.graph.Node`, optional
+                The latest node that was added to the tree, or `None` if no node was found.
         """
         # If they are the same node there's nothing to do.
         if np.array_equal(parent_node.q, q_sample):
             return None
 
-        q_out = None
-        q_cur = parent_node.q
+        cur_parent_node = parent_node
+        cur_node = None
         while True:
             # Compute the next incremental robot configuration.
             q_extend = extend_robot_state(
-                q_cur,
+                cur_parent_node.q,
                 q_sample,
                 self.options.max_connection_dist,
             )
 
             # If we can connect then it is a valid state
-            if has_collision_free_path(
-                q_cur,
+            if not has_collision_free_path(
+                cur_parent_node.q,
                 q_extend,
                 self.options.max_step_size,
                 self.model,
                 self.collision_model,
                 distance_padding=self.options.collision_distance_padding,
             ):
-                q_out = q_cur = q_extend
-                # If we have reached the sampled state then we are done.
-                if np.array_equal(q_cur, q_sample):
-                    break
-            else:
                 break
 
-            # If RRTConnect is disabled, only one iteration is needed.
+            cur_node = self.add_node_to_tree(tree, q_extend, cur_parent_node)
+
+            # If RRT-Connect is disabled, only one iteration is needed.
             if not self.options.rrt_connect:
                 break
 
-        return q_out
+            # If we have reached the final configuration, we are done.
+            if np.array_equal(cur_node.q, q_sample):
+                break
+
+            cur_parent_node = cur_node
+
+        return cur_node
 
     def extract_path_from_trees(self, start_tree_final_node, goal_tree_final_node):
         """
