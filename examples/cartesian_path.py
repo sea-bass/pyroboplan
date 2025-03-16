@@ -68,7 +68,7 @@ options = CartesianPlannerOptions(
 )
 
 use_toppra = False
-dt = 0.025
+dt = 0.05
 curr_time = 0
 
 planner = CartesianPlanner(model, target_frame, tforms, ik, options=options)
@@ -98,12 +98,13 @@ if use_toppra:
     instance = ta.algorithm.TOPPRA(
         [pc_vel, pc_acc], path, parametrizer="ParametrizeConstAccel"
     )
-    jnt_traj = instance.compute_trajectory()
+    toppra_traj = instance.compute_trajectory()
 
-    # Overwrite variables with TOPP-RA data
-    t_vec = np.linspace(0, jnt_traj.duration, q_vec.shape[1])
-    dt = jnt_traj.duration / q_vec.shape[1]
-    q_vec = jnt_traj(t_vec).T
+    # Evaluate the TOPP-RA trajectory at the prescribed timing.
+    t_vec = np.arange(0, toppra_traj.duration, dt)
+    if t_vec[-1] != toppra_traj.duration:
+        t_vec = np.append(t_vec, toppra_traj.duration)
+    q_vec = np.array([toppra_traj.eval(t) for t in t_vec]).T
     plt.title("TOPP-RA - Joint Position Trajectories")
 
 for idx in range(q_vec.shape[0]):
@@ -116,9 +117,11 @@ plt.show()
 if success:
     print("Cartesian planning successful!")
     input("Press 'Enter' to animate the path.")
-    for idx in range(q_vec.shape[1]):
+    for idx in range(1, q_vec.shape[1]):
+        t_start = time.time()
         viz.display(q_vec[:, idx])
-        plt.pause(dt)
+        t_end = time.time()
+        plt.pause(dt - (t_end - t_start))
         curr_time += dt
         time_line.set_xdata([curr_time, curr_time])
 else:
