@@ -361,8 +361,8 @@ class CubicTrajectoryOptimization:
                 The number of degrees of freedom.
             samples_per_segment : int
                 The number of samples per waypoint at which to evaluate collisions.
-            collision_pairs : list[list[int]]
-                A nested list containing the indices of collision model pairs for each geometry to check.
+            collision_pairs : list[int]
+                A list containing the indices of collision model pairs to check.
             min_allowable_dist : float
                 The minimum allowable collision distance, in meters, for the constraint to be satisfied.
                 Positive is out of collision and negative is in collision.
@@ -390,12 +390,14 @@ class CubicTrajectoryOptimization:
         ].reshape((num_waypoints - 1, num_dofs))
         h_all = all_vars[-(num_waypoints - 1) :]
 
-        num_links = len(collision_pairs)
+        num_collision_pairs = len(collision_pairs)
         total_num_points = (num_waypoints - 1) * samples_per_segment
 
-        min_distance_smoothed_squared = np.zeros(total_num_points * num_links)
+        min_distance_smoothed_squared = np.zeros(total_num_points * num_collision_pairs)
 
-        gradient = np.zeros((total_num_points * num_links, all_gradients.shape[0]))
+        gradient = np.zeros(
+            (total_num_points * num_collision_pairs, all_gradients.shape[0])
+        )
         point_idx = 0
         for k in range(num_waypoints - 1):
             for step in np.linspace(0.0, 1.0, samples_per_segment):
@@ -408,53 +410,39 @@ class CubicTrajectoryOptimization:
 
                 # Compute collision and distance checks
                 pinocchio.framesForwardKinematics(self.model, self.data, q)
-                pinocchio.computeCollisions(
-                    self.model,
-                    self.data,
-                    self.collision_model,
-                    self.collision_data,
-                    q,
-                    False,
-                )
                 pinocchio.computeDistances(
                     self.model, self.data, self.collision_model, self.collision_data, q
                 )
 
                 # Get the minimum distance in the allowable range
-                for link_idx, pairs in enumerate(collision_pairs):
-                    min_distance_idx = -1
-                    min_distance = influence_dist
-                    for p in pairs:
-                        dist = self.collision_data.distanceResults[p].min_distance
-                        if dist <= influence_dist and dist < min_distance:
-                            min_distance_idx = p
-                            min_distance = dist
+                for link_idx, pair in enumerate(collision_pairs):
+                    dist = self.collision_data.distanceResults[pair].min_distance
 
                     # Find the collision Jacobian for the closest point pair, and calculate gradients.
-                    if min_distance_idx >= 0:
+                    if dist <= influence_dist:
                         distance_vec, Jcoll1, Jcoll2 = (
                             calculate_collision_vector_and_jacobians(
                                 self.model,
                                 self.collision_model,
                                 self.data,
                                 self.collision_data,
-                                min_distance_idx,
+                                pair,
                                 q,
                             )
                         )
-                        grad = min_distance * (Jcoll2 - Jcoll1)
+                        grad = distance_vec.T @ (Jcoll2 - Jcoll1)
                     else:
                         grad = np.zeros(num_dofs)
 
                     # Minimum distances are smoothed using a squared hinge loss to have better gradients.
                     min_distance_smoothed = np.clip(
                         1.0
-                        + (min_distance - min_allowable_dist)
+                        + (dist - min_allowable_dist)
                         / (min_allowable_dist - influence_dist),
                         0.0,
                         np.inf,
                     )
-                    grad_idx = point_idx * num_links + link_idx
+                    grad_idx = point_idx * num_collision_pairs + link_idx
                     min_distance_smoothed_squared[grad_idx] = min_distance_smoothed**2
                     grad = (
                         2.0
@@ -605,20 +593,17 @@ class CubicTrajectoryOptimization:
 
         # Collision checking by sampling points along the entire trajectory.
         link_list = self.options.collision_link_list
-        num_links = len(link_list)
-        if self.options.check_collisions and num_links > 0:
-            all_pairs = [
-                get_collision_pair_indices_from_bodies(
-                    self.model, self.collision_model, [link]
-                )
-                for link in link_list
-            ]
+        if self.options.check_collisions and len(link_list) > 0:
+            all_pairs = get_collision_pair_indices_from_bodies(
+                self.model, self.collision_model, link_list
+            )
+            num_pairs = len(all_pairs)
 
             total_points = (num_waypoints - 1) * self.options.samples_per_segment
             # The minimum distance values are smoothed in the constraint such that
             # a value of 1.0 or lower satisfies the constraint.
-            min_dist_val = -np.inf * np.ones(total_points * num_links)
-            max_dist_val = 1.0 * np.ones(total_points * num_links)
+            min_dist_val = -np.inf * np.ones(total_points * num_pairs)
+            max_dist_val = 1.0 * np.ones(total_points * num_pairs)
             collision_expr = partial(
                 self._collision_constraint,
                 num_waypoints=num_waypoints,
