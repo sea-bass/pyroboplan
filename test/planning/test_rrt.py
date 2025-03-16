@@ -63,6 +63,7 @@ def test_plan_rrt_connect():
     options = RRTPlannerOptions(
         rrt_connect=True,
         bidirectional_rrt=True,
+        max_connection_dist=0.75,
         rng_seed=1234,
     )
     planner = RRTPlanner(model, collision_model, options=options)
