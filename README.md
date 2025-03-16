@@ -45,11 +45,25 @@ Install this package and its dependencies.
 ```bash
 pip3 install -e .
 ```
-#### TOPP-RA (optional)
-If you want to use the [TOPP-RA](https://github.com/CoMMALab/toppra/tree/develop) repository for path optimization (implemented in `examples/cartesian_path.py`).
+
+## External dependencies
+
+We are using [Git submodules](https://git-scm.com/book/en/v2/Git-Tools-Submodules) to manage external dependencies that must be included from source.
+
+To set up this repo's submodules, the following step is required.
+
 ```bash
 git submodule init
 git submodule update
-cd toppra
+```
+
+### TOPP-RA
+
+To use the [TOPP-RA](https://github.com/CoMMALab/toppra/tree/develop) repository for trajectory timing, you must install it as follows.
+
+```bash
+cd external/toppra
 pip3 install -e .
 ```
+
+The `examples/cartesian_path.py` script currently uses TOPP-RA as an option.
