@@ -47,7 +47,7 @@ repos:
 
   # Finds issues in YAML files.
   - repo: https://github.com/adrienverge/yamllint
-    rev: v1.35.1
+    rev: v1.36.2
     hooks:
       - id: yamllint
         args:
@@ -69,7 +69,7 @@ repos:
 
   # Checks links in markdown files.
   - repo: https://github.com/tcort/markdown-link-check
-    rev: v3.13.6
+    rev: v3.13.7
     hooks:
       - id: markdown-link-check
 
