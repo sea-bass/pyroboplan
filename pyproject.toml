@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "pyroboplan"
-version = "1.1.0"
+version = "1.2.0"
 dependencies = [
   "drake == 1.39.0",
   "pin == 3.4.0",
