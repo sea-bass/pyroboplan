@@ -142,3 +142,23 @@ def add_object_collisions(model, collision_model, visual_model, inflation_radius
 
     # Exclude the collision between the ground and the base link
     set_collisions(model, collision_model, "panda_link0", "ground_plane", False)
+
+
+def add_pointcloud_collisions(model, collision_model, visual_model):
+    import pinocchio as pin
+    import hppfcl as fcl
+
+    # collision_model = pin.GeometryModel()
+
+    octree = fcl.makeOctree(np.random.rand(1000, 3)+np.array([1, 1, 1]), 0.01)
+    octree_object = pin.GeometryObject("octree", 0, pin.SE3.Identity(), octree)
+    octree_object.meshColor[0] = 1.0
+    collision_model.addGeometryObject(octree_object)
+    visual_model.addGeometryObject(octree_object)
+
+    collision_names = [
+        cobj.name for cobj in collision_model.geometryObjects if "panda" in cobj.name
+    ]
+
+    for collision_name in collision_names:
+        set_collisions(model, collision_model, "pointcloud", collision_name, True)
