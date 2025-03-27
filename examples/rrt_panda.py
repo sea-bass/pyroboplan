@@ -21,20 +21,8 @@ from pyroboplan.planning.utils import discretize_joint_space_path
 from pyroboplan.visualization.meshcat_utils import visualize_frames
 
 
-if __name__ == "__main__":
-    # Create models and data
-    model, collision_model, visual_model = load_models()
-    add_self_collisions(model, collision_model)
-    add_object_collisions(model, collision_model, visual_model)
 
-    data = model.createData()
-    collision_data = collision_model.createData()
-
-    # Initialize visualizer
-    viz = MeshcatVisualizer(model, collision_model, visual_model, data=data)
-    viz.initViewer(open=True)
-    viz.loadViewerModel()
-
+def rrt_panda(viz, model, collision_model):
     # Define the start and end configurations
     q_start = get_random_collision_free_state(model, collision_model)
     q_end = get_random_collision_free_state(model, collision_model)
@@ -92,3 +80,20 @@ if __name__ == "__main__":
             print()
             q_start = q_end
             q_end = get_random_collision_free_state(model, collision_model)
+
+
+if __name__ == "__main__":
+    # Create models and data
+    model, collision_model, visual_model = load_models()
+    add_self_collisions(model, collision_model)
+    add_object_collisions(model, collision_model, visual_model)
+
+    data = model.createData()
+    collision_data = collision_model.createData()
+
+    # Initialize visualizer
+    viz = MeshcatVisualizer(model, collision_model, visual_model, data=data)
+    viz.initViewer(open=True)
+    viz.loadViewerModel()
+
+    rrt_panda(viz, model, collision_model)
