@@ -4,6 +4,9 @@ import coal
 import numpy as np
 import os
 import pinocchio
+import hppfcl as fcl
+from plyfile import PlyData
+
 
 from ..core.utils import set_collisions
 from .utils import get_example_models_folder
@@ -144,14 +147,18 @@ def add_object_collisions(model, collision_model, visual_model, inflation_radius
     set_collisions(model, collision_model, "panda_link0", "ground_plane", False)
 
 
-def add_pointcloud_collisions(model, collision_model, visual_model):
-    import pinocchio as pin
-    import hppfcl as fcl
+def add_octree_collisions(model, collision_model, visual_model):
 
-    # collision_model = pin.GeometryModel()
+    # Read the PLY file
+    ply_data = PlyData.read('./living_room_furniture.ply')
 
-    octree = fcl.makeOctree(np.random.rand(1000, 3)+np.array([1, 1, 1]), 0.01)
-    octree_object = pin.GeometryObject("octree", 0, pin.SE3.Identity(), octree)
+    # Access vertex data (assuming it's a mesh file)
+    vertices = ply_data['vertex']
+    vertex_array = np.array([vertices['x'], vertices['y'], vertices['z']]).T
+    octree = fcl.makeOctree(vertex_array, 0.01)
+
+    # octree = fcl.makeOctree(np.random.rand(8, 3)+np.array([-0.5, -0.5, 0]), 0.01)
+    octree_object = pinocchio.GeometryObject("octree", 0, pinocchio.SE3.Identity(), octree)
     octree_object.meshColor[0] = 1.0
     collision_model.addGeometryObject(octree_object)
     visual_model.addGeometryObject(octree_object)
@@ -161,4 +168,4 @@ def add_pointcloud_collisions(model, collision_model, visual_model):
     ]
 
     for collision_name in collision_names:
-        set_collisions(model, collision_model, "pointcloud", collision_name, True)
+        set_collisions(model, collision_model, "octree", collision_name, True)
