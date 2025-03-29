@@ -21,7 +21,6 @@ from pyroboplan.planning.utils import discretize_joint_space_path
 from pyroboplan.visualization.meshcat_utils import visualize_frames
 
 
-
 def rrt_panda(viz, model, collision_model):
     # Define the start and end configurations
     q_start = get_random_collision_free_state(model, collision_model)
