@@ -7,7 +7,6 @@ import pinocchio
 import hppfcl as fcl
 from plyfile import PlyData
 
-
 from ..core.utils import set_collisions
 from .utils import get_example_models_folder
 
