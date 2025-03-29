@@ -17,7 +17,7 @@ if __name__ == "__main__":
     # Create models and data
     model, collision_model, visual_model = load_models()
     add_self_collisions(model, collision_model)
-    # Provide a path to your point cloud
+    # Provide a path to your point cloud if None example point cloud will be used
     octree = load_point_cloud(pointcloud_path=None)
 
     add_octree_collisions(model, collision_model, visual_model, octree)
