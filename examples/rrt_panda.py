@@ -5,6 +5,7 @@ Rapidly-Exploring Random Tree (RRT) algorithm on a 7-DOF Panda robot.
 
 from pinocchio.visualize import MeshcatVisualizer
 import time
+import argparse
 
 from pyroboplan.core.utils import (
     extract_cartesian_poses,
@@ -12,7 +13,9 @@ from pyroboplan.core.utils import (
 )
 from pyroboplan.models.panda import (
     load_models,
+    load_point_cloud,
     add_self_collisions,
+    add_octree_collisions,
     add_object_collisions,
 )
 from pyroboplan.planning.path_shortcutting import shortcut_path
@@ -21,7 +24,29 @@ from pyroboplan.planning.utils import discretize_joint_space_path
 from pyroboplan.visualization.meshcat_utils import visualize_frames
 
 
-def rrt_panda(viz, model, collision_model):
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--octree", action="store_true")
+    args = parser.parse_args()
+
+    # Create models and data
+    model, collision_model, visual_model = load_models()
+    add_self_collisions(model, collision_model)
+
+    if args.octree:
+        octree = load_point_cloud(pointcloud_path=None, voxel_resolution=0.04)
+        add_octree_collisions(model, collision_model, visual_model, octree)
+    else:
+        add_object_collisions(model, collision_model, visual_model)
+
+    data = model.createData()
+    collision_data = collision_model.createData()
+
+    # Initialize visualizer
+    viz = MeshcatVisualizer(model, collision_model, visual_model, data=data)
+    viz.initViewer(open=True)
+    viz.loadViewerModel()
+
     # Define the start and end configurations
     q_start = get_random_collision_free_state(model, collision_model)
     q_end = get_random_collision_free_state(model, collision_model)
@@ -79,20 +104,3 @@ def rrt_panda(viz, model, collision_model):
             print()
             q_start = q_end
             q_end = get_random_collision_free_state(model, collision_model)
-
-
-if __name__ == "__main__":
-    # Create models and data
-    model, collision_model, visual_model = load_models()
-    add_self_collisions(model, collision_model)
-    add_object_collisions(model, collision_model, visual_model)
-
-    data = model.createData()
-    collision_data = collision_model.createData()
-
-    # Initialize visualizer
-    viz = MeshcatVisualizer(model, collision_model, visual_model, data=data)
-    viz.initViewer(open=True)
-    viz.loadViewerModel()
-
-    rrt_panda(viz, model, collision_model)
