@@ -4,7 +4,6 @@ import coal
 import numpy as np
 import os
 import pinocchio
-import hppfcl as fcl
 from plyfile import PlyData
 
 from ..core.utils import set_collisions
@@ -28,7 +27,7 @@ def load_models(use_sphere_collisions=False):
     return pinocchio.buildModelsFromUrdf(urdf_filepath, package_dirs=models_folder)
 
 
-def load_point_cloud(pointcloud_path=None):
+def load_point_cloud(pointcloud_path=None, voxel_resolution=0.04):
     """
     Loads a point cloud from a PLY file and converts it into an octree structure.
 
@@ -36,7 +35,7 @@ def load_point_cloud(pointcloud_path=None):
     -------
     octree : fcl.Octree
         An octree data structure representing the hierarchical spatial partitioning
-        of the point cloud. The leaf size (voxel resolution) is set to 0.01 units.
+        of the point cloud. The voxel resolution default value is set to 0.04 units.
     """
     if pointcloud_path is None:
         models_folder = get_example_models_folder()
@@ -50,7 +49,7 @@ def load_point_cloud(pointcloud_path=None):
     # Access vertex data
     vertices = ply_data["vertex"]
     vertex_array = np.array([vertices["x"], vertices["y"], vertices["z"]]).T
-    octree = fcl.makeOctree(vertex_array, 0.01)
+    octree = coal.makeOctree(vertex_array, voxel_resolution)
 
     return octree
 
