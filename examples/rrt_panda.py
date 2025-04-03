@@ -26,7 +26,11 @@ from pyroboplan.visualization.meshcat_utils import visualize_frames
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--octree", action="store_true")
+    parser.add_argument(
+        "--octree",
+        action="store_true",
+        help="Use octree for collision detection instead of object collisions",
+    )
     args = parser.parse_args()
 
     # Create models and data

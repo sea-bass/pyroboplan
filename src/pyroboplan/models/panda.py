@@ -33,7 +33,7 @@ def load_point_cloud(pointcloud_path=None, voxel_resolution=0.04):
 
     Returns
     -------
-    octree : fcl.Octree
+    octree : coal.Octree
         An octree data structure representing the hierarchical spatial partitioning
         of the point cloud. The voxel resolution default value is set to 0.04 units.
     """
@@ -185,7 +185,7 @@ def add_octree_collisions(model, collision_model, visual_model, octree):
         The Panda collision geometry model.
     visual_model : `pinocchio.Model`
         The Panda visual geometry model.
-    octree : fcl.Octree
+    octree : coal.Octree
         Octree data structure representing the environment/obstacles.
     """
     octree_object = pinocchio.GeometryObject(
