@@ -5,6 +5,7 @@ Rapidly-Exploring Random Tree (RRT) algorithm on a 7-DOF Panda robot.
 
 from pinocchio.visualize import MeshcatVisualizer
 import time
+import argparse
 
 from pyroboplan.core.utils import (
     extract_cartesian_poses,
@@ -12,7 +13,9 @@ from pyroboplan.core.utils import (
 )
 from pyroboplan.models.panda import (
     load_models,
+    load_point_cloud,
     add_self_collisions,
+    add_octree_collisions,
     add_object_collisions,
 )
 from pyroboplan.planning.path_shortcutting import shortcut_path
@@ -22,10 +25,23 @@ from pyroboplan.visualization.meshcat_utils import visualize_frames
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--octree",
+        action="store_true",
+        help="Use octree for collision detection instead of object collisions",
+    )
+    args = parser.parse_args()
+
     # Create models and data
     model, collision_model, visual_model = load_models()
     add_self_collisions(model, collision_model)
-    add_object_collisions(model, collision_model, visual_model)
+
+    if args.octree:
+        octree = load_point_cloud(pointcloud_path=None, voxel_resolution=0.04)
+        add_octree_collisions(model, collision_model, visual_model, octree)
+    else:
+        add_object_collisions(model, collision_model, visual_model)
 
     data = model.createData()
     collision_data = collision_model.createData()

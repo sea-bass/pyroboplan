@@ -4,6 +4,7 @@ import coal
 import numpy as np
 import os
 import pinocchio
+from plyfile import PlyData
 
 from ..core.utils import set_collisions
 from .utils import get_example_models_folder
@@ -24,6 +25,33 @@ def load_models(use_sphere_collisions=False):
     urdf_filepath = os.path.join(package_dir, "urdf", urdf_filename)
 
     return pinocchio.buildModelsFromUrdf(urdf_filepath, package_dirs=models_folder)
+
+
+def load_point_cloud(pointcloud_path=None, voxel_resolution=0.04):
+    """
+    Loads a point cloud from a PLY file and converts it into an octree structure.
+
+    Returns
+    -------
+    octree : coal.Octree
+        An octree data structure representing the hierarchical spatial partitioning
+        of the point cloud. The voxel resolution default value is set to 0.04 units.
+    """
+    if pointcloud_path is None:
+        models_folder = get_example_models_folder()
+        pointcloud_path = os.path.join(
+            models_folder, "example_point_cloud", "example_point_cloud.ply"
+        )
+
+    # Read the PLY file
+    ply_data = PlyData.read(pointcloud_path)
+
+    # Access vertex data
+    vertices = ply_data["vertex"]
+    vertex_array = np.array([vertices["x"], vertices["y"], vertices["z"]]).T
+    octree = coal.makeOctree(vertex_array, voxel_resolution)
+
+    return octree
 
 
 def add_self_collisions(model, collision_model, srdf_filename=None):
@@ -142,3 +170,34 @@ def add_object_collisions(model, collision_model, visual_model, inflation_radius
 
     # Exclude the collision between the ground and the base link
     set_collisions(model, collision_model, "panda_link0", "ground_plane", False)
+
+
+def add_octree_collisions(model, collision_model, visual_model, octree):
+    """
+    Adds an octree as a collision/visual object to the robot model and enables collisions
+    between the octree and specified robot links.
+
+    Parameters
+    ----------
+    model : `pinocchio.Model`
+        The Panda model.
+    collision_model : `pinocchio.Model`
+        The Panda collision geometry model.
+    visual_model : `pinocchio.Model`
+        The Panda visual geometry model.
+    octree : coal.Octree
+        Octree data structure representing the environment/obstacles.
+    """
+    octree_object = pinocchio.GeometryObject(
+        "octree", 0, pinocchio.SE3.Identity(), octree
+    )
+    octree_object.meshColor = np.array([1.0, 0.0, 0.0, 0.5])
+    collision_model.addGeometryObject(octree_object)
+    visual_model.addGeometryObject(octree_object)
+
+    collision_names = [
+        cobj.name for cobj in collision_model.geometryObjects if "panda" in cobj.name
+    ]
+
+    for collision_name in collision_names:
+        set_collisions(model, collision_model, "octree", collision_name, True)
