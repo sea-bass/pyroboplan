@@ -91,5 +91,6 @@ def test_path_shortcutting():
 
     # Check that the shortened path is shorter than original, but cannot be shorter than a direct path from start to end.
     q_shortened = shortcut_path(model, collision_model, q_path)
+    assert len(q_shortened) <= len(q_path)
     assert get_path_length(q_shortened) <= get_path_length(q_path)
     assert get_path_length(q_shortened) >= get_path_length([q_path[0], q_path[-1]])
