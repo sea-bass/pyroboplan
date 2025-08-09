@@ -107,8 +107,16 @@ def shortcut_path(model, collision_model, q_path, max_iters=100, max_step_size=0
 
     q_shortened = q_path
     for _ in range(max_iters):
-        # If the path has been shortened to 2 points or less, this is already a shortest path.
         if len(q_shortened) < 3:
+            # If the path has been shortened to 2 points or less, this is already a shortest path.
+            break
+        elif len(q_shortened) == 3:
+            # If the path has exactly 3 points, try to remove the middle point and return regardless.
+            path_to_goal = discretize_joint_space_path(
+                [q_path[0], q_path[2]], max_step_size
+            )
+            if not (check_collisions_along_path(model, collision_model, path_to_goal)):
+                q_shortened = [q_shortened[0], q_shortened[2]]
             break
 
         # Sample two points along the path length
