@@ -113,7 +113,7 @@ def shortcut_path(model, collision_model, q_path, max_iters=100, max_step_size=0
         elif len(q_shortened) == 3:
             # If the path has exactly 3 points, try to remove the middle point and return regardless.
             path_to_goal = discretize_joint_space_path(
-                [q_path[0], q_path[2]], max_step_size
+                [q_shortened[0], q_shortened[2]], max_step_size
             )
             if not (check_collisions_along_path(model, collision_model, path_to_goal)):
                 q_shortened = [q_shortened[0], q_shortened[2]]
@@ -136,7 +136,7 @@ def shortcut_path(model, collision_model, q_path, max_iters=100, max_step_size=0
         # Check if the sampled segment is collision free. If it is, shortcut the path.
         path_to_goal = discretize_joint_space_path([q_low, q_high], max_step_size)
         if not check_collisions_along_path(model, collision_model, path_to_goal):
-            q_shortened = (
-                q_shortened[:idx_low] + [q_low, q_high] + q_shortened[idx_high:]
-            )
+            q_shortened[idx_low] = q_low
+            q_shortened[idx_high - 1] = q_high
+            q_shortened = q_shortened[:idx_low] + q_shortened[idx_high - 1 :]
     return q_shortened
