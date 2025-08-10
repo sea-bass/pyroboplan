@@ -12,7 +12,7 @@ import sys
 project = "pyroboplan"
 copyright = "2024-2025, Sebastian Castro"
 author = "Sebastian Castro"
-version = release = "1.2.0"
+version = release = "1.3.0"
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
