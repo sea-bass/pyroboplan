@@ -135,11 +135,28 @@ def shortcut_path(model, collision_model, q_path, max_iters=100, max_step_size=0
         if idx_low == idx_high:
             continue
 
-        # Check if the sampled segment is collision free. If it is, shortcut the path.
+        # Check if the sampled segment is collision free. If not, try again.
         path_to_goal = discretize_joint_space_path([q_low, q_high], max_step_size)
-        if not check_collisions_along_path(model, collision_model, path_to_goal):
-            q_shortened[idx_low] = q_low
-            q_shortened[idx_high - 1] = q_high
-            q_shortened = q_shortened[:idx_low] + q_shortened[idx_high - 1 :]
-            path_changed = True
+        if check_collisions_along_path(model, collision_model, path_to_goal):
+            continue
+
+        # Check if the low and high sampled configurations can be connected to the path.
+        # If not, true again.
+        if idx_low > 0:
+            path_to_low = discretize_joint_space_path([q_shortened[idx_low - 1], q_low], max_step_size)
+            if check_collisions_along_path(model, collision_model, path_to_low):
+                continue
+
+        if idx_high < len(q_shortened) - 1:
+            path_to_high = discretize_joint_space_path([q_high, q_shortened[idx_high]], max_step_size)
+            if check_collisions_along_path(model, collision_model, path_to_high):
+                continue
+
+        # Otherwise the newly sampled configurations will shorten the path, so modify the
+        # path accordingly.
+        q_shortened[idx_low] = q_low
+        q_shortened[idx_high - 1] = q_high
+        q_shortened = q_shortened[:idx_low] + q_shortened[idx_high - 1 :]
+        path_changed = True
+
     return q_shortened
