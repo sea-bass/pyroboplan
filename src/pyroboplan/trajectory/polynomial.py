@@ -7,7 +7,7 @@ Some good resources:
 """
 
 from abc import ABC
-from typing import List, Optional, Union
+from typing import Dict, List, Optional, Union
 import numpy as np
 import numpy.typing as npt
 import warnings
@@ -18,6 +18,27 @@ class PolynomialTrajectoryBase(ABC):
     num_dims: int
     coeffs: List[List[npt.NDArray[np.float32]]]
     segment_times: List[List[np.float32]]
+    _derivatives_cache: List[List[Dict[str, npt.NDArray[np.float32]]]]
+
+    def __init__(self):
+        # make sure coefs are set by the subclass
+        if len(self.coeffs) != self.num_dims or self.num_dims == 0:
+            raise ValueError(
+                "Coefficients must be provided for each dimension.")
+
+        # Pre-calculate and cache derivatives
+        if len(self._derivatives_cache) != self.num_dims:
+            self._derivatives_cache = []
+            for dim in range(self.num_dims):
+                self._derivatives_cache[dim] = []
+                for seg_idx in range(len(self.coeffs[dim])):
+                    coeffs = self.coeffs[dim][seg_idx]
+                    self._derivatives_cache[dim].append({
+                        'pos': coeffs,
+                        'vel': np.polyder(coeffs, 1),
+                        'acc': np.polyder(coeffs, 2),
+                        'jerk': np.polyder(coeffs, 3)
+                    })
 
     def evaluate(self, t: float):
         """
@@ -54,12 +75,12 @@ class PolynomialTrajectoryBase(ABC):
             t_segment_final = self.segment_times[segment_idx][-1]
             if t <= t_segment_final:
                 for dim in range(self.num_dims):
-                    coeffs = self.coeffs[dim][segment_idx]
+                    coeffs = self._derivatives_cache[dim][segment_idx]
                     dt = t - t_segment_start
-                    q[dim] = np.polyval(coeffs, dt)
-                    qd[dim] = np.polyval(np.polyder(coeffs, 1), dt)
-                    qdd[dim] = np.polyval(np.polyder(coeffs, 2), dt)
-                    qddd[dim] = np.polyval(np.polyder(coeffs, 3), dt)
+                    q[dim] = np.polyval(coeffs['pos'], dt)
+                    qd[dim] = np.polyval(coeffs['vel'], dt)
+                    qdd[dim] = np.polyval(coeffs['acc'], dt)
+                    qddd[dim] = np.polyval(coeffs['jerk'], dt)
                 evaluated = True
             else:
                 segment_idx += 1
@@ -110,12 +131,12 @@ class PolynomialTrajectoryBase(ABC):
             t_segment_final = self.segment_times[segment_idx][-1]
             if t <= t_segment_final:
                 for dim in range(self.num_dims):
-                    coeffs = self.coeffs[dim][segment_idx]
+                    coeffs = self._derivatives_cache[dim][segment_idx]
                     dt = t - t_segment_start
-                    q[dim, t_idx] = np.polyval(coeffs, dt)
-                    qd[dim, t_idx] = np.polyval(np.polyder(coeffs, 1), dt)
-                    qdd[dim, t_idx] = np.polyval(np.polyder(coeffs, 2), dt)
-                    qddd[dim, t_idx] = np.polyval(np.polyder(coeffs, 3), dt)
+                    q[dim, t_idx] = np.polyval(coeffs['pos'], dt)
+                    qd[dim, t_idx] = np.polyval(coeffs['vel'], dt)
+                    qdd[dim, t_idx] = np.polyval(coeffs['acc'], dt)
+                    qddd[dim, t_idx] = np.polyval(coeffs['jerk'], dt)
                 t_idx += 1
             else:
                 segment_idx += 1
@@ -275,6 +296,8 @@ class CubicPolynomialTrajectory(PolynomialTrajectoryBase):
                 coeffs = np.linalg.solve(M, endpoints)
                 self.coeffs[dim].append(coeffs)
 
+        super().__init__()
+
 
 class QuinticPolynomialTrajectory(PolynomialTrajectoryBase):
     """Describes a quintic (5th-order) polynomial trajectory."""
@@ -352,3 +375,5 @@ class QuinticPolynomialTrajectory(PolynomialTrajectoryBase):
                 )
                 coeffs = np.linalg.solve(M, endpoints)
                 self.coeffs[dim].append(coeffs)
+
+        super().__init__()
