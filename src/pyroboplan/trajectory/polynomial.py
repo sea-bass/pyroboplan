@@ -7,14 +7,19 @@ Some good resources:
 """
 
 from abc import ABC
+from typing import List, Optional, Union
 import numpy as np
+import numpy.typing as npt
 import warnings
 
 
 class PolynomialTrajectoryBase(ABC):
     """Abstract base class for polynomial trajectories."""
+    num_dims: int
+    coeffs: List[List[npt.NDArray[np.float32]]]
+    segment_times: List[List[np.float32]]
 
-    def evaluate(self, t):
+    def evaluate(self, t: float):
         """
         Evaluates the trajectory at a specific time.
 
@@ -67,7 +72,7 @@ class PolynomialTrajectoryBase(ABC):
             qddd = qddd[0]
         return q, qd, qdd, qddd
 
-    def generate(self, dt):
+    def generate(self, dt: float):
         """
         Generates a full trajectory at a specified sample time.
 
@@ -119,12 +124,12 @@ class PolynomialTrajectoryBase(ABC):
 
     def visualize(
         self,
-        dt=0.01,
-        joint_names=None,
-        show_position=True,
-        show_velocity=False,
-        show_acceleration=False,
-        show_jerk=False,
+        dt: float = 0.01,
+        joint_names: Optional[List[str]] = None,
+        show_position: bool = True,
+        show_velocity: bool = False,
+        show_acceleration: bool = False,
+        show_jerk: bool = False,
     ):
         """
         Visualizes a generated trajectory with one figure window per dimension.
@@ -206,7 +211,10 @@ class PolynomialTrajectoryBase(ABC):
 class CubicPolynomialTrajectory(PolynomialTrajectoryBase):
     """Describes a cubic (3rd-order) polynomial trajectory."""
 
-    def __init__(self, t, q, qd=0.0):
+    def __init__(self,
+                 t: npt.NDArray[np.float32],
+                 q: npt.NDArray[np.float32],
+                 qd: Union[float, npt.NDArray[np.float32]] = 0.0):
         """
         Creates a cubic (3rd-order) polynomial trajectory.
 
