@@ -32,20 +32,19 @@ class PolynomialTrajectoryBase(ABC):
         self._segment_start_times = [times[0] for times in self.segment_times]
 
         # Pre-calculate and cache derivatives
-        if len(self._derivatives_cache) != self.num_dims:
-            self._derivatives_cache = []
-            for dim in range(self.num_dims):
-                self._derivatives_cache[dim] = []
-                for seg_idx in range(len(self.coeffs[dim])):
-                    coeffs = self.coeffs[dim][seg_idx]
-                    self._derivatives_cache[dim].append(
-                        {
-                            "pos": coeffs,
-                            "vel": np.polyder(coeffs, 1),
-                            "acc": np.polyder(coeffs, 2),
-                            "jerk": np.polyder(coeffs, 3),
-                        }
-                    )
+        self._derivatives_cache = []
+        for dim in range(self.num_dims):
+            self._derivatives_cache.append([])
+            for seg_idx in range(len(self.coeffs[dim])):
+                coeffs = self.coeffs[dim][seg_idx]
+                self._derivatives_cache[dim].append(
+                    {
+                        "pos": coeffs,
+                        "vel": np.polyder(coeffs, 1),
+                        "acc": np.polyder(coeffs, 2),
+                        "jerk": np.polyder(coeffs, 3),
+                    }
+                )
 
     def evaluate(self, t: float):
         """
