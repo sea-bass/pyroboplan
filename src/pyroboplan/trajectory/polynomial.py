@@ -8,6 +8,7 @@ Some good resources:
 
 from abc import ABC
 from typing import Dict, List, Optional, Union
+import bisect
 import numpy as np
 import numpy.typing as npt
 import warnings
@@ -18,6 +19,7 @@ class PolynomialTrajectoryBase(ABC):
     num_dims: int
     coeffs: List[List[npt.NDArray[np.float32]]]
     segment_times: List[List[np.float32]]
+    _segment_start_times: List[np.float32]
     _derivatives_cache: List[List[Dict[str, npt.NDArray[np.float32]]]]
 
     def __init__(self):
@@ -25,6 +27,9 @@ class PolynomialTrajectoryBase(ABC):
         if len(self.coeffs) != self.num_dims or self.num_dims == 0:
             raise ValueError(
                 "Coefficients must be provided for each dimension.")
+
+        # used for quick segment lookup
+        self._segment_start_times = [times[0] for times in self.segment_times]
 
         # Pre-calculate and cache derivatives
         if len(self._derivatives_cache) != self.num_dims:
@@ -68,22 +73,24 @@ class PolynomialTrajectoryBase(ABC):
             warnings.warn("Cannot evaluate trajectory after its end time.")
             return None
 
-        segment_idx = 0
-        evaluated = False
-        while not evaluated:
-            t_segment_start = self.segment_times[segment_idx][0]
-            t_segment_final = self.segment_times[segment_idx][-1]
-            if t <= t_segment_final:
-                for dim in range(self.num_dims):
-                    coeffs = self._derivatives_cache[dim][segment_idx]
-                    dt = t - t_segment_start
-                    q[dim] = np.polyval(coeffs['pos'], dt)
-                    qd[dim] = np.polyval(coeffs['vel'], dt)
-                    qdd[dim] = np.polyval(coeffs['acc'], dt)
-                    qddd[dim] = np.polyval(coeffs['jerk'], dt)
-                evaluated = True
-            else:
-                segment_idx += 1
+        segment_idx = bisect.bisect_right(self._segment_start_times, t) - 1
+        segment_idx = max(0, segment_idx)
+
+        # Sanity check, it should never run but is here in case of floating
+        # point issues
+        while t > self.segment_times[segment_idx][-1]:
+            segment_idx += 1
+
+        t_segment_start = self._segment_start_times[segment_idx]
+        dt = t - t_segment_start
+
+        for dim in range(self.num_dims):
+            coeffs = self._derivatives_cache[dim][segment_idx]
+            dt = t - t_segment_start
+            q[dim] = np.polyval(coeffs['pos'], dt)
+            qd[dim] = np.polyval(coeffs['vel'], dt)
+            qdd[dim] = np.polyval(coeffs['acc'], dt)
+            qddd[dim] = np.polyval(coeffs['jerk'], dt)
 
         # If the trajectory is single-DOF, return the values as scalars.
         if len(q) == 1:
