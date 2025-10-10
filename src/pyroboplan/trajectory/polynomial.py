@@ -7,14 +7,46 @@ Some good resources:
 """
 
 from abc import ABC
+from typing import Dict, List, Optional, Union
+import bisect
 import numpy as np
+import numpy.typing as npt
 import warnings
 
 
 class PolynomialTrajectoryBase(ABC):
     """Abstract base class for polynomial trajectories."""
 
-    def evaluate(self, t):
+    num_dims: int
+    coeffs: List[List[npt.NDArray[np.float32]]]
+    segment_times: List[List[np.float32]]
+    _segment_start_times: List[np.float32]
+    _derivatives_cache: List[List[Dict[str, npt.NDArray[np.float32]]]]
+
+    def __init__(self):
+        # make sure coefs are set by the subclass
+        if len(self.coeffs) != self.num_dims or self.num_dims == 0:
+            raise ValueError("Coefficients must be provided for each dimension.")
+
+        # used for quick segment lookup
+        self._segment_start_times = [times[0] for times in self.segment_times]
+
+        # Pre-calculate and cache derivatives
+        self._derivatives_cache = []
+        for dim in range(self.num_dims):
+            self._derivatives_cache.append([])
+            for seg_idx in range(len(self.coeffs[dim])):
+                coeffs = self.coeffs[dim][seg_idx]
+                self._derivatives_cache[dim].append(
+                    {
+                        "pos": coeffs,
+                        "vel": np.polyder(coeffs, 1),
+                        "acc": np.polyder(coeffs, 2),
+                        "jerk": np.polyder(coeffs, 3),
+                    }
+                )
+
+    def evaluate(self, t: float):
         """
         Evaluates the trajectory at a specific time.
 
@@ -42,22 +74,24 @@ class PolynomialTrajectoryBase(ABC):
             warnings.warn("Cannot evaluate trajectory after its end time.")
             return None
 
-        segment_idx = 0
-        evaluated = False
-        while not evaluated:
-            t_segment_start = self.segment_times[segment_idx][0]
-            t_segment_final = self.segment_times[segment_idx][-1]
-            if t <= t_segment_final:
-                for dim in range(self.num_dims):
-                    coeffs = self.coeffs[dim][segment_idx]
-                    dt = t - t_segment_start
-                    q[dim] = np.polyval(coeffs, dt)
-                    qd[dim] = np.polyval(np.polyder(coeffs, 1), dt)
-                    qdd[dim] = np.polyval(np.polyder(coeffs, 2), dt)
-                    qddd[dim] = np.polyval(np.polyder(coeffs, 3), dt)
-                evaluated = True
-            else:
-                segment_idx += 1
+        segment_idx = bisect.bisect_right(self._segment_start_times, t) - 1
+        segment_idx = max(0, segment_idx)
+
+        # Sanity check, it should never run but is here in case of floating
+        # point issues
+        while t > self.segment_times[segment_idx][-1]:
+            segment_idx += 1
+
+        t_segment_start = self._segment_start_times[segment_idx]
+        dt = t - t_segment_start
+
+        for dim in range(self.num_dims):
+            coeffs = self._derivatives_cache[dim][segment_idx]
+            dt = t - t_segment_start
+            q[dim] = np.polyval(coeffs["pos"], dt)
+            qd[dim] = np.polyval(coeffs["vel"], dt)
+            qdd[dim] = np.polyval(coeffs["acc"], dt)
+            qddd[dim] = np.polyval(coeffs["jerk"], dt)
 
         # If the trajectory is single-DOF, return the values as scalars.
         if len(q) == 1:
@@ -67,7 +101,7 @@ class PolynomialTrajectoryBase(ABC):
             qddd = qddd[0]
         return q, qd, qdd, qddd
 
-    def generate(self, dt):
+    def generate(self, dt: float):
         """
         Generates a full trajectory at a specified sample time.
 
@@ -105,12 +139,12 @@ class PolynomialTrajectoryBase(ABC):
             t_segment_final = self.segment_times[segment_idx][-1]
             if t <= t_segment_final:
                 for dim in range(self.num_dims):
-                    coeffs = self.coeffs[dim][segment_idx]
+                    coeffs = self._derivatives_cache[dim][segment_idx]
                     dt = t - t_segment_start
-                    q[dim, t_idx] = np.polyval(coeffs, dt)
-                    qd[dim, t_idx] = np.polyval(np.polyder(coeffs, 1), dt)
-                    qdd[dim, t_idx] = np.polyval(np.polyder(coeffs, 2), dt)
-                    qddd[dim, t_idx] = np.polyval(np.polyder(coeffs, 3), dt)
+                    q[dim, t_idx] = np.polyval(coeffs["pos"], dt)
+                    qd[dim, t_idx] = np.polyval(coeffs["vel"], dt)
+                    qdd[dim, t_idx] = np.polyval(coeffs["acc"], dt)
+                    qddd[dim, t_idx] = np.polyval(coeffs["jerk"], dt)
                 t_idx += 1
             else:
                 segment_idx += 1
@@ -119,12 +153,12 @@ class PolynomialTrajectoryBase(ABC):
 
     def visualize(
         self,
-        dt=0.01,
-        joint_names=None,
-        show_position=True,
-        show_velocity=False,
-        show_acceleration=False,
-        show_jerk=False,
+        dt: float = 0.01,
+        joint_names: Optional[List[str]] = None,
+        show_position: bool = True,
+        show_velocity: bool = False,
+        show_acceleration: bool = False,
+        show_jerk: bool = False,
     ):
         """
         Visualizes a generated trajectory with one figure window per dimension.
@@ -206,7 +240,12 @@ class PolynomialTrajectoryBase(ABC):
 class CubicPolynomialTrajectory(PolynomialTrajectoryBase):
     """Describes a cubic (3rd-order) polynomial trajectory."""
 
-    def __init__(self, t, q, qd=0.0):
+    def __init__(
+        self,
+        t: npt.NDArray[np.float32],
+        q: npt.NDArray[np.float32],
+        qd: Union[float, npt.NDArray[np.float32]] = 0.0,
+    ):
         """
         Creates a cubic (3rd-order) polynomial trajectory.
 
@@ -266,6 +305,8 @@ class CubicPolynomialTrajectory(PolynomialTrajectoryBase):
                 )
                 coeffs = np.linalg.solve(M, endpoints)
                 self.coeffs[dim].append(coeffs)
+
+        super().__init__()
 
 
 class QuinticPolynomialTrajectory(PolynomialTrajectoryBase):
@@ -344,3 +385,5 @@ class QuinticPolynomialTrajectory(PolynomialTrajectoryBase):
                 )
                 coeffs = np.linalg.solve(M, endpoints)
                 self.coeffs[dim].append(coeffs)
+
+        super().__init__()
