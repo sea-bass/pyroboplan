@@ -12,6 +12,10 @@ For more information, refer to the [full documentation](https://pyroboplan.readt
 
 By Sebastian Castro, 2024-2025
 
+> [!WARNING]
+> This library should be used for educational purposes only.
+> If you are doing more serious motion planning and control work, check out [RoboPlan](https://github.com/open-planning/roboplan).
+
 ![RRT based motion planning and trajectory execution](https://raw.githubusercontent.com/sea-bass/pyroboplan/main/docs/source/_static/gifs/pyroboplan_rrt_traj.gif)
 
 ![Cartesian motion planning](https://raw.githubusercontent.com/sea-bass/pyroboplan/main/docs/source/_static/gifs/pyroboplan_cartesian_path.gif)

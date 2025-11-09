@@ -8,6 +8,8 @@ This library extensively uses the `Pinocchio <https://github.com/stack-of-tasks/
 Note the **educational** in this library description.
 It is not designed for performance, but rather to teach newcomers the fundamentals of motion planning in an easy-to-use environment with :examples:`many examples <>`.
 
+If you are doing more serious motion planning and control work, check out `RoboPlan <https://github.com/open-planning/roboplan>`_.
+
 .. image:: _static/gifs/pyroboplan_rrt_traj.gif
   :width: 640
   :alt: RRT based motion planning and trajectory execution
