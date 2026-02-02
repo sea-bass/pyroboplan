@@ -23,7 +23,6 @@ from pyroboplan.planning.rrt import RRTPlanner, RRTPlannerOptions
 from pyroboplan.planning.utils import discretize_joint_space_path
 from pyroboplan.visualization.meshcat_utils import visualize_frames
 
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(

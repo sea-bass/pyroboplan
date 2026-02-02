@@ -22,7 +22,6 @@ from pyroboplan.models.panda import (
     add_object_collisions,
 )
 
-
 if __name__ == "__main__":
     # Create models and data
     model, collision_model, visual_model = load_models()

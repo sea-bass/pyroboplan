@@ -22,7 +22,6 @@ from pyroboplan.trajectory.trajectory_optimization import (
 )
 from pyroboplan.visualization.meshcat_utils import visualize_frames
 
-
 if __name__ == "__main__":
     # Set this to True to add collisions to the world and try avoid them.
     # If you enable collision avoidance, expect that optimization will fail frequently

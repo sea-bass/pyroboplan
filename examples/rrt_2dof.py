@@ -11,7 +11,6 @@ from pyroboplan.models.two_dof import load_models, add_object_collisions
 from pyroboplan.planning.rrt import RRTPlanner, RRTPlannerOptions
 from pyroboplan.planning.utils import discretize_joint_space_path
 
-
 if __name__ == "__main__":
     # Create models and data
     model, collision_model, visual_model = load_models()
