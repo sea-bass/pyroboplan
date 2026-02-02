@@ -7,7 +7,6 @@ from pyroboplan.trajectory.trajectory_optimization import (
     CubicTrajectoryOptimizationOptions,
 )
 
-
 # Use a fixed seed for random number generation in tests.
 np.random.seed(1234)
 

@@ -24,7 +24,6 @@ from pyroboplan.trajectory.trajectory_optimization import (
 )
 from pyroboplan.visualization.meshcat_utils import visualize_frames
 
-
 if __name__ == "__main__":
     # Create models and data.
     # NOTE: We are using sphere collisions since they behave better with optimization.

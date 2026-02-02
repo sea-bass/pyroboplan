@@ -3,7 +3,6 @@
 import meshcat.geometry as mg
 import numpy as np
 
-
 FRAME_AXIS_POSITIONS = (
     np.array([[0, 0, 0], [1, 0, 0], [0, 0, 0], [0, 1, 0], [0, 0, 0], [0, 0, 1]])
     .astype(np.float32)

@@ -22,7 +22,6 @@ from pyroboplan.planning.cartesian_planner import (
 )
 from pyroboplan.visualization.meshcat_utils import visualize_frames
 
-
 # Create models and data
 model, collision_model, visual_model = load_models()
 add_self_collisions(model, collision_model)

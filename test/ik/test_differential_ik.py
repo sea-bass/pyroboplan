@@ -7,7 +7,6 @@ from pyroboplan.ik.differential_ik import DifferentialIk, DifferentialIkOptions
 from pyroboplan.ik.nullspace_components import collision_avoidance_nullspace_component
 from pyroboplan.models.panda import load_models, add_self_collisions
 
-
 # Use a fixed seed for random number generation in tests.
 np.random.seed(1234)
 

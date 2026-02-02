@@ -20,7 +20,6 @@ from pyroboplan.trajectory.polynomial import QuinticPolynomialTrajectory
 from pyroboplan.trajectory.trapezoidal_velocity import TrapezoidalVelocityTrajectory
 from pyroboplan.visualization.meshcat_utils import visualize_frames
 
-
 if __name__ == "__main__":
     # Create models and data
     model, collision_model, visual_model = load_models()

@@ -23,7 +23,6 @@ from pyroboplan.models.panda import (
     add_object_collisions,
 )
 
-
 # Use a fixed seed for random number generation in tests.
 np.random.seed(1234)
 
