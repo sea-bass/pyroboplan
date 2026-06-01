@@ -27,7 +27,7 @@ jobs:
             python_version: '3.10'
           - ubuntu_version: '24.04'
             python_version: '3.12'
-          - ubuntu_version: '26.04'
+          - ubuntu_version: 'latest'
             python_version: '3.14'
 
     runs-on: ubuntu-${{ matrix.env.ubuntu_version }}
