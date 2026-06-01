@@ -1,6 +1,7 @@
 .coverage
 .pytest_cache/
 .virtualenvs/
+.vscode/
 
 dist/
 **__pycache__/
