@@ -10,7 +10,7 @@ import sys
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = "pyroboplan"
-copyright = "2024-2025, Sebastian Castro"
+copyright = "2024-2026, Sebastian Castro"
 author = "Sebastian Castro"
 version = release = "1.3.0"
 

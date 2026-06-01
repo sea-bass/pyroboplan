@@ -10,7 +10,7 @@ This library extensively uses the [Pinocchio](https://github.com/stack-of-tasks/
 
 For more information, refer to the [full documentation](https://pyroboplan.readthedocs.io/en/latest/), this [blog post on motion planning](https://roboticseabass.com/2024/06/30/how-do-robot-manipulators-move), or this [YouTube presentation](https://youtu.be/YYRlypz9ZgE?si=_gavTnLokcEldaQX).
 
-By Sebastian Castro, 2024-2025
+By Sebastian Castro, 2024-2026
 
 > [!WARNING]
 > This library should be used for educational purposes only.
