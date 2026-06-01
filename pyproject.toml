@@ -10,7 +10,7 @@ dependencies = [
   "pin == 4.0.0",
   "matplotlib == 3.10.5",
   "meshcat == 0.3.2",
-  "scipy == 1.15.3",
+  "scipy == 1.17.1",
   "toppra == 0.6.3",
   "plyfile == 1.1.2",
 ]
