@@ -86,16 +86,17 @@ class CartesianPlanner:
         """
         self.model = model
         self.target_frame = target_frame
-        self.tforms = tforms
+        # Own the waypoints: callers may pass views into mutable Pinocchio Data.
+        self.tforms = [pinocchio.SE3(tform) for tform in tforms]
         self.ik_solver = ik_solver
         self.options = options
 
         # Generate the segments
         cur_time = 0.0
         self.segments = []
-        for idx in range(1, len(tforms)):
-            tform_start = tforms[idx - 1]
-            tform_end = tforms[idx]
+        for idx in range(1, len(self.tforms)):
+            tform_start = self.tforms[idx - 1]
+            tform_end = self.tforms[idx]
 
             # Figure out a time scaling.
             tform_diff = tform_end.actInv(tform_start)
@@ -175,7 +176,7 @@ class CartesianPlanner:
         q = np.zeros([self.model.nq, num_pts])
         q[:, 0] = q_init
 
-        q_cur = q_init
+        q_cur = np.array(q_init, dtype=float, copy=True)
         idx = 0
         segment_idx = 0
         t_prev = 0
@@ -219,6 +220,9 @@ class CartesianPlanner:
                 q_sol = self.ik_solver.solve(self.target_frame, tform, init_state=q_cur)
                 if q_sol is not None:
                     q[:, idx] = q_sol
+                    # Warm-start from the accepted solution, independently of
+                    # whether the solver modifies or replaces its initial state.
+                    q_cur = np.array(q_sol, dtype=float, copy=True)
                 else:
                     print(f"Failed to solve on point {idx + 1} out of {num_pts}")
                     return False, t_vec, q

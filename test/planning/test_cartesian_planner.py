@@ -31,7 +31,7 @@ def test_invalid_cartesian_planner_options(max_vals):
         )
 
 
-@pytest.mark.parametrize("use_trapezoidal_scaling", [(True,), (False,)])
+@pytest.mark.parametrize("use_trapezoidal_scaling", [True, False])
 def test_cartesian_planner(use_trapezoidal_scaling):
     model, collision_model, _ = load_models()
     add_self_collisions(model, collision_model)
