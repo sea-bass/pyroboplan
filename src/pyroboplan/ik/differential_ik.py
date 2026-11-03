@@ -161,6 +161,9 @@ class DifferentialIk:
             array-like or None
                 A list of joint configuration values with the solution, if one was found. Otherwise, returns None.
         """
+        # The target may be a borrowed view into self.data.oMf, which forward
+        # kinematics updates in place. Keep the desired pose independent.
+        target_tform = pinocchio.SE3(target_tform)
         np.random.seed(self.options.rng_seed)
         target_frame_id = self.model.getFrameId(target_frame)
 
@@ -196,7 +199,8 @@ class DifferentialIk:
         # Initialize IK
         solved = False
         n_tries = 0
-        q_cur = init_state
+        # Iteration must not modify the caller's initial configuration.
+        q_cur = np.array(init_state, dtype=float, copy=True)
         initial_error_norm = None
 
         if self.visualizer:
